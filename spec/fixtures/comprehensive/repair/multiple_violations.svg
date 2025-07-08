@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     version="1.2" baseProfile="tiny" width="200" height="150" viewBox="0 0 200 150">
+  <title>Comprehensive Test</title>
+  <desc>Multiple violations combined</desc>
+
+  <!-- Fixed: viewBox added, forbidden elements removed -->
+
+  <g>
+    <rect x="10" y="10" width="40" height="30" fill="black" stroke="black"/>
+    <text x="70" y="30" font-family="sans-serif" fill="black" font-size="14">Bad Text</text>
+  </g>
+
+  <circle cx="100" cy="80" r="20" fill="black" stroke="black"/>
+  <path d="M 10 100 Q 50 120 90 100" fill="none" stroke="black"/>
+</svg>

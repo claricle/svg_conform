@@ -1,0 +1,20 @@
+name: "no_external_css"
+description: "Security-focused profile that disallows external CSS references"
+
+requirements:
+  - id: "no_external_css"
+    type: "NoExternalCssRequirement"
+    description: "Validates that no external CSS references are present"
+    check_style_elements: true
+    check_style_attributes: true
+    check_link_elements: true
+    allowed_protocols: []
+
+remediations:
+  - id: "remove_external_css"
+    type: "NoExternalCssRemediation"
+    description: "Remove external CSS references"
+    targets: ["no_external_css"]
+    strategy: "remove_external_references"
+    preserve_inline_styles: true
+    log_removed_elements: true

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" 
+     width="100" height="100" viewBox="0 0 100 100">
+  <title>Color Restrictions Violations</title>
+  <desc>Testing color restrictions - should only allow black and white</desc>
+  
+  <!-- Invalid colors that should be converted -->
+  <rect x="10" y="10" width="20" height="20" fill="red"/>
+  <rect x="40" y="10" width="20" height="20" fill="blue"/>
+  <rect x="70" y="10" width="20" height="20" fill="#00ff00"/>
+  <circle cx="25" cy="50" r="10" fill="rgb(255,0,255)"/>
+  <circle cx="50" cy="50" r="10" fill="orange"/>
+  <circle cx="75" cy="50" r="10" fill="#f0f"/>
+  
+  <!-- Valid colors that should remain -->
+  <rect x="10" y="70" width="20" height="20" fill="black"/>
+  <rect x="40" y="70" width="20" height="20" fill="white"/>
+  <rect x="70" y="70" width="20" height="20" fill="none"/>
+  
+  <!-- Style attributes with invalid colors -->
+  <path d="M 10 90 L 90 90" stroke="red" stroke-width="2"/>
+  <text x="50" y="45" fill="green" font-family="serif" text-anchor="middle">Colors</text>
+</svg>

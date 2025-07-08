@@ -1,0 +1,180 @@
+# SVGCheck Compatibility Mapping Configuration
+# This file defines how svgcheck error messages map to SvgConform requirements
+
+# Message pattern mappings - patterns are evaluated in order
+message_patterns:
+  # Style promotion patterns - now handled by unified style requirement
+  - pattern: "Style property '(.+)' promoted to attribute"
+    requirement: "style"
+    semantic_key: "style_promotion:${1}"
+
+  # Standard RGB color restriction patterns
+  - pattern: "The attribute '(.+)' does not allow the value '(rgb\\([^)]+\\))', replaced with '(.+)'"
+    requirement: "color_restrictions"
+    semantic_key: "color_restriction:${1}:${2}"
+
+  # Percentage RGB color restriction patterns
+  - pattern: "The attribute '(.+)' does not allow the value '(rgb\\([^)]*%[^)]*\\))', replaced with '(.+)'"
+    requirement: "color_restrictions"
+    semantic_key: "color_restriction:${1}:${2}"
+
+  # Case-sensitive color name patterns (BLACK, WHITE, etc.)
+  - pattern: "The attribute '(.+)' does not allow the value '([A-Z]+)', replaced with '(.+)'"
+    requirement: "color_restrictions"
+    semantic_key: "color_restriction:${1}:${2}"
+
+  # Named color restriction patterns (with replacement) - map to color_restrictions for semantic comparison
+  - pattern: "The attribute '(fill|stroke)' does not allow the value '([^']+)', replaced with '(.+)'"
+    requirement: "color_restrictions"
+    semantic_key: "color_restriction:${1}:${2}"
+
+  # Hex color restriction patterns
+  - pattern: "The attribute '(.+)' does not allow the value '(#[0-9a-fA-F]{3,6})', replaced with '(.+)'"
+    requirement: "color_restrictions"
+    semantic_key: "color_restriction:${1}:${2}"
+
+  # Unknown/invalid color patterns
+  - pattern: "The attribute '(.+)' does not allow the value '([^']+)', replaced with 'black'"
+    requirement: "color_restrictions"
+    semantic_key: "color_restriction:${1}:${2}"
+
+  # Generic attribute value restriction patterns (with replacement) - now handled by unified style requirement
+  - pattern: "The attribute '(.+)' does not allow the value '([^']+)', replaced with '(.+)'"
+    requirement: "style"
+    semantic_key: "property_value:${1}:${2}"
+
+  # Attribute removal patterns - now handled by unified style requirement
+  - pattern: "The attribute '(.+)' does not allow the value '([^']+)', attribute to be removed"
+    requirement: "style"
+    semantic_key: "property_value_removed:${1}:${2}"
+
+  # Element attribute restriction patterns
+  - pattern: "The element '(.+)' does not allow the attribute '(.+)', attribute to be removed"
+    requirement: "allowed_elements"
+    semantic_key: "invalid_attribute:${1}:${2}"
+
+  # Namespace attribute patterns
+  - pattern: "Element '(.+)' does not allow attributes with namespace '([^']+)'"
+    requirement: "namespace_attributes"
+    semantic_key: "namespace_attributes:${1}:${2}"
+
+  # Child element restriction patterns
+  - pattern: "The element '(.+)' is not allowed as a child of '(.+)'"
+    requirement: "allowed_elements"
+    semantic_key: "invalid_child:${1}:${2}"
+
+  # Element not allowed patterns
+  - pattern: "Element '(.+)' not allowed"
+    requirement: "allowed_elements"
+    semantic_key: "allowed_elements:${1}"
+
+  # Element in wrong namespace patterns
+  - pattern: "Element '(.+)' in namespace '(.+)' is not allowed"
+    requirement: "namespace_attributes"
+    semantic_key: "namespace_element:${1}:${2}"
+
+  # Namespace not permitted patterns
+  - pattern: "The namespace (.+) is not permitted for svg elements"
+    requirement: "namespace_validation"
+    semantic_key: "namespace_not_permitted:${1}"
+
+  # ViewBox required patterns
+  - pattern: "The attribute viewBox is required on the root svg element"
+    requirement: "viewbox_required"
+    semantic_key: "viewbox_required"
+
+  # ViewBox calculation patterns
+  - pattern: "Trying to put in the attribute with value '(.+)'"
+    requirement: "viewbox_required"
+    semantic_key: "viewbox_calculated:${1}"
+
+  # Malformed style patterns - now handled by unified style requirement
+  - pattern: "Malformed field '(.+)' in style attribute found\\. Field removed"
+    requirement: "style"
+    semantic_key: "style_malformed:${1}"
+
+  # SvgConform malformed style declaration pattern
+  - pattern: "Malformed style declaration '(.+)' found\\. Declaration removed\\."
+    requirement: "style"
+    semantic_key: "malformed_style_field:${1}"
+
+  # Style property removal patterns - now handled by unified style requirement
+  - pattern: "Style property '(.+)' removed"
+    requirement: "style"
+    semantic_key: "style_removal:${1}"
+
+  # Font family restriction patterns
+  - pattern: "The attribute 'font-family' does not allow the value '(.+)', replaced with '(.+)'"
+    requirement: "font_family"
+    semantic_key: "font_family_restriction:${1}:${2}"
+
+  # Viewport fill color restriction patterns
+  - pattern: "The attribute 'viewport-fill' does not allow the value '(.+)', replaced with '(.+)'"
+    requirement: "color_restrictions"
+    semantic_key: "color_restriction:viewport-fill:${1}"
+
+  # Malformed style field with brackets pattern
+  - pattern: "Malformed field '\\[\\[(.+)\\]\\]' in style attribute found\\. Field removed\\."
+    requirement: "style"
+    semantic_key: "malformed_style_field_brackets:${1}"
+
+# Requirement ID mappings - direct mappings for SvgConform requirement IDs
+requirement_mappings:
+  allowed_elements: "allowed_elements"
+  namespace_attributes: "namespace_attributes"
+  namespace_validation: "namespace_attributes"  # Map namespace validation to namespace_attributes
+  font_family: "font_family"
+  color_restrictions: "color_restrictions"
+  viewbox_required: "viewbox_required"
+  # All style-related requirements now map to unified "style" requirement
+  style_promotion: "style"
+  style_syntax: "style"
+  style_validation: "style"
+  property_value: "style"
+  required_attribute: "viewbox_required"  # Map required_attribute to viewbox_required
+  invalid_id_references: null  # Mark as unmapped - no direct equivalent
+  namespace: "namespace_attributes"  # Map to closest equivalent
+
+# Skip patterns - errors matching these patterns should be skipped
+skip_patterns:
+  # Skip metadata child elements
+  - pattern: "Element '(RDF|Work|format|type|title|creator|description)'"
+    reason: "metadata_child_elements"
+
+  # Skip embedded font errors
+  - pattern: "font-family.*embedded"
+    reason: "ignored_font_patterns"
+    flags: "i"  # case insensitive
+
+  # Skip namespace errors on exempt elements
+  - pattern: "Element '(Work|type|title|creator|description|format)' does not allow attributes with namespace"
+    reason: "namespace_exempt_elements"
+
+  # Skip status messages (not validation errors)
+  - pattern: "ERROR: File does not conform to SVG requirements"
+    reason: "status_message"
+
+  - pattern: "INFO: File conforms to SVG requirements\\."
+    reason: "status_message"
+
+# Special handling rules
+special_rules:
+  # Parse failure conditions
+  parse_failure:
+    - pattern: "svg:"
+      reason: "namespaced_svg_elements"
+    - pattern: "namespace declaration"
+      reason: "problematic_xml_structure"
+
+  # Validity error inclusion conditions
+  validity_errors:
+    structural_requirements: ["viewbox_required", "allowed_elements", "namespace"]
+    datatype_condition: "both_width_and_height_present"
+
+# Configuration values
+config:
+  svg_urls:
+    - "http://www.w3.org/2000/svg"
+  xmlns_urls:
+    - "http://www.w3.org/2000/xmlns/"
+    - "http://www.w3.org/XML/1998/namespace"

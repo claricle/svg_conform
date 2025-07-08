@@ -1,0 +1,137 @@
+name: SVGCheck Compatibility
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual triggering
+  push:
+    branches:
+      - main
+    paths:
+      - 'lib/svg_conform/**'
+      - 'spec/svgcheck_compatibility_spec.rb'
+      - 'lib/tasks/svgcheck.rake'
+
+jobs:
+  compatibility-test:
+    runs-on: ubuntu-latest
+    name: SVGCheck Compatibility Test
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true # Ensure svgcheck submodule is checked out
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.2'
+          bundler-cache: true
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install svgcheck
+
+      - name: Verify svgcheck installation
+        run: |
+          svgcheck --version
+          svgcheck --help
+
+      - name: Run compatibility tests
+        run: |
+          bundle exec rake svgcheck:test_compatibility
+
+      - name: Generate compatibility report
+        run: |
+          bundle exec rake svgcheck:compare > svgcheck_compatibility_report.txt 2>&1 || true
+
+      - name: Upload compatibility report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: svgcheck-compatibility-report
+          path: svgcheck_compatibility_report.txt
+
+      - name: Benchmark performance
+        run: |
+          bundle exec rake svgcheck:benchmark > benchmark_results.txt 2>&1 || true
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: benchmark-results
+          path: benchmark_results.txt
+
+      - name: Check for compatibility issues
+        run: |
+          if bundle exec rake svgcheck:compare | grep -q "Differences: 0"; then
+            echo "✅ All compatibility tests passed!"
+          else
+            echo "⚠️ Some compatibility differences found. Check the report for details."
+            exit 1
+          fi
+
+  notify-on-failure:
+    runs-on: ubuntu-latest
+    needs: compatibility-test
+    if: failure()
+    steps:
+      - name: Create issue on compatibility failure
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const title = `SVGCheck Compatibility Test Failed - ${new Date().toISOString().split('T')[0]}`;
+            const body = `
+            ## SVGCheck Compatibility Test Failure
+
+            The daily SVGCheck compatibility test has failed. This indicates that our SVG validation
+            behavior may have diverged from the reference Python implementation.
+
+            **Run Details:**
+            - Workflow: ${context.workflow}
+            - Run ID: ${context.runId}
+            - Commit: ${context.sha}
+
+            **Next Steps:**
+            1. Download the compatibility report artifact from the failed run
+            2. Review the differences between our implementation and svgcheck
+            3. Update our rules or fix any regressions
+            4. Re-run the compatibility tests
+
+            **Artifacts:**
+            - svgcheck-compatibility-report
+            - benchmark-results
+
+            This issue was automatically created by the SVGCheck Compatibility workflow.
+            `;
+
+            // Check if an issue already exists for today
+            const today = new Date().toISOString().split('T')[0];
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'svgcheck-compatibility'
+            });
+
+            const todayIssue = existingIssues.data.find(issue =>
+              issue.title.includes(today)
+            );
+
+            if (!todayIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['bug', 'svgcheck-compatibility', 'automated']
+              });
+            }

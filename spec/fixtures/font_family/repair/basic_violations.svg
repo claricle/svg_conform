@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny"
+     width="200" height="100" viewBox="0 0 200 100">
+  <title>Font Family Violations</title>
+  <desc>Testing font family restrictions - should only allow generic families</desc>
+
+  <!-- Fixed to generic font families -->
+  <text x="10" y="20" font-family="sans-serif">Arial Text</text>
+  <text x="10" y="40" font-family="serif">Times Text</text>
+  <text x="10" y="60" font-family="sans-serif">Mixed Fonts</text>
+  <text x="10" y="80" font-family="sans-serif">Comic Sans</text>
+
+  <!-- Valid generic font families -->
+  <text x="120" y="20" font-family="serif">Serif</text>
+  <text x="120" y="40" font-family="sans-serif">Sans</text>
+  <text x="120" y="60" font-family="monospace">Mono</text>
+</svg>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny"
+     width="150" height="150" viewBox="0 0 150 150">
+  <title>Style Violations</title>
+  <desc>Testing style attribute validation and property restrictions</desc>
+
+  <!-- Malformed style syntax -->
+  <rect x="10" y="10" width="30" height="30" style="fill:red;stroke"/>
+  <rect x="50" y="10" width="30" height="30" style="fill red; stroke: black"/>
+  <rect x="90" y="10" width="30" height="30" style="[[invalid-property]]: value"/>
+
+  <!-- Invalid style properties -->
+  <circle cx="25" cy="70" r="15" style="background-color: blue; margin: 10px"/>
+  <circle cx="65" cy="70" r="15" style="border: 1px solid red; padding: 5px"/>
+
+  <!-- Invalid property values -->
+  <path d="M 10 110 L 40 130 L 10 130 Z" style="fill: rainbow; stroke-width: auto"/>
+  <text x="75" y="125" style="font-family: Arial Black; text-decoration: blink">Invalid</text>
+
+  <!-- Valid styles -->
+  <rect x="10" y="90" width="30" height="20" style="fill: black; stroke: none"/>
+</svg>

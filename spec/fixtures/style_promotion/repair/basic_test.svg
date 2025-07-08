@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny"
+     width="120" height="80" viewBox="0 0 120 80">
+  <title>Style Promotion</title>
+  <desc>Testing style property promotion to attributes</desc>
+
+  <!-- Style properties promoted to attributes -->
+  <rect x="10" y="10" width="30" height="20" fill="black" stroke="none"/>
+  <circle cx="60" cy="20" r="10" fill="white" stroke="black" stroke-width="1"/>
+  <text x="10" y="50" font-family="serif" font-size="12" fill="black">Text</text>
+  <path d="M 10 60 L 40 70 L 10 70 Z" fill="none" stroke="black" stroke-width="2"/>
+
+  <!-- Style promoted (overrides attribute) -->
+  <rect x="80" y="10" width="20" height="20" fill="black"/>
+</svg>

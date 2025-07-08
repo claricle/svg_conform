@@ -1,0 +1,34 @@
+name: "base"
+description: "Base SVG validation profile with common requirements"
+
+requirements:
+  - id: "namespace"
+    type: "NamespaceRequirement"
+    description: "Validates SVG namespace declaration"
+
+  - id: "viewbox_required"
+    type: "ViewboxRequiredRequirement"
+    description: "Ensures SVG has viewBox attribute"
+    strict_mode: false
+
+  - id: "namespace_attributes"
+    type: "NamespaceAttributesRequirement"
+    description: "Only allows attributes from SVG, XLink, and XML namespaces per RFC 7996 Section 2.1"
+    allowed_namespaces:
+      - "http://www.w3.org/2000/svg"
+      - "http://www.w3.org/1999/xlink"
+      - "http://www.w3.org/XML/1998/namespace"  # XML namespace (xml:space, xml:lang, etc.)
+      - ""  # Default namespace (no prefix)
+
+remediations:
+  - id: "fix_namespace"
+    type: "NamespaceRemediation"
+    description: "Add missing SVG namespace"
+    targets: ["namespace"]
+    default_namespace: "http://www.w3.org/2000/svg"
+
+  # RFC 7996 Section 2.1: ViewBox auto-generation
+  - id: "viewbox_generation"
+    type: "ViewboxRemediation"
+    description: "Auto-generate viewBox from width/height per RFC 7996 Section 2.1"
+    targets: ["viewbox_required"]

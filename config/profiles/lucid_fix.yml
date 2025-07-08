@@ -1,0 +1,37 @@
+name: "lucid_fix"
+description: "Lucid SVG Fix Profile - Removes invalid use element references and namespace attributes from Lucid-generated SVGs"
+
+requirements:
+  - id: "invalid_id_references"
+    type: "InvalidIdReferencesRequirement"
+    description: "Validates that ID references point to existing elements"
+    check_use_elements: true
+    check_other_references: true
+    strict_mode: true
+  - id: "namespace_attributes_requirement"
+    type: "NamespaceAttributesRequirement"
+    description: "Disallow lucid namespace attributes"
+    disallowed_namespaces:
+      - "lucid"
+  - id: "viewbox_required"
+    type: "ViewboxRequiredRequirement"
+    description: "Require viewBox attribute on SVG root element"
+
+remediations:
+  - id: "remove_invalid_use_elements"
+    type: "InvalidIdReferencesRemediation"
+    description: "Remove use elements with invalid ID references (Lucid fix)"
+    targets: ["invalid_id_references"]
+    strategy: "remove_invalid_use"
+    log_removed_elements: true
+    create_placeholder_comment: false
+  - id: "lucid_namespace_fix"
+    type: "NamespaceAttributeRemediation"
+    description: "Remove lucid namespace attributes and declarations"
+    targets: ["namespace_attributes_requirement"]
+    disallowed_namespaces:
+      - "lucid"
+  - id: "add_viewbox"
+    type: "ViewboxRemediation"
+    description: "Add viewBox attribute based on width/height"
+    targets: ["viewbox_required"]

@@ -1,0 +1,269 @@
+name: "svg_1_2_rfc"
+description: "SVG 1.2 RFC Profile (RFC 7996) - Black and white diagrams for technical documents"
+
+requirements:
+  # RFC 7996 Section 2.1: Elements, Properties, and Attributes Allowed in SVG 1.2 RFC
+  - id: "allowed_elements"
+    type: "AllowedElementsRequirement"
+    description: "Validates allowed SVG elements and attributes per RFC 7996 Section 2.1"
+    element_configs:
+      # Direct encoding from svgcheck word_properties.py elements dictionary
+      - tag: "svg"
+        attributes: ["version", "baseProfile", "width", "viewBox", "preserveAspectRatio", "snapshotTime", "height", "id", "role", "break", "color-rendering", "fill-rule"]
+        required_attributes: ["version", "baseProfile"]
+        attribute_values:
+          version: ["1.2"]
+          baseProfile: ["tiny"]
+        allowed_children: ["title", "path", "rect", "circle", "line", "ellipse", "polyline", "polygon", "solidColor", "textArea", "text", "g", "defs", "use", "a", "tspan", "desc"]
+      - tag: "desc"
+        attributes: ["id", "role", "shape-rendering", "text-rendering", "buffered-rendering", "visibility", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "fill-rule"]
+        allowed_children: ["text"]
+      - tag: "title"
+        attributes: ["id", "role", "shape-rendering", "text-rendering", "buffered-rendering", "visibility", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "fill-rule"]
+        allowed_children: ["text"]
+      - tag: "path"
+        attributes: ["d", "pathLength", "stroke-miterlimit", "id", "role", "fill", "style", "transform", "font-size", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        allowed_children: ["title", "desc"]
+      - tag: "rect"
+        attributes: ["x", "y", "width", "height", "rx", "ry", "stroke-miterlimit", "id", "role", "fill", "style", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        allowed_children: ["title", "desc"]
+      - tag: "circle"
+        attributes: ["cx", "cy", "r", "id", "role", "fill", "style", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        allowed_children: ["title", "desc"]
+      - tag: "line"
+        attributes: ["x1", "y1", "x2", "y2", "id", "role", "fill", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        allowed_children: ["title", "desc"]
+      - tag: "ellipse"
+        attributes: ["cx", "cy", "rx", "ry", "id", "role", "fill", "style", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        allowed_children: ["title", "desc"]
+      - tag: "polyline"
+        attributes: ["points", "id", "role", "fill", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        allowed_children: ["title", "desc"]
+      - tag: "polygon"
+        attributes: ["points", "id", "role", "fill", "style", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        allowed_children: ["title", "desc"]
+      - tag: "solidColor"
+        attributes: ["id", "role", "fill", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        allowed_children: ["title", "desc"]
+      - tag: "textArea"
+        attributes: ["x", "y", "width", "height", "auto", "id", "role", "fill", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        allowed_children: ["desc", "title", "tspan", "text", "a"]
+      - tag: "text"
+        attributes: ["x", "y", "rotate", "id", "role", "fill", "style", "transform", "font-size", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        allowed_children: ["desc", "title", "tspan", "text", "a"]
+      - tag: "g"
+        attributes: ["label", "class", "id", "role", "fill", "style", "transform", "fill-rule", "visibility", "base", "lang", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        allowed_children: ["title", "path", "rect", "circle", "line", "ellipse", "polyline", "polygon", "solidColor", "textArea", "text", "g", "defs", "use", "a", "tspan", "desc"]
+      - tag: "defs"
+        attributes: ["id", "role", "fill", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        allowed_children: ["title", "path", "rect", "circle", "line", "ellipse", "polyline", "polygon", "solidColor", "textArea", "text", "g", "defs", "use", "a", "tspan", "desc"]
+      - tag: "use"
+        attributes: ["x", "y", "href", "xlink:href", "id", "role", "fill", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        allowed_children: ["title", "desc"]
+      - tag: "a"
+        attributes: ["id", "role", "fill", "transform", "fill-rule", "target", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        allowed_children: ["title", "path", "rect", "circle", "line", "ellipse", "polyline", "polygon", "solidColor", "textArea", "text", "g", "defs", "use", "a", "tspan", "desc"]
+      - tag: "tspan"
+        attributes: ["x", "y", "id", "role", "fill", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        allowed_children: ["desc", "title", "tspan", "text", "a", "tbreak"]
+      - tag: "tbreak"
+        attributes: ["id", "role", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+    check_attributes: true
+    check_invalid_attributes: true
+    check_parent_child: true
+
+  # RFC 7996 Section 2.1: Color restrictions - "Anything relating to 'color' is not allowed in SVG 1.2 RFC"
+  # RFC 6949: "Color and grayscale will not be accepted. RFCs must correctly display in monochromatic black-and-white"
+  - id: "color_restrictions"
+    type: "ColorRestrictionsRequirement"
+    description: "Restricts colors to black and white only per RFC 7996 Section 2.1 and RFC 6949"
+    mode: "black_white_only"
+    allowed_colors: ["black", "white", "#000000", "#ffffff", "#FFFFFF", "none", "inherit", "currentColor"]
+    black_and_white_threshold: 764  # RGB sum threshold for svgcheck compatibility (764 = 255+255+254)
+
+  # RFC 7996 Section 17: Font restrictions - "SVG 1.2 RFC only allows 'serif', 'sans-serif', and 'monospace' generic font families"
+  - id: "font_family"
+    type: "FontFamilyRequirement"
+    description: "Restricts font families to generic families per RFC 7996 Section 17"
+    allowed_families: ["serif", "sans-serif", "monospace", "inherit"]
+
+  # RFC 7996 Section 2.1: Unified style validation (syntax, properties, and values)
+  - id: "style"
+    type: "StyleRequirement"
+    description: "Validates style attributes per RFC 7996 Section 2.1 - syntax, allowed properties, and property values"
+    allowed_properties:
+      # All style properties that svgcheck recognizes (from word_properties.py properties dictionary)
+      # Font properties
+      - "font-family"
+      - "font-weight"
+      - "font-style"
+      - "font-variant"
+      - "font-size"
+      # Text properties
+      - "direction"
+      - "unicode-bidi"
+      - "text-anchor"
+      - "line-increment"
+      - "text-align"
+      - "display-align"
+      # Fill properties
+      - "fill"
+      - "fill-rule"
+      - "fill-opacity"
+      # Stroke properties
+      - "stroke"
+      - "stroke-width"
+      - "stroke-linecap"
+      - "stroke-linejoin"
+      - "stroke-miterlimit"
+      - "stroke-dasharray"
+      - "stroke-dashoffset"
+      - "stroke-opacity"
+      # Color properties
+      - "color"
+      - "solid-color"
+      - "solid-opacity"
+      - "stop-color"
+      - "stop-opacity"
+      # Display properties
+      - "display"
+      - "visibility"
+      # Rendering properties
+      - "image-rendering"
+      - "color-rendering"
+      - "shape-rendering"
+      - "text-rendering"
+      - "buffered-rendering"
+      # Vector and viewport properties
+      - "vector-effect"
+      - "viewport-fill"
+      - "viewport-fill-opacity"
+    property_values:
+      # Direct mapping from svgcheck word_properties.py properties dictionary
+      "font-family": ["serif", "sans-serif", "monospace", "inherit"]
+      "font-weight": ["normal", "bold", "bolder", "lighter", "inherit", "100", "200", "300", "400", "500", "600", "700", "800", "900"]
+      "font-style": ["normal", "italic", "oblique", "inherit"]
+      "font-variant": ["normal", "small-caps", "inherit"]
+      "direction": ["ltr", "rtl", "inherit"]
+      "unicode-bidi": ["normal", "embed", "bidi-override", "inherit"]
+      "text-anchor": ["start", "middle", "end", "inherit"]
+      "text-align": ["start", "end", "center", "inherit"]
+      "display-align": ["auto", "before", "center", "after", "inherit"]
+      "fill": ["none", "inherit", "<color>"]  # Uses <color> type like Python
+      "fill-rule": ["nonzero", "evenodd", "inherit"]
+      "stroke": ["none", "<paint>"]  # Match Python: ('none', '<paint>')
+      "stroke-linecap": ["butt", "round", "square", "inherit"]
+      "stroke-linejoin": ["miter", "round", "bevel", "inherit"]
+      "color": ["currentColor", "inherit", "<color>"]
+      "solid-color": ["currentColor", "inherit", "<color>"]
+      "stop-color": ["currentColor", "inherit", "<color>"]
+      "viewport-fill": ["none", "currentColor", "inherit", "<color>"]
+      "display": ["inline", "block", "list-item", "run-in", "compact", "table", "inline-table", "table-row-group", "table-header-group", "table-footer-group", "table-row", "table-column-group", "table-column", "table-cell", "table-caption", "none", "inherit"]
+      "visibility": ["visible", "hidden", "collapse", "inherit"]
+      "image-rendering": ["auto", "optimizeSpeed", "optimizeQuality", "inherit"]
+      "color-rendering": ["auto", "optimizeSpeed", "optimizeQuality", "inherit"]
+      "shape-rendering": ["auto", "optimizeSpeed", "crispEdges", "geometricPrecision", "inherit"]
+      "text-rendering": ["auto", "optimizeSpeed", "optimizeLegibility", "geometricPrecision", "inherit"]
+      "buffered-rendering": ["auto", "dynamic", "static", "inherit"]
+      "vector-effect": ["non-scaling-stroke", "none", "inherit"]
+    # Basic type definitions matching svgcheck word_properties.py basic_types
+    basic_types:
+      "<color>": ["black", "#ffffff", "#FFFFFF", "white", "#000000"]
+      "<paint>": ["none", "currentColor", "inherit", "<color>"]
+      "<number>": ["+"]  # Indicates numeric validation with positive numbers
+      "<integer>": ["+"]  # Indicates integer validation with positive numbers
+    # Color conversion settings matching svgcheck logic
+    color_conversion:
+      threshold: 764  # svgcheck color_threshold = 764
+      default_color: "black"  # svgcheck color_default = 'black'
+      color_map:
+        "rgb(0,0,0)": "black"
+    property_types:
+      "fill": "<color>"
+      "stroke": "<paint>"
+      "color": "<color>"
+      "solid-color": "<color>"
+      "stop-color": "<color>"
+      "viewport-fill": "<color>"
+      "stroke-width": "<number>"
+      "stroke-miterlimit": "<number>"
+      "stroke-dashoffset": "<number>"
+      "fill-opacity": "<number>"
+      "stroke-opacity": "<number>"
+      "solid-opacity": "<number>"
+      "stop-opacity": "<number>"
+      "viewport-fill-opacity": "<number>"
+      "font-size": "<number>"
+
+  # RFC 7996 Section 2.1: Namespace restrictions - only SVG namespace allowed
+  - id: "namespace_validation"
+    type: "NamespaceRequirement"
+    description: "Only allows SVG namespace elements per RFC 7996 Section 2.1"
+    allowed_namespaces:
+      - "http://www.w3.org/2000/svg"
+      - ""  # Default namespace (no prefix)
+
+  # RFC 7996 Section 2.1: Namespace attribute restrictions - only SVG, XLink, and XML namespaces allowed
+  - id: "namespace_attributes"
+    type: "NamespaceAttributesRequirement"
+    description: "Only allows attributes from SVG, XLink, and XML namespaces per RFC 7996 Section 2.1"
+    allowed_namespaces:
+      - "http://www.w3.org/2000/svg"
+      - "http://www.w3.org/1999/xlink"
+      - "http://www.w3.org/XML/1998/namespace"  # XML namespace (xml:space, xml:lang, etc.)
+      - ""  # Default namespace (no prefix)
+
+  # RFC 7996 Section 2.1: ViewBox required on root SVG element
+  - id: "viewbox_required"
+    type: "ViewboxRequiredRequirement"
+    description: "Requires viewBox attribute on root SVG element per RFC 7996 Section 2.1"
+
+  # RFC 7996 Section 14: Link validation - IRIs must be ASCII only
+  - id: "link_validation"
+    type: "LinkValidationRequirement"
+    description: "Validates links are ASCII-only per RFC 7996 Section 14"
+    error_context: "RFC 7996 Section 14 requires ASCII-only IRIs"
+
+  # RFC 7996 Section 2.1: ID reference validation
+  - id: "id_references"
+    type: "IdReferenceRequirement"
+    description: "Validates ID references point to existing elements per RFC 7996 Section 2.1"
+
+  # RFC 7996 Section 2: Forbidden content - no multimedia, animation, scripting, etc.
+  - id: "forbidden_content"
+    type: "ForbiddenContentRequirement"
+    description: "Prohibits multimedia, animation, scripting content per RFC 7996 Section 2"
+    forbidden_elements: ["script", "audio", "video", "animation", "animateColor", "animateMotion", "animateTransform", "set"]
+    forbidden_attributes: ["onload", "onclick", "onmouseover", "onmouseout", "onfocus", "onblur", "onkeydown", "onkeyup", "onkeypress"]
+
+  # RFC 7996 Section 2.1: Style promotion detection
+  - id: "style_promotion"
+    type: "StylePromotionRequirement"
+    description: "Detects CSS style properties that should be promoted to attributes per RFC 7996 Section 2.1"
+
+remediations:
+  # RFC 7996 Section 2.1: Color restrictions remediation to black and white only
+  - id: "color_conversion"
+    type: "ColorRemediation"
+    description: "Convert colors to black and white only per RFC 7996 Section 2.1 and RFC 6949"
+    targets: ["color_restrictions"]
+
+  # RFC 7996 Section 17: Font family remediation to generic families only
+  - id: "font_family_conversion"
+    type: "FontRemediation"
+    description: "Convert font families to generic families per RFC 7996 Section 17"
+    targets: ["font_family"]
+    default_family: "sans-serif"
+    allowed_families: ["serif", "sans-serif", "monospace", "inherit"]
+
+  # RFC 7996 Section 2.1: Style processing remediations
+  - id: "style_promotion"
+    type: "StylePromotionRemediation"
+    description: "Promote valid style properties to attributes per RFC 7996 Section 2.1"
+    targets: ["style_promotion"]
+
+  # RFC 7996 Section 2.1: ViewBox auto-generation
+  - id: "viewbox_generation"
+    type: "ViewboxRemediation"
+    description: "Auto-generate viewBox from width/height per RFC 7996 Section 2.1"
+    targets: ["viewbox_required"]

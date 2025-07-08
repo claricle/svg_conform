@@ -1,0 +1,127 @@
+# frozen_string_literal: true
+
+require_relative 'base_requirement'
+
+module SvgConform
+  module Requirements
+    # Requirement to validate that ID references point to existing elements
+    # Based on the Lucid SVG fix script that removes use elements with invalid IDREF
+    class InvalidIdReferencesRequirement < BaseRequirement
+      attribute :type, :string, default: -> { 'InvalidIdReferencesRequirement' }
+      attribute :check_use_elements, :boolean, default: true
+      attribute :check_other_references, :boolean, default: false
+      attribute :strict_mode, :boolean, default: false
+
+      yaml do
+        map 'id', to: :id
+        map 'description', to: :description
+        map 'type', to: :type
+        map 'check_use_elements', to: :check_use_elements
+        map 'check_other_references', to: :check_other_references
+        map 'strict_mode', to: :strict_mode
+      end
+
+      def validate_document(document, context)
+        # Collect all existing IDs in the document
+        existing_ids = collect_existing_ids(document)
+        context.set_data(:existing_ids, existing_ids)
+
+        # Check for invalid references
+        super(document, context)
+      end
+
+      def check(node, context)
+        return unless element?(node)
+
+        check_use_element(node, context) if check_use_elements && node.name == 'use'
+
+        return unless check_other_references
+
+        check_other_id_references(node, context)
+      end
+
+      private
+
+      def collect_existing_ids(document)
+        ids = Set.new
+        document.traverse do |node|
+          next unless element?(node)
+
+          id_attr = get_attribute(node, 'id')
+          ids.add(id_attr) if id_attr && !id_attr.empty?
+        end
+        ids
+      end
+
+      def check_use_element(node, context)
+        href = get_attribute(node, 'xlink:href') || get_attribute(node, 'href')
+        return unless href&.start_with?('#')
+
+        id_ref = href[1..] # Remove # prefix
+        return if id_ref.empty?
+
+        existing_ids = context.get_data(:existing_ids)
+        return if existing_ids.include?(id_ref)
+
+        context.add_error(
+          requirement: self,
+          node: node,
+          message: "use element references non-existent ID: #{id_ref}",
+          data: { invalid_id: id_ref, href: href }
+        )
+      end
+
+      def check_other_id_references(node, context)
+        # Check other attributes that reference IDs
+        id_reference_attributes = %w[
+          clip-path mask filter marker-start marker-mid marker-end
+          fill stroke
+        ]
+
+        existing_ids = context.get_data(:existing_ids)
+
+        id_reference_attributes.each do |attr_name|
+          attr_value = get_attribute(node, attr_name)
+          next unless attr_value
+
+          # Extract ID from url(#id) format
+          next unless attr_value.match(/^url\(#(.+)\)$/)
+
+          id_ref = Regexp.last_match(1)
+          next if existing_ids.include?(id_ref)
+
+          context.add_error(
+            requirement: self,
+            node: node,
+            message: "#{attr_name} references non-existent ID: #{id_ref}",
+            data: { invalid_id: id_ref, attribute: attr_name, value: attr_value }
+          )
+        end
+
+        # Check style attribute for ID references
+        check_style_id_references(node, context, existing_ids)
+      end
+
+      def check_style_id_references(node, context, existing_ids)
+        style_value = get_attribute(node, 'style')
+        return unless style_value
+
+        styles = parse_style(style_value)
+
+        styles.each do |property, value|
+          next unless value.match(/^url\(#(.+)\)$/)
+
+          id_ref = Regexp.last_match(1)
+          next if existing_ids.include?(id_ref)
+
+          context.add_error(
+            requirement: self,
+            node: node,
+            message: "style property #{property} references non-existent ID: #{id_ref}",
+            data: { invalid_id: id_ref, style_property: property, value: value }
+          )
+        end
+      end
+    end
+  end
+end
