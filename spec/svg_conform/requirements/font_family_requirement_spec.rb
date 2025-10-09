@@ -145,20 +145,22 @@ RSpec.describe SvgConform::Requirements::FontFamilyRequirement do
       expect(context.errors.first.message).to match(/Times New Roman/i)
     end
 
-    it 'detects invalid font families in style attributes' do
-      invalid_svg = <<~SVG
+    it 'does not check style attributes (handled by StylePromotionRequirement to avoid duplication)' do
+      # FontFamilyRequirement only checks font-family attributes
+      # Style properties are handled by StylePromotionRequirement
+      svg_with_style = <<~SVG
         <?xml version="1.0"?>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-          <text x="10" y="20" style="font-family: Arial">Invalid Font in Style</text>
+          <text x="10" y="20" style="font-family: Arial">Font in Style</text>
         </svg>
       SVG
 
-      document = SvgConform::Document.from_content(invalid_svg)
+      document = SvgConform::Document.from_content(svg_with_style)
       context = SvgConform::ValidationContext.new(document, nil)
       requirement.validate_document(document, context)
 
-      expect(context.errors).not_to be_empty
-      expect(context.errors.first.message).to match(/Arial/i)
+      # Should not detect errors in style attributes (that's StylePromotionRequirement's job)
+      expect(context.errors).to be_empty
     end
 
     it 'handles font family lists correctly' do
