@@ -41,15 +41,15 @@ module SvgConform
 
         # Check for forbidden attributes
         if node.respond_to?(:attributes) && node.attributes
-          node.attributes.each_key do |attr_name|
-            name_str = attr_name.respond_to?(:name) ? attr_name.name : attr_name.to_s
+          node.attributes.each do |attr|
+            attr_name = attr.respond_to?(:name) ? attr.name : attr.to_s
 
-            if forbidden_attributes.include?(name_str)
+            if forbidden_attributes.include?(attr_name)
               context.add_error(
                 requirement_id: id,
-                message: "Forbidden attribute '#{name_str}' is not allowed",
+                message: "Forbidden attribute '#{attr_name}' is not allowed",
                 node: node,
-                severity: :error,
+                severity: :error
               )
             end
           end
