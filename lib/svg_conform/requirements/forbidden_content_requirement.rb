@@ -49,7 +49,7 @@ module SvgConform
                 requirement_id: id,
                 message: "Forbidden attribute '#{attr_name}' is not allowed",
                 node: node,
-                severity: :error
+                severity: :error,
               )
             end
           end
