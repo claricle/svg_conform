@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require_relative 'remediations/base_remediation'
-require_relative 'remediations/color_remediation'
-require_relative 'remediations/font_remediation'
-require_relative 'remediations/invalid_id_references_remediation'
-require_relative 'remediations/namespace_attribute_remediation'
-require_relative 'remediations/namespace_remediation'
-require_relative 'remediations/no_external_css_remediation'
-require_relative 'remediations/style_promotion_remediation'
-require_relative 'remediations/viewbox_remediation'
+require_relative "remediations/base_remediation"
+require_relative "remediations/color_remediation"
+require_relative "remediations/font_remediation"
+require_relative "remediations/invalid_id_references_remediation"
+require_relative "remediations/namespace_attribute_remediation"
+require_relative "remediations/namespace_remediation"
+require_relative "remediations/no_external_css_remediation"
+require_relative "remediations/style_promotion_remediation"
+require_relative "remediations/viewbox_remediation"
 
 module SvgConform
   module Remediations
@@ -22,7 +22,7 @@ module SvgConform
         NamespaceRemediation,
         NoExternalCSSRemediation,
         StylePromotionRemediation,
-        ViewboxRemediation
+        ViewboxRemediation,
       ]
     end
 

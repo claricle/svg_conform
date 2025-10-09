@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'lutaml/model'
-require_relative '../remediation_result'
+require "lutaml/model"
+require_relative "../remediation_result"
 
 module SvgConform
   module Remediations
@@ -11,18 +11,20 @@ module SvgConform
       attribute :description, :string
       attribute :targets, :string, collection: true
       attribute :config, :hash
-      attribute :type, :string, polymorphic_class: true, default: -> { self.class.name.split('::').last }
+      attribute :type, :string, polymorphic_class: true, default: -> {
+        self.class.name.split("::").last
+      }
 
       yaml do
-        map 'id', to: :id
-        map 'description', to: :description
-        map 'targets', to: :targets
-        map 'config', to: :config
-        map 'type', to: :type
+        map "id", to: :id
+        map "description", to: :description
+        map "targets", to: :targets
+        map "config", to: :config
+        map "type", to: :type
       end
 
       def apply(document, context)
-        raise NotImplementedError, 'Subclasses must implement apply'
+        raise NotImplementedError, "Subclasses must implement apply"
       end
 
       # Check if this remediation should execute based on failed requirements
@@ -38,7 +40,7 @@ module SvgConform
             remediation_id: @id,
             success: false,
             failed_requirements: [],
-            message: 'Remediation not applicable'
+            message: "Remediation not applicable",
           )
         end
 
@@ -49,8 +51,8 @@ module SvgConform
             remediation_id: @id,
             success: true,
             failed_requirements: failed_requirements,
-            message: 'Remediation applied successfully',
-            changes_made: changes_made
+            message: "Remediation applied successfully",
+            changes_made: changes_made,
           )
         rescue StandardError => e
           RemediationResult.new(
@@ -58,7 +60,7 @@ module SvgConform
             success: false,
             failed_requirements: failed_requirements,
             message: "Remediation failed: #{e.message}",
-            error: e
+            error: e,
           )
         end
       end
@@ -91,9 +93,9 @@ module SvgConform
         !node[attr_name].nil?
       end
 
-      def find_nodes(document, &block)
+      def find_nodes(document, &)
         nodes = []
-        traverse_nodes(document, nodes, &block)
+        traverse_nodes(document, nodes, &)
         nodes
       end
 
@@ -136,9 +138,9 @@ module SvgConform
         {
           type: type,
           message: message,
-          node: node&.name || 'unknown',
+          node: node&.name || "unknown",
           node_attributes: node.respond_to?(:attributes) ? node.attributes : nil,
-          timestamp: Time.now
+          timestamp: Time.now,
         }
       end
 
@@ -148,7 +150,7 @@ module SvgConform
         return unless node
 
         # Add node if it matches the block condition
-        nodes << node if block.call(node)
+        nodes << node if yield(node)
 
         # Traverse children if the node supports it
         if node.respond_to?(:children)

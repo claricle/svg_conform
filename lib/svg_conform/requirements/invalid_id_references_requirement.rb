@@ -1,24 +1,24 @@
 # frozen_string_literal: true
 
-require_relative 'base_requirement'
+require_relative "base_requirement"
 
 module SvgConform
   module Requirements
     # Requirement to validate that ID references point to existing elements
     # Based on the Lucid SVG fix script that removes use elements with invalid IDREF
     class InvalidIdReferencesRequirement < BaseRequirement
-      attribute :type, :string, default: -> { 'InvalidIdReferencesRequirement' }
+      attribute :type, :string, default: -> { "InvalidIdReferencesRequirement" }
       attribute :check_use_elements, :boolean, default: true
       attribute :check_other_references, :boolean, default: false
       attribute :strict_mode, :boolean, default: false
 
       yaml do
-        map 'id', to: :id
-        map 'description', to: :description
-        map 'type', to: :type
-        map 'check_use_elements', to: :check_use_elements
-        map 'check_other_references', to: :check_other_references
-        map 'strict_mode', to: :strict_mode
+        map "id", to: :id
+        map "description", to: :description
+        map "type", to: :type
+        map "check_use_elements", to: :check_use_elements
+        map "check_other_references", to: :check_other_references
+        map "strict_mode", to: :strict_mode
       end
 
       def validate_document(document, context)
@@ -33,7 +33,10 @@ module SvgConform
       def check(node, context)
         return unless element?(node)
 
-        check_use_element(node, context) if check_use_elements && node.name == 'use'
+        if check_use_elements && node.name == "use"
+          check_use_element(node,
+                            context)
+        end
 
         return unless check_other_references
 
@@ -47,15 +50,15 @@ module SvgConform
         document.traverse do |node|
           next unless element?(node)
 
-          id_attr = get_attribute(node, 'id')
+          id_attr = get_attribute(node, "id")
           ids.add(id_attr) if id_attr && !id_attr.empty?
         end
         ids
       end
 
       def check_use_element(node, context)
-        href = get_attribute(node, 'xlink:href') || get_attribute(node, 'href')
-        return unless href&.start_with?('#')
+        href = get_attribute(node, "xlink:href") || get_attribute(node, "href")
+        return unless href&.start_with?("#")
 
         id_ref = href[1..] # Remove # prefix
         return if id_ref.empty?
@@ -67,7 +70,7 @@ module SvgConform
           requirement: self,
           node: node,
           message: "use element references non-existent ID: #{id_ref}",
-          data: { invalid_id: id_ref, href: href }
+          data: { invalid_id: id_ref, href: href },
         )
       end
 
@@ -85,7 +88,7 @@ module SvgConform
           next unless attr_value
 
           # Extract ID from url(#id) format
-          next unless attr_value.match(/^url\(#(.+)\)$/)
+          next unless attr_value =~ /^url\(#(.+)\)$/
 
           id_ref = Regexp.last_match(1)
           next if existing_ids.include?(id_ref)
@@ -94,7 +97,8 @@ module SvgConform
             requirement: self,
             node: node,
             message: "#{attr_name} references non-existent ID: #{id_ref}",
-            data: { invalid_id: id_ref, attribute: attr_name, value: attr_value }
+            data: { invalid_id: id_ref, attribute: attr_name,
+                    value: attr_value },
           )
         end
 
@@ -103,13 +107,13 @@ module SvgConform
       end
 
       def check_style_id_references(node, context, existing_ids)
-        style_value = get_attribute(node, 'style')
+        style_value = get_attribute(node, "style")
         return unless style_value
 
         styles = parse_style(style_value)
 
         styles.each do |property, value|
-          next unless value.match(/^url\(#(.+)\)$/)
+          next unless value =~ /^url\(#(.+)\)$/
 
           id_ref = Regexp.last_match(1)
           next if existing_ids.include?(id_ref)
@@ -118,7 +122,8 @@ module SvgConform
             requirement: self,
             node: node,
             message: "style property #{property} references non-existent ID: #{id_ref}",
-            data: { invalid_id: id_ref, style_property: property, value: value }
+            data: { invalid_id: id_ref, style_property: property,
+                    value: value },
           )
         end
       end

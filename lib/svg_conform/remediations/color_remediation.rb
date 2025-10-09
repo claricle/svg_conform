@@ -1,18 +1,18 @@
 # frozen_string_literal: true
 
-require_relative 'base_remediation'
+require_relative "base_remediation"
 
 module SvgConform
   module Remediations
     # Remediation action for color-related issues that matches svgcheck behavior
     class ColorRemediation < BaseRemediation
-      attribute :type, :string, default: -> { 'ColorRemediation' }
+      attribute :type, :string, default: -> { "ColorRemediation" }
 
       DEFAULT_COLOR_THRESHOLD = 764 # Default threshold if not specified in requirement
-      COLOR_DEFAULT = 'black'
+      COLOR_DEFAULT = "black"
 
       COLOR_MAP = {
-        'rgb(0,0,0)' => 'black'
+        "rgb(0,0,0)" => "black",
       }.freeze
 
       def apply(document, context)
@@ -37,7 +37,8 @@ module SvgConform
 
       def fix_color_attributes(node)
         changes = []
-        color_attributes = %w[fill stroke color stop-color flood-color lighting-color]
+        color_attributes = %w[fill stroke color stop-color flood-color
+                              lighting-color]
 
         color_attributes.each do |attr_name|
           value = get_attribute(node, attr_name)
@@ -50,7 +51,7 @@ module SvgConform
           changes << log_change(
             :attribute_modified,
             "The attribute '#{attr_name}' does not allow the value '#{value}', replaced with '#{new_color}'",
-            node
+            node,
           )
         end
 
@@ -59,11 +60,12 @@ module SvgConform
 
       def fix_style_colors(node)
         changes = []
-        style_value = get_attribute(node, 'style')
+        style_value = get_attribute(node, "style")
         return changes unless style_value
 
         styles = parse_style(style_value)
-        color_properties = %w[fill stroke color stop-color flood-color lighting-color]
+        color_properties = %w[fill stroke color stop-color flood-color
+                              lighting-color]
         style_changed = false
 
         color_properties.each do |prop|
@@ -79,11 +81,11 @@ module SvgConform
 
         if style_changed
           new_style = build_style(styles)
-          set_attribute(node, 'style', new_style)
+          set_attribute(node, "style", new_style)
           changes << log_change(
             :attribute_modified,
-            'Updated style colors',
-            node
+            "Updated style colors",
+            node,
           )
         end
 
@@ -107,9 +109,9 @@ module SvgConform
         return COLOR_MAP[v] if COLOR_MAP.key?(v)
 
         # Handle different color formats
-        if v.start_with?('rgb(') && v.end_with?(')')
+        if v.start_with?("rgb(") && v.end_with?(")")
           convert_rgb_color(v)
-        elsif v.start_with?('#')
+        elsif v.start_with?("#")
           convert_hex_color(v)
         else
           # Unknown color, convert to default
@@ -127,15 +129,20 @@ module SvgConform
 
           # Check for case-insensitive hex color matches
           if color.match?(/^#[0-9a-fA-F]{6}$/)
-            hex_allowed = allowed_colors.select { |c| c.match?(/^#[0-9a-fA-F]{6}$/) }
-            return hex_allowed.any? { |allowed| allowed.downcase == color.downcase }
+            hex_allowed = allowed_colors.select do |c|
+              c.match?(/^#[0-9a-fA-F]{6}$/)
+            end
+            return hex_allowed.any? do |allowed|
+              allowed.downcase == color.downcase
+            end
           end
 
           return false
         end
 
         # Fallback to default validation
-        %w[black white #ffffff #000000 none inherit currentcolor].include?(color.downcase)
+        %w[black white #ffffff #000000 none inherit
+           currentcolor].include?(color.downcase)
       end
 
       def find_color_requirement
@@ -143,7 +150,7 @@ module SvgConform
 
         @failed_requirements.find do |failure|
           requirement_id = failure.requirement_id || failure.rule&.id
-          requirement_id == 'color_restrictions'
+          requirement_id == "color_restrictions"
         end&.rule
       end
 
@@ -152,18 +159,18 @@ module SvgConform
         match = rgb_string.match(/rgb\(([^)]+)\)/)
         return COLOR_DEFAULT unless match
 
-        values = match[1].split(',').map(&:strip)
+        values = match[1].split(",").map(&:strip)
         return COLOR_DEFAULT unless values.length == 3
 
-        shade = if values.first.include?('%')
+        shade = if values.first.include?("%")
                   # Percentage values
-                  values.sum { |v| v.gsub('%', '').to_f * 255 / 100 }
+                  values.sum { |v| v.gsub("%", "").to_f * 255 / 100 }
                 else
                   # Integer values
                   values.sum(&:to_i)
                 end
 
-        shade > color_threshold ? 'white' : COLOR_DEFAULT
+        shade > color_threshold ? "white" : COLOR_DEFAULT
       end
 
       def convert_hex_color(hex_string)
@@ -181,7 +188,7 @@ module SvgConform
           return COLOR_DEFAULT
         end
 
-        shade > color_threshold ? 'white' : COLOR_DEFAULT
+        shade > color_threshold ? "white" : COLOR_DEFAULT
       end
 
       def color_threshold
@@ -198,10 +205,10 @@ module SvgConform
         return {} if style_value.nil? || style_value.empty?
 
         styles = {}
-        style_value.split(';').each do |declaration|
+        style_value.split(";").each do |declaration|
           next if declaration.strip.empty?
 
-          parts = declaration.split(':', 2)
+          parts = declaration.split(":", 2)
           next unless parts.size == 2
 
           property = parts[0].strip
@@ -212,7 +219,7 @@ module SvgConform
       end
 
       def build_style(styles)
-        styles.map { |prop, value| "#{prop}:#{value}" }.join(';')
+        styles.map { |prop, value| "#{prop}:#{value}" }.join(";")
       end
     end
   end

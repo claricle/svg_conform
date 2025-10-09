@@ -5,25 +5,25 @@ module SvgConform
   class CssColor
     # Named colors mapping to their hex equivalents
     NAMED_COLORS = {
-      'black' => '#000000',
-      'white' => '#ffffff',
-      'red' => '#ff0000',
-      'green' => '#008000',
-      'blue' => '#0000ff',
-      'yellow' => '#ffff00',
-      'cyan' => '#00ffff',
-      'magenta' => '#ff00ff',
-      'silver' => '#c0c0c0',
-      'gray' => '#808080',
-      'grey' => '#808080',
-      'maroon' => '#800000',
-      'olive' => '#808000',
-      'lime' => '#00ff00',
-      'aqua' => '#00ffff',
-      'teal' => '#008080',
-      'navy' => '#000080',
-      'fuchsia' => '#ff00ff',
-      'purple' => '#800080'
+      "black" => "#000000",
+      "white" => "#ffffff",
+      "red" => "#ff0000",
+      "green" => "#008000",
+      "blue" => "#0000ff",
+      "yellow" => "#ffff00",
+      "cyan" => "#00ffff",
+      "magenta" => "#ff00ff",
+      "silver" => "#c0c0c0",
+      "gray" => "#808080",
+      "grey" => "#808080",
+      "maroon" => "#800000",
+      "olive" => "#808000",
+      "lime" => "#00ff00",
+      "aqua" => "#00ffff",
+      "teal" => "#008080",
+      "navy" => "#000080",
+      "fuchsia" => "#ff00ff",
+      "purple" => "#800080",
     }.freeze
 
     # Reverse mapping for canonical named color lookup
@@ -134,7 +134,7 @@ module SvgConform
         g = [[green.to_i, 0].max, 255].min
         b = [[blue.to_i, 0].max, 255].min
 
-        format('#%02x%02x%02x', r, g, b)
+        format("#%02x%02x%02x", r, g, b)
       end
 
       # Check if a color is valid according to SVG specifications
@@ -248,9 +248,9 @@ module SvgConform
       # Parse individual RGB value (percentage or absolute)
       def parse_rgb_value(value_str)
         value_str = value_str.strip
-        if value_str.end_with?('%')
+        if value_str.end_with?("%")
           # Percentage value
-          percent = value_str.chomp('%').to_f
+          percent = value_str.chomp("%").to_f
           (percent * 255 / 100).round
         else
           # Absolute value

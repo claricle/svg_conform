@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'paint'
+require "paint"
 
 module SvgConform
   module Compatibility
@@ -62,27 +62,29 @@ module SvgConform
       end
 
       def display_file_header(filename)
-        mode_icon = @context.repair_mode? ? '🔧' : '📋'
-        mode_text = @context.repair_mode? ? 'Repair Analysis' : 'Analysis'
-        analysis_type = @context.semantic_analysis? ? 'Semantic' : 'Basic'
+        mode_icon = @context.repair_mode? ? "🔧" : "📋"
+        mode_text = @context.repair_mode? ? "Repair Analysis" : "Analysis"
+        analysis_type = @context.semantic_analysis? ? "Semantic" : "Basic"
 
-        puts Paint["#{mode_icon} #{analysis_type} #{mode_text}: #{filename}", :cyan, :bold]
-        puts '=' * 60
+        puts Paint["#{mode_icon} #{analysis_type} #{mode_text}: #{filename}",
+                   :cyan, :bold]
+        puts "=" * 60
       end
 
       def display_batch_header(file_count)
-        mode_icon = @context.repair_mode? ? '🔧' : '📋'
-        mode_text = @context.repair_mode? ? 'Repair Analysis' : 'Analysis'
-        analysis_type = @context.semantic_analysis? ? 'Semantic' : 'Basic'
+        mode_icon = @context.repair_mode? ? "🔧" : "📋"
+        mode_text = @context.repair_mode? ? "Repair Analysis" : "Analysis"
+        analysis_type = @context.semantic_analysis? ? "Semantic" : "Basic"
 
-        puts Paint["#{mode_icon} #{analysis_type} Batch #{mode_text} (#{file_count} files)", :cyan, :bold]
-        puts '=' * 80
+        puts Paint["#{mode_icon} #{analysis_type} Batch #{mode_text} (#{file_count} files)",
+                   :cyan, :bold]
+        puts "=" * 80
       end
 
       def display_semantic_validation_section(result)
         return unless result.validation_comparison
 
-        puts Paint['📊 Validation Comparison:', :blue, :bold]
+        puts Paint["📊 Validation Comparison:", :blue, :bold]
 
         score = result.compatibility_score
         score_color = if score >= 90
@@ -90,9 +92,10 @@ module SvgConform
                       else
                         score >= 70 ? :yellow : :red
                       end
-        puts "  Compatibility Score: #{Paint[format('%.1f%%', score), score_color, :bold]}"
+        puts "  Compatibility Score: #{Paint[format('%.1f%%', score),
+                                             score_color, :bold]}"
 
-        validity_status = result.validity_match? ? '✅ Match' : '❌ Mismatch'
+        validity_status = result.validity_match? ? "✅ Match" : "❌ Mismatch"
         puts "  Validity Match: #{validity_status}"
         puts "  SvgConform Valid: #{result.svg_conform_valid? ? '✅' : '❌'}"
         puts "  Svgcheck Valid: #{result.svgcheck_valid? ? '✅' : '❌'}"
@@ -102,7 +105,7 @@ module SvgConform
       def display_semantic_repair_section(result)
         return unless result.validation_comparison
 
-        puts Paint['🔧 Repair Results:', :blue, :bold]
+        puts Paint["🔧 Repair Results:", :blue, :bold]
 
         if result.successful_remediation?
           puts "  Remediation: #{Paint['✅ Successful', :green, :bold]}"
@@ -117,13 +120,14 @@ module SvgConform
                         else
                           equivalence >= 70 ? :yellow : :red
                         end
-          puts "  Content Equivalence: #{Paint[format('%.1f%%', equivalence), equiv_color, :bold]}"
+          puts "  Content Equivalence: #{Paint[format('%.1f%%', equivalence),
+                                               equiv_color, :bold]}"
         end
         puts
       end
 
       def display_xml_equivalence_section(result)
-        puts Paint['🔍 XML Equivalence:', :blue, :bold]
+        puts Paint["🔍 XML Equivalence:", :blue, :bold]
 
         if result.xml_error
           puts "  Status: #{Paint['❌ Error', :red, :bold]}"
@@ -138,7 +142,7 @@ module SvgConform
       end
 
       def display_basic_validation_section(result)
-        puts Paint['📊 Validation Results:', :blue, :bold]
+        puts Paint["📊 Validation Results:", :blue, :bold]
         puts "  SvgConform Valid: #{result.svg_conform_valid? ? '✅' : '❌'}"
         puts "  Svgcheck Valid: #{result.svgcheck_valid? ? '✅' : '❌'}"
         puts "  Validity Match: #{result.validity_match? ? '✅' : '❌'}"
@@ -146,7 +150,7 @@ module SvgConform
       end
 
       def display_basic_repair_section(result)
-        puts Paint['🔧 Repair Results:', :blue, :bold]
+        puts Paint["🔧 Repair Results:", :blue, :bold]
 
         if result.successful_remediation?
           puts "  Remediation: #{Paint['✅ Successful', :green, :bold]}"
@@ -159,27 +163,27 @@ module SvgConform
       end
 
       def display_semantic_summary_table(results)
-        puts Paint['📊 Summary Table:', :blue, :bold]
+        puts Paint["📊 Summary Table:", :blue, :bold]
         puts
 
-        header = format('%-25s %12s %8s %12s %12s',
-                        'File', 'Compatibility', 'Valid', 'SvgConform', 'Svgcheck')
+        header = format("%-25s %12s %8s %12s %12s",
+                        "File", "Compatibility", "Valid", "SvgConform", "Svgcheck")
         puts Paint[header, :white, :bold]
-        puts '-' * 70
+        puts "-" * 70
 
         results.each do |result|
-          score = format('%.1f%%', result.compatibility_score)
+          score = format("%.1f%%", result.compatibility_score)
           score_color = if result.compatibility_score >= 90
                           :green
                         else
                           result.compatibility_score >= 70 ? :yellow : :red
                         end
 
-          validity = result.validity_match? ? '✅' : '❌'
-          svg_conform = result.svg_conform_valid? ? '✅' : '❌'
-          svgcheck = result.svgcheck_valid? ? '✅' : '❌'
+          validity = result.validity_match? ? "✅" : "❌"
+          svg_conform = result.svg_conform_valid? ? "✅" : "❌"
+          svgcheck = result.svgcheck_valid? ? "✅" : "❌"
 
-          row = format('%-25s %12s %8s %12s %12s',
+          row = format("%-25s %12s %8s %12s %12s",
                        result.filename.truncate(23),
                        Paint[score, score_color],
                        validity,
@@ -191,21 +195,21 @@ module SvgConform
       end
 
       def display_basic_summary_table(results)
-        puts Paint['📊 Summary Table:', :blue, :bold]
+        puts Paint["📊 Summary Table:", :blue, :bold]
         puts
 
-        header = format('%-25s %8s %12s %12s %8s',
-                        'File', 'Valid', 'SvgConform', 'Svgcheck', 'Errors')
+        header = format("%-25s %8s %12s %12s %8s",
+                        "File", "Valid", "SvgConform", "Svgcheck", "Errors")
         puts Paint[header, :white, :bold]
-        puts '-' * 66
+        puts "-" * 66
 
         results.each do |result|
-          validity = result.validity_match? ? '✅' : '❌'
-          svg_conform = result.svg_conform_valid? ? '✅' : '❌'
-          svgcheck = result.svgcheck_valid? ? '✅' : '❌'
+          validity = result.validity_match? ? "✅" : "❌"
+          svg_conform = result.svg_conform_valid? ? "✅" : "❌"
+          svgcheck = result.svgcheck_valid? ? "✅" : "❌"
           errors = result.error_count
 
-          row = format('%-25s %8s %12s %12s %8d',
+          row = format("%-25s %8s %12s %12s %8d",
                        result.filename.truncate(23),
                        validity,
                        svg_conform,
@@ -217,9 +221,9 @@ module SvgConform
       end
 
       def display_semantic_batch_statistics(results)
-        puts Paint['📈 Statistics:', :blue, :bold]
+        puts Paint["📈 Statistics:", :blue, :bold]
 
-        avg_compatibility = results.map(&:compatibility_score).sum / results.length
+        avg_compatibility = results.sum(&:compatibility_score) / results.length
         validity_matches = results.count(&:validity_match?)
         successful_remediations = results.count(&:successful_remediation?) if @context.repair_mode?
 
@@ -228,7 +232,8 @@ module SvgConform
                       else
                         avg_compatibility >= 70 ? :yellow : :red
                       end
-        puts "  Average Compatibility: #{Paint[format('%.1f%%', avg_compatibility), score_color, :bold]}"
+        puts "  Average Compatibility: #{Paint[format('%.1f%%', avg_compatibility),
+                                               score_color, :bold]}"
         puts "  Validity Matches: #{validity_matches}/#{results.length} (#{format('%.1f%%',
                                                                                   validity_matches * 100.0 / results.length)})"
 
@@ -240,11 +245,11 @@ module SvgConform
       end
 
       def display_basic_batch_statistics(results)
-        puts Paint['📈 Statistics:', :blue, :bold]
+        puts Paint["📈 Statistics:", :blue, :bold]
 
         validity_matches = results.count(&:validity_match?)
         successful_remediations = results.count(&:successful_remediation?) if @context.repair_mode?
-        total_errors = results.map(&:error_count).sum
+        total_errors = results.sum(&:error_count)
 
         puts "  Validity Matches: #{validity_matches}/#{results.length} (#{format('%.1f%%',
                                                                                   validity_matches * 100.0 / results.length)})"
@@ -259,13 +264,13 @@ module SvgConform
 
       def generate_output_content(results)
         content = []
-        content << '# Compatibility Analysis Results'
-        content << ''
+        content << "# Compatibility Analysis Results"
+        content << ""
         content << "Analysis Type: #{@context.semantic_analysis? ? 'Semantic' : 'Basic'}"
         content << "Mode: #{@context.mode.to_s.capitalize}"
         content << "Profile: #{@context.profile}"
         content << "Generated: #{Time.now}"
-        content << ''
+        content << ""
 
         if results.is_a?(Array)
           generate_batch_output_content(content, results)
@@ -277,12 +282,13 @@ module SvgConform
       end
 
       def generate_batch_output_content(content, results)
-        content << '## Summary'
-        content << ''
+        content << "## Summary"
+        content << ""
 
         if @context.semantic_analysis?
-          avg_compatibility = results.map(&:compatibility_score).sum / results.length
-          content << "Average Compatibility: #{format('%.1f%%', avg_compatibility)}"
+          avg_compatibility = results.sum(&:compatibility_score) / results.length
+          content << "Average Compatibility: #{format('%.1f%%',
+                                                      avg_compatibility)}"
         end
 
         validity_matches = results.count(&:validity_match?)
@@ -293,26 +299,29 @@ module SvgConform
           content << "Successful Remediations: #{successful_remediations}/#{results.length}"
         end
 
-        content << ''
-        content << '## Individual Results'
-        content << ''
+        content << ""
+        content << "## Individual Results"
+        content << ""
 
         results.each do |result|
           content << "### #{result.filename}"
-          content << ''
+          content << ""
           add_result_details(content, result)
-          content << ''
+          content << ""
         end
       end
 
       def generate_single_output_content(content, result)
         content << "## #{result.filename}"
-        content << ''
+        content << ""
         add_result_details(content, result)
       end
 
       def add_result_details(content, result)
-        content << "Compatibility Score: #{format('%.1f%%', result.compatibility_score)}" if @context.semantic_analysis?
+        if @context.semantic_analysis?
+          content << "Compatibility Score: #{format('%.1f%%',
+                                                    result.compatibility_score)}"
+        end
 
         content << "Validity Match: #{result.validity_match?}"
         content << "SvgConform Valid: #{result.svg_conform_valid?}"
@@ -322,7 +331,10 @@ module SvgConform
 
         content << "Successful Remediation: #{result.successful_remediation?}"
 
-        content << "Content Equivalence: #{format('%.1f%%', result.content_equivalence_score)}" if result.content_comparison
+        if result.content_comparison
+          content << "Content Equivalence: #{format('%.1f%%',
+                                                    result.content_equivalence_score)}"
+        end
 
         return unless result.xml_equivalence
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'validity_analysis'
+require_relative "validity_analysis"
 
 module SvgConform
   module Compatibility
@@ -14,7 +14,7 @@ module SvgConform
       attribute :suggested_semantic_key, :string
       attribute :confidence_level, :float
 
-      def initialize(source_tool:, message_text:, pattern_category: 'unknown')
+      def initialize(source_tool:, message_text:, pattern_category: "unknown")
         @source_tool = source_tool
         @message_text = message_text
         @pattern_category = pattern_category
@@ -72,13 +72,13 @@ module SvgConform
         # Analyze SvgConform patterns
         svg_conform_patterns = extract_svg_conform_patterns(filename)
         svg_conform_patterns.each do |pattern|
-          record_pattern('svg_conform', pattern, filename)
+          record_pattern("svg_conform", pattern, filename)
         end
 
         # Analyze svgcheck patterns
         svgcheck_patterns = extract_svgcheck_patterns(filename)
         svgcheck_patterns.each do |pattern|
-          record_pattern('svgcheck', pattern, filename)
+          record_pattern("svgcheck", pattern, filename)
         end
       end
 
@@ -89,11 +89,11 @@ module SvgConform
 
         begin
           # Run SvgConform validation to get patterns
-          file_path = File.join('spec/fixtures/svgcheck/inputs', filename)
+          file_path = File.join("spec/fixtures/svgcheck/inputs", filename)
           return patterns unless File.exist?(file_path)
 
           validator = SvgConform::Validator.new(
-            profile: 'svg_1_2_rfc'
+            profile: "svg_1_2_rfc",
           )
 
           result = validator.validate(file_path)
@@ -115,7 +115,7 @@ module SvgConform
 
         begin
           # Read svgcheck repair output
-          repair_file = File.join('spec/fixtures/svgcheck/repair',
+          repair_file = File.join("spec/fixtures/svgcheck/repair",
                                   "#{filename}.out")
           return patterns unless File.exist?(repair_file)
 
@@ -142,13 +142,13 @@ module SvgConform
         normalized = message.to_s.strip
 
         # Remove file-specific details
-        normalized = normalized.gsub(/line \d+/i, 'line X')
-        normalized = normalized.gsub(/column \d+/i, 'column X')
+        normalized = normalized.gsub(/line \d+/i, "line X")
+        normalized = normalized.gsub(/column \d+/i, "column X")
         normalized = normalized.gsub(/"[^"]*"/, '"VALUE"')
         normalized = normalized.gsub(/'[^']*'/, "'VALUE'")
 
         # Normalize common variations
-        normalized = normalized.gsub(/\s+/, ' ')
+        normalized = normalized.gsub(/\s+/, " ")
         normalized.downcase
       end
 
@@ -161,7 +161,7 @@ module SvgConform
           pattern = DiscoveredPattern.new(
             source_tool: source_tool,
             message_text: pattern_text,
-            pattern_category: categorize_pattern(pattern_text)
+            pattern_category: categorize_pattern(pattern_text),
           )
           pattern.increment_frequency(filename)
           @discovered_patterns[key] = pattern
@@ -171,27 +171,27 @@ module SvgConform
       def categorize_pattern(pattern_text)
         case pattern_text
         when /namespace/i
-          'namespace_validation'
+          "namespace_validation"
         when /viewbox/i
-          'viewbox_validation'
+          "viewbox_validation"
         when /font/i
-          'font_validation'
+          "font_validation"
         when /color/i
-          'color_validation'
+          "color_validation"
         when /attribute/i
-          'attribute_validation'
+          "attribute_validation"
         when /element/i
-          'element_validation'
+          "element_validation"
         when /style/i
-          'style_validation'
+          "style_validation"
         else
-          'unknown_validation'
+          "unknown_validation"
         end
       end
 
       def categorize_patterns
         @discovered_patterns.each_value do |pattern|
-          pattern.pattern_category = categorize_pattern(pattern.message_text) if pattern.pattern_category == 'unknown_validation'
+          pattern.pattern_category = categorize_pattern(pattern.message_text) if pattern.pattern_category == "unknown_validation"
         end
       end
 
@@ -212,7 +212,8 @@ module SvgConform
         # Try to find existing mapping
         existing_mappings.each do |key, variations|
           variations.each do |variation|
-            return key if pattern_matches_variation?(pattern.message_text, variation)
+            return key if pattern_matches_variation?(pattern.message_text,
+                                                     variation)
           end
         end
 
@@ -250,10 +251,10 @@ module SvgConform
 
       def generate_semantic_key_suggestion(pattern)
         # Generate semantic key based on pattern category and content
-        category = pattern.pattern_category.gsub('_validation', '')
+        category = pattern.pattern_category.gsub("_validation", "")
 
         keywords = extract_keywords(pattern.message_text)
-        key_suffix = keywords.first(2).join('_')
+        key_suffix = keywords.first(2).join("_")
 
         "#{category}_#{key_suffix}".downcase
       end
@@ -265,7 +266,7 @@ module SvgConform
         confidence += 0.2 if pattern.common_pattern?
 
         # Increase confidence for well-categorized patterns
-        confidence += 0.2 if pattern.pattern_category != 'unknown_validation'
+        confidence += 0.2 if pattern.pattern_category != "unknown_validation"
 
         # Increase confidence for existing mappings
         confidence += 0.3 if semantic_key_exists?(semantic_key)
@@ -287,12 +288,12 @@ module SvgConform
 
       def generate_discovery_report
         puts
-        puts '=== Pattern Discovery Report ==='
+        puts "=== Pattern Discovery Report ==="
         puts "Total patterns discovered: #{@discovered_patterns.length}"
         puts "Unmapped patterns: #{@unmapped_patterns.length}"
         puts
 
-        puts '🔍 High-confidence new mappings:'
+        puts "🔍 High-confidence new mappings:"
         high_confidence_new = @discovered_patterns.values.select do |pattern|
           pattern.high_confidence? &&
             !semantic_key_exists?(pattern.suggested_semantic_key)
@@ -305,7 +306,7 @@ module SvgConform
           puts
         end
 
-        puts '❓ Unmapped patterns requiring investigation:'
+        puts "❓ Unmapped patterns requiring investigation:"
         @unmapped_patterns.each do |pattern|
           puts "  [#{pattern.source_tool}] #{pattern.message_text}"
           puts "    Category: #{pattern.pattern_category}"

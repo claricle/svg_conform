@@ -1,26 +1,26 @@
 # frozen_string_literal: true
 
-require_relative 'base_requirement'
-require_relative '../css_color'
+require_relative "base_requirement"
+require_relative "../css_color"
 
 module SvgConform
   module Requirements
     # Validates color restrictions (e.g., black and white only for IETF profile)
     class ColorRestrictionsRequirement < BaseRequirement
-      attribute :type, :string, default: -> { 'ColorRestrictionsRequirement' }
-      attribute :mode, :string, default: 'black_white_only'
+      attribute :type, :string, default: -> { "ColorRestrictionsRequirement" }
+      attribute :mode, :string, default: "black_white_only"
       attribute :allowed_colors, :string, collection: true, default: lambda {
-        ['black', 'white', '#000000', '#ffffff', 'none', 'inherit', 'currentcolor']
+        ["black", "white", "#000000", "#ffffff", "none", "inherit", "currentcolor"]
       }
       attribute :black_and_white_threshold, :integer, default: nil
 
       yaml do
-        map 'id', to: :id
-        map 'description', to: :description
-        map 'type', to: :type
-        map 'mode', to: :mode
-        map 'allowed_colors', to: :allowed_colors
-        map 'black_and_white_threshold', to: :black_and_white_threshold
+        map "id", to: :id
+        map "description", to: :description
+        map "type", to: :type
+        map "mode", to: :mode
+        map "allowed_colors", to: :allowed_colors
+        map "black_and_white_threshold", to: :black_and_white_threshold
       end
 
       def check(node, context)
@@ -30,7 +30,8 @@ module SvgConform
         return if context.node_structurally_invalid?(node)
 
         # Check color-related attributes
-        color_attributes = %w[fill stroke color stop-color flood-color lighting-color]
+        color_attributes = %w[fill stroke color stop-color flood-color
+                              lighting-color]
 
         color_attributes.each do |attr_name|
           value = get_attribute(node, attr_name)
@@ -46,17 +47,18 @@ module SvgConform
             data: {
               attribute: attr_name,
               value: value,
-              element: node.name
-            }
+              element: node.name,
+            },
           )
         end
 
         # Check style attribute for color properties
-        style_value = get_attribute(node, 'style')
+        style_value = get_attribute(node, "style")
         return unless style_value
 
         styles = parse_style(style_value)
-        color_properties = %w[fill stroke color stop-color flood-color lighting-color]
+        color_properties = %w[fill stroke color stop-color flood-color
+                              lighting-color]
 
         color_properties.each do |prop|
           value = styles[prop]
@@ -72,8 +74,8 @@ module SvgConform
             data: {
               attribute: prop,
               value: value,
-              element: node.name
-            }
+              element: node.name,
+            },
           )
         end
       end
@@ -92,7 +94,8 @@ module SvgConform
 
       def valid_color_for_threshold?(color)
         # Handle special keywords that are always valid
-        return true if %w[none inherit currentcolor].include?(color.strip.downcase)
+        return true if %w[none inherit
+                          currentcolor].include?(color.strip.downcase)
 
         # In threshold mode, be strict about exact string matching
         # Only allow the exact formats that svgcheck accepts
@@ -103,12 +106,12 @@ module SvgConform
         return {} if style_string.nil? || style_string.empty?
 
         properties = {}
-        declarations = style_string.split(';').map(&:strip)
+        declarations = style_string.split(";").map(&:strip)
 
         declarations.each do |declaration|
           next if declaration.empty?
 
-          parts = declaration.split(':', 2)
+          parts = declaration.split(":", 2)
           next unless parts.length == 2
 
           property = parts[0].strip

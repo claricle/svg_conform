@@ -4,7 +4,7 @@ module SvgConform
   # Namespace for external SVG conformance checkers
   # This allows for multiple external checker integrations while keeping them separate
   module ExternalCheckers
-    autoload :Svgcheck, 'svg_conform/external_checkers/svgcheck'
+    autoload :Svgcheck, "svg_conform/external_checkers/svgcheck"
 
     # Base class for external checker integrations
     class BaseChecker

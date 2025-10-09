@@ -3,9 +3,11 @@
 module SvgConform
   # Result object for remediation operations
   class RemediationResult
-    attr_reader :remediation_id, :success, :failed_requirements, :message, :changes_made, :error
+    attr_reader :remediation_id, :success, :failed_requirements, :message,
+                :changes_made, :error
 
-    def initialize(remediation_id:, success:, failed_requirements:, message: nil, changes_made: [], error: nil)
+    def initialize(remediation_id:, success:, failed_requirements:,
+message: nil, changes_made: [], error: nil)
       @remediation_id = remediation_id
       @success = success
       @failed_requirements = failed_requirements
@@ -27,7 +29,7 @@ module SvgConform
     end
 
     def to_s
-      status = success? ? 'SUCCESS' : 'FAILURE'
+      status = success? ? "SUCCESS" : "FAILURE"
       "#{@remediation_id}: #{status} - #{@message}"
     end
   end

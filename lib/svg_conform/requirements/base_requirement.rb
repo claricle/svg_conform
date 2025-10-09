@@ -6,17 +6,19 @@ module SvgConform
     class BaseRequirement < Lutaml::Model::Serializable
       attribute :id, :string
       attribute :description, :string
-      attribute :type, :string, polymorphic_class: true, default: -> { self.class.name.split('::').last }
+      attribute :type, :string, polymorphic_class: true, default: -> {
+        self.class.name.split("::").last
+      }
 
       yaml do
-        map 'id', to: :id
-        map 'description', to: :description
-        map 'type', to: :type
+        map "id", to: :id
+        map "description", to: :description
+        map "type", to: :type
       end
 
       # Main validation method - must be implemented by subclasses
       def check(node, context)
-        raise NotImplementedError, 'Subclasses must implement #check'
+        raise NotImplementedError, "Subclasses must implement #check"
       end
 
       # Validate the entire document (called once per requirement)
@@ -31,7 +33,7 @@ module SvgConform
         return false unless node.respond_to?(:name) && node.respond_to?(:attributes)
 
         # Skip structurally invalid nodes (and their children are automatically skipped by marking the parent)
-        return false if context && context.node_structurally_invalid?(node)
+        return false if context&.node_structurally_invalid?(node)
 
         true
       end

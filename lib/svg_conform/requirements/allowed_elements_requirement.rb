@@ -1,44 +1,50 @@
 # frozen_string_literal: true
 
-require_relative 'base_requirement'
-require_relative 'element_requirement_config'
+require_relative "base_requirement"
+require_relative "element_requirement_config"
 
 module SvgConform
   module Requirements
     # Validates that only allowed SVG elements and their attributes are used
     class AllowedElementsRequirement < BaseRequirement
-      attribute :type, :string, default: -> { 'AllowedElementsRequirement' }
-      attribute :element_configs, ElementRequirementConfig, collection: true, default: -> { [] }
-      attribute :disallowed_elements, :string, collection: true, default: -> { [] }
+      attribute :type, :string, default: -> { "AllowedElementsRequirement" }
+      attribute :element_configs, ElementRequirementConfig, collection: true, default: -> {
+        []
+      }
+      attribute :disallowed_elements, :string, collection: true, default: -> {
+        []
+      }
       attribute :check_attributes, :boolean, default: false
       attribute :check_invalid_attributes, :boolean, default: false
       attribute :check_parent_child, :boolean, default: false
       attribute :parent_child_rules, :string, default: -> { {} }
       attribute :skip_foreign_namespaces, :boolean, default: false
-      attribute :allowed_namespaces, :string, collection: true, default: -> { [] }
+      attribute :allowed_namespaces, :string, collection: true, default: -> {
+        []
+      }
       attribute :allow_rdf_metadata, :boolean, default: false
 
       # RDF-related namespaces (same as in NamespaceRequirement for consistency)
       RDF_NAMESPACES = [
-        'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-        'http://creativecommons.org/ns#',
-        'http://purl.org/dc/elements/1.1/',
-        'http://purl.org/dc/dcmitype/',
-        'http://www.w3.org/2000/01/rdf-schema#'
+        "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+        "http://creativecommons.org/ns#",
+        "http://purl.org/dc/elements/1.1/",
+        "http://purl.org/dc/dcmitype/",
+        "http://www.w3.org/2000/01/rdf-schema#",
       ].freeze
 
       yaml do
-        map 'id', to: :id
-        map 'description', to: :description
-        map 'type', to: :type
-        map 'element_configs', to: :element_configs
-        map 'disallowed_elements', to: :disallowed_elements
-        map 'check_attributes', to: :check_attributes
-        map 'check_invalid_attributes', to: :check_invalid_attributes
-        map 'check_parent_child', to: :check_parent_child
-        map 'skip_foreign_namespaces', to: :skip_foreign_namespaces
-        map 'allowed_namespaces', to: :allowed_namespaces
-        map 'allow_rdf_metadata', to: :allow_rdf_metadata
+        map "id", to: :id
+        map "description", to: :description
+        map "type", to: :type
+        map "element_configs", to: :element_configs
+        map "disallowed_elements", to: :disallowed_elements
+        map "check_attributes", to: :check_attributes
+        map "check_invalid_attributes", to: :check_invalid_attributes
+        map "check_parent_child", to: :check_parent_child
+        map "skip_foreign_namespaces", to: :skip_foreign_namespaces
+        map "allowed_namespaces", to: :allowed_namespaces
+        map "allow_rdf_metadata", to: :allow_rdf_metadata
       end
 
       def check(node, context)
@@ -58,7 +64,7 @@ module SvgConform
             message: "Element '#{element_name}' is not allowed in this profile",
             node: node,
             severity: :error,
-            data: { element: element_name }
+            data: { element: element_name },
           )
           return
         end
@@ -72,7 +78,7 @@ module SvgConform
               message: "The element '#{element_name}' is not allowed as a child of '#{parent_name}'",
               node: node,
               severity: :error,
-              data: { element: element_name, parent: parent_name }
+              data: { element: element_name, parent: parent_name },
             )
             # Mark node as structurally invalid so other requirements skip it
             context.mark_node_structurally_invalid(node)
@@ -90,7 +96,7 @@ module SvgConform
               message: "Element '#{element_name}' is not allowed in this profile",
               node: node,
               severity: :error,
-              data: { element: element_name }
+              data: { element: element_name },
             )
             # Mark as structurally invalid so children aren't validated
             # (matches svgcheck behavior: invalid element removed with all children)
@@ -109,7 +115,7 @@ module SvgConform
             requirement_id: id,
             message: error[:message],
             node: node,
-            severity: :error
+            severity: :error,
           )
         end
       end
@@ -124,11 +130,13 @@ module SvgConform
         return false unless element_configs&.any?
 
         # Find the configuration for the parent element
-        parent_config = element_configs.find { |config| config.tag == parent_name }
+        parent_config = element_configs.find do |config|
+          config.tag == parent_name
+        end
         return false unless parent_config
 
         # If allowed_children is defined and not empty, use it
-        if parent_config.allowed_children && parent_config.allowed_children.any?
+        if parent_config.allowed_children&.any?
           # Child must be in the allowed list
           return !parent_config.allowed_children.include?(child_name)
         end
@@ -156,7 +164,9 @@ module SvgConform
 
         return errors unless element_configs&.any?
 
-        element_config = element_configs.find { |config| config.tag == element_name }
+        element_config = element_configs.find do |config|
+          config.tag == element_name
+        end
 
         return errors unless element_config&.attr
 
@@ -165,7 +175,7 @@ module SvgConform
 
         # Parse attributes, separating allowed from disallowed (prefixed with !)
         element_config.attr.each do |attribute|
-          if attribute.start_with?('!')
+          if attribute.start_with?("!")
             disallowed_attrs << attribute[1..].downcase
           else
             allowed_attrs << attribute.downcase
@@ -195,8 +205,8 @@ module SvgConform
 
         node.attributes.each do |attr|
           attr_name = attr.name.downcase
-          next if attr_name.start_with?('xmlns:')
-          next if attr_name.start_with?('xml:')
+          next if attr_name.start_with?("xmlns:")
+          next if attr_name.start_with?("xml:")
 
           # Skip namespaced attributes - they should be handled by NamespaceAttributesRequirement
           next if attr.namespace
@@ -206,7 +216,7 @@ module SvgConform
             errors << {
               type: :explicitly_disallowed,
               attribute: attr_name,
-              message: "Attribute '#{attr_name}' is explicitly disallowed on element '#{element_name}'"
+              message: "Attribute '#{attr_name}' is explicitly disallowed on element '#{element_name}'",
             }
             next
           end
@@ -217,7 +227,7 @@ module SvgConform
           errors << {
             type: :not_allowed,
             attribute: attr_name,
-            message: "Attribute '#{attr_name}' is not allowed on element '#{element_name}'"
+            message: "Attribute '#{attr_name}' is not allowed on element '#{element_name}'",
           }
         end
 
@@ -230,12 +240,12 @@ module SvgConform
         # Check for globally disallowed attributes (using * tag)
         return errors unless element_configs&.any?
 
-        global_config = element_configs.find { |config| config.tag == '*' }
+        global_config = element_configs.find { |config| config.tag == "*" }
         return errors unless global_config&.attr
 
         global_disallowed = []
         global_config.attr.each do |attribute|
-          global_disallowed << attribute[1..].downcase if attribute.start_with?('!')
+          global_disallowed << attribute[1..].downcase if attribute.start_with?("!")
         end
 
         return errors if global_disallowed.empty?
@@ -247,7 +257,7 @@ module SvgConform
           errors << {
             type: :globally_disallowed,
             attribute: attr_name,
-            message: "Attribute '#{attr_name}' is globally disallowed in this profile"
+            message: "Attribute '#{attr_name}' is globally disallowed in this profile",
           }
         end
 
@@ -262,10 +272,18 @@ module SvgConform
 
         errors_by_attr.each_value do |attr_errors|
           # Priority order: globally_disallowed > explicitly_disallowed > not_allowed
-          prioritized << if attr_errors.any? { |e| e[:type] == :globally_disallowed }
-                           attr_errors.find { |e| e[:type] == :globally_disallowed }
-                         elsif attr_errors.any? { |e| e[:type] == :explicitly_disallowed }
-                           attr_errors.find { |e| e[:type] == :explicitly_disallowed }
+          prioritized << if attr_errors.any? do |e|
+            e[:type] == :globally_disallowed
+          end
+                           attr_errors.find do |e|
+                             e[:type] == :globally_disallowed
+                           end
+                         elsif attr_errors.any? do |e|
+                           e[:type] == :explicitly_disallowed
+                         end
+                           attr_errors.find do |e|
+                             e[:type] == :explicitly_disallowed
+                           end
                          else
                            attr_errors.find { |e| e[:type] == :not_allowed }
                          end
@@ -276,7 +294,8 @@ module SvgConform
 
       def should_check_node?(node, context = nil)
         return false unless element?(node)
-        return false if context && context.node_structurally_invalid?(node)
+        return false if context&.node_structurally_invalid?(node)
+
         true
       end
 
@@ -306,14 +325,14 @@ module SvgConform
         if node.respond_to?(:namespace) && node.namespace
           namespace_str = node.namespace.to_s
           # Extract the URI from the namespace string
-          if namespace_str.match(/xmlns[^=]*="([^"]+)"/)
+          if namespace_str =~ /xmlns[^=]*="([^"]+)"/
             return ::Regexp.last_match(1)
           end
         end
 
         # If no namespace found, check if element has a prefix (indicating it's namespaced)
-        if node.name.include?(':')
-          prefix = node.name.split(':').first
+        if node.name.include?(":")
+          prefix = node.name.split(":").first
           return find_namespace_uri_for_prefix(node, prefix)
         end
 

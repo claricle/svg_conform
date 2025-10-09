@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../semantic_comparator'
-require_relative '../remediation_runner'
+require_relative "../semantic_comparator"
+require_relative "../remediation_runner"
 
 module SvgConform
   module Compatibility
@@ -25,12 +25,15 @@ module SvgConform
       def analyze_validation(filename, svgcheck_report)
         input_file = @file_processor.input_file_path(filename)
         svg_conform_result = run_validation(input_file)
-        svg_conform_report = create_conformance_report(filename, svg_conform_result)
+        svg_conform_report = create_conformance_report(filename,
+                                                       svg_conform_result)
 
         if @context.semantic_analysis?
-          build_semantic_validation_result(filename, svg_conform_report, svgcheck_report)
+          build_semantic_validation_result(filename, svg_conform_report,
+                                           svgcheck_report)
         else
-          build_basic_validation_result(filename, svg_conform_report, svgcheck_report)
+          build_basic_validation_result(filename, svg_conform_report,
+                                        svgcheck_report)
         end
       end
 
@@ -39,9 +42,11 @@ module SvgConform
         svg_conform_result = run_remediation(input_file, filename)
 
         if @context.semantic_analysis?
-          build_semantic_repair_result(filename, svg_conform_result, svgcheck_report)
+          build_semantic_repair_result(filename, svg_conform_result,
+                                       svgcheck_report)
         else
-          build_basic_repair_result(filename, svg_conform_result, svgcheck_report)
+          build_basic_repair_result(filename, svg_conform_result,
+                                    svgcheck_report)
         end
       end
 
@@ -61,40 +66,44 @@ module SvgConform
           filename,
           svg_conform_result,
           profile: @context.profile,
-          use_svgcheck_mapping: true
+          use_svgcheck_mapping: true,
         )
       end
 
-      def build_semantic_validation_result(filename, svg_conform_report, svgcheck_report)
+      def build_semantic_validation_result(filename, svg_conform_report,
+svgcheck_report)
         validation_comparison = SvgConform::SemanticComparator.compare_validation_results(
           svg_conform_report,
-          svgcheck_report
+          svgcheck_report,
         )
 
         ComparisonResult.new(
           filename: filename,
           type: :semantic_validation,
-          validation_comparison: validation_comparison
+          validation_comparison: validation_comparison,
         )
       end
 
-      def build_basic_validation_result(filename, svg_conform_report, svgcheck_report)
+      def build_basic_validation_result(filename, svg_conform_report,
+svgcheck_report)
         ComparisonResult.new(
           filename: filename,
           type: :basic_validation,
           svg_conform_result: svg_conform_report,
-          svgcheck_result: svgcheck_report
+          svgcheck_result: svgcheck_report,
         )
       end
 
-      def build_semantic_repair_result(filename, svg_conform_result, svgcheck_report)
+      def build_semantic_repair_result(filename, svg_conform_result,
+svgcheck_report)
         svg_conform_report = svg_conform_result.generate_conformance_report
         validation_comparison = SvgConform::SemanticComparator.compare_validation_results(
           svg_conform_report,
-          svgcheck_report
+          svgcheck_report,
         )
 
-        content_comparison = build_content_comparison(svg_conform_result, svgcheck_report)
+        content_comparison = build_content_comparison(svg_conform_result,
+                                                      svgcheck_report)
         xml_equivalence = build_xml_equivalence(filename, svg_conform_result)
 
         ComparisonResult.new(
@@ -102,26 +111,27 @@ module SvgConform
           type: :semantic_repair,
           validation_comparison: validation_comparison,
           content_comparison: content_comparison,
-          xml_equivalence: xml_equivalence
+          xml_equivalence: xml_equivalence,
         )
       end
 
-      def build_basic_repair_result(filename, svg_conform_result, svgcheck_report)
+      def build_basic_repair_result(filename, svg_conform_result,
+svgcheck_report)
         ComparisonResult.new(
           filename: filename,
           type: :basic_repair,
           svg_conform_result: svg_conform_result,
-          svgcheck_result: svgcheck_report
+          svgcheck_result: svgcheck_report,
         )
       end
 
       def build_content_comparison(svg_conform_result, svgcheck_report)
         return nil unless svgcheck_report.respond_to?(:remediated_content) &&
-                          svg_conform_result.remediated_content
+          svg_conform_result.remediated_content
 
         SvgConform::SemanticComparator.compare_remediated_content(
           svg_conform_result.remediated_content,
-          svgcheck_report.remediated_content
+          svgcheck_report.remediated_content,
         )
       end
 
@@ -131,39 +141,41 @@ module SvgConform
         unless @file_processor.svgcheck_repaired_file_exists?(filename)
           return {
             error: "Svgcheck repaired file not found: #{@file_processor.svgcheck_repaired_file_path(filename)}",
-            xml_equivalent: false
+            xml_equivalent: false,
           }
         end
 
         begin
           svgcheck_content = @file_processor.read_svgcheck_repaired_content(filename)
-          compare_xml_content(svg_conform_result.remediated_content, svgcheck_content)
+          compare_xml_content(svg_conform_result.remediated_content,
+                              svgcheck_content)
         rescue StandardError => e
           {
             error: "Error comparing XML files: #{e.message}",
-            xml_equivalent: false
+            xml_equivalent: false,
           }
         end
       end
 
       def compare_xml_content(svg_conform_content, svgcheck_content)
-        require 'equivalent-xml'
+        require "equivalent-xml"
 
         xml_equivalent = EquivalentXml.equivalent?(svg_conform_content, svgcheck_content, {
                                                      element_order: false,
-                                                     normalize_whitespace: true
+                                                     normalize_whitespace: true,
                                                    })
 
         if xml_equivalent
           {
             xml_equivalent: true,
-            differences: []
+            differences: [],
           }
         else
-          differences = analyze_xml_differences(svg_conform_content, svgcheck_content)
+          differences = analyze_xml_differences(svg_conform_content,
+                                                svgcheck_content)
           {
             xml_equivalent: false,
-            differences: differences
+            differences: differences,
           }
         end
       end
@@ -172,7 +184,7 @@ module SvgConform
         differences = []
 
         begin
-          require 'moxml'
+          require "moxml"
           moxml = Moxml.new
 
           svg_conform_doc = moxml.parse(svg_conform_content)
@@ -186,17 +198,19 @@ module SvgConform
             differences << {
               type: :root_element_name,
               svg_conform: svg_conform_root.name,
-              svgcheck: svgcheck_root.name
+              svgcheck: svgcheck_root.name,
             }
           end
 
           # Compare attributes and children recursively
-          differences.concat(compare_element_attributes(svg_conform_root, svgcheck_root))
-          differences.concat(compare_child_elements(svg_conform_root, svgcheck_root))
+          differences.concat(compare_element_attributes(svg_conform_root,
+                                                        svgcheck_root))
+          differences.concat(compare_child_elements(svg_conform_root,
+                                                    svgcheck_root))
         rescue StandardError => e
           differences << {
             type: :parsing_error,
-            error: e.message
+            error: e.message,
           }
         end
 
@@ -220,7 +234,7 @@ module SvgConform
             element: elem1.name,
             attribute: attr_name,
             svg_conform: val1,
-            svgcheck: val2
+            svgcheck: val2,
           }
         end
 
@@ -256,7 +270,7 @@ module SvgConform
             type: :child_count_difference,
             element: elem1.name,
             svg_conform_count: children1.length,
-            svgcheck_count: children2.length
+            svgcheck_count: children2.length,
           }
         end
 
@@ -266,31 +280,31 @@ module SvgConform
           child2 = children2[i]
 
           if child1 && child2
-            if child1.name != child2.name
+            if child1.name == child2.name
+              differences.concat(compare_element_attributes(child1, child2))
+              differences.concat(compare_child_elements(child1, child2))
+            else
               differences << {
                 type: :child_element_name,
                 parent: elem1.name,
                 position: i,
                 svg_conform: child1.name,
-                svgcheck: child2.name
+                svgcheck: child2.name,
               }
-            else
-              differences.concat(compare_element_attributes(child1, child2))
-              differences.concat(compare_child_elements(child1, child2))
             end
           elsif child1
             differences << {
               type: :extra_child_svg_conform,
               parent: elem1.name,
               position: i,
-              element: child1.name
+              element: child1.name,
             }
           elsif child2
             differences << {
               type: :extra_child_svgcheck,
               parent: elem1.name,
               position: i,
-              element: child2.name
+              element: child2.name,
             }
           end
         end

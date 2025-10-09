@@ -139,7 +139,7 @@ module SvgConform
           xml_equivalent: xml_equivalent?,
           successful_remediation: successful_remediation?,
           issues_fixed: issues_fixed,
-          remediations_applied: remediations_applied
+          remediations_applied: remediations_applied,
         }
       end
     end

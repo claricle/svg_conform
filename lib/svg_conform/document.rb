@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'moxml'
+require "moxml"
 
 module SvgConform
   # Wrapper around Moxml document for SVG validation
@@ -39,14 +39,14 @@ module SvgConform
       @moxml_document.xpath(path, namespaces)
     end
 
-    def traverse(&block)
-      traverse_node(root, &block) if root
+    def traverse(&)
+      traverse_node(root, &) if root
     end
 
     def svg_elements
       # Handle both default namespace and prefixed namespace
       if has_svg_namespace_prefix?
-        xpath('//svg:*', { 'svg' => 'http://www.w3.org/2000/svg' }).select { |node| node.respond_to?(:name) }
+        xpath("//svg:*", { "svg" => "http://www.w3.org/2000/svg" }).select { |node| node.respond_to?(:name) }
       else
         xpath("//*[namespace-uri()='http://www.w3.org/2000/svg']").select { |node| node.respond_to?(:name) }
       end
@@ -71,37 +71,37 @@ module SvgConform
     end
 
     def svg_namespace?
-      namespace_uri == 'http://www.w3.org/2000/svg'
+      namespace_uri == "http://www.w3.org/2000/svg"
     end
 
     def has_svg_namespace_prefix?
-      @content.include?('xmlns:svg=') || @content.include?('svg:')
+      @content.include?("xmlns:svg=") || @content.include?("svg:")
     end
 
     def has_viewbox?
-      root&.attribute('viewBox')
+      root&.attribute("viewBox")
     end
 
     def viewbox
-      root&.attribute('viewBox')&.value
+      root&.attribute("viewBox")&.value
     end
 
     def width
-      root&.attribute('width')&.value
+      root&.attribute("width")&.value
     end
 
     def height
-      root&.attribute('height')&.value
+      root&.attribute("height")&.value
     end
 
     def version
-      root&.attribute('version')&.value
+      root&.attribute("version")&.value
     end
 
     # Find all elements with a specific name
     def find_elements(name)
       if has_svg_namespace_prefix?
-        xpath("//svg:#{name}", { 'svg' => 'http://www.w3.org/2000/svg' })
+        xpath("//svg:#{name}", { "svg" => "http://www.w3.org/2000/svg" })
       else
         xpath("//#{name}[namespace-uri()='http://www.w3.org/2000/svg']")
       end
@@ -109,7 +109,7 @@ module SvgConform
 
     # Find all elements with style attributes
     def elements_with_style
-      xpath('//*[@style]')
+      xpath("//*[@style]")
     end
 
     # Find all elements with specific attributes
@@ -135,7 +135,8 @@ module SvgConform
     def has_external_references?
       # Check for external stylesheets
       link_elements = if has_svg_namespace_prefix?
-                        xpath('//svg:link[@rel="stylesheet"]', { 'svg' => 'http://www.w3.org/2000/svg' })
+                        xpath('//svg:link[@rel="stylesheet"]',
+                              { "svg" => "http://www.w3.org/2000/svg" })
                       else
                         xpath('//link[@rel="stylesheet"][namespace-uri()="http://www.w3.org/2000/svg"]')
                       end
@@ -143,20 +144,21 @@ module SvgConform
 
       # Check for @import in style elements
       style_elements = if has_svg_namespace_prefix?
-                         xpath('//svg:style', { 'svg' => 'http://www.w3.org/2000/svg' })
+                         xpath("//svg:style",
+                               { "svg" => "http://www.w3.org/2000/svg" })
                        else
                          xpath("//style[namespace-uri()='http://www.w3.org/2000/svg']")
                        end
 
       style_elements.each do |style|
         content = style.text
-        return true if content&.include?('@import')
+        return true if content&.include?("@import")
       end
 
       # Check for external references in style attributes
       elements_with_style.each do |element|
-        style_value = element.attribute('style')&.value
-        return true if style_value&.include?('url(')
+        style_value = element.attribute("style")&.value
+        return true if style_value&.include?("url(")
       end
 
       false
@@ -173,9 +175,9 @@ module SvgConform
         raise ParseError, "Failed to parse SVG document: #{e.message}"
       end
 
-      raise ParseError, 'Document could not be parsed' unless @moxml_document
+      raise ParseError, "Document could not be parsed" unless @moxml_document
 
-      raise ParseError, 'Document has no root element' unless root
+      raise ParseError, "Document has no root element" unless root
 
       # Check if root element is SVG (handle both namespaced and non-namespaced)
       root_name = root.name
@@ -183,13 +185,13 @@ module SvgConform
 
       # Accept if element name is "svg" regardless of namespace
       # or if it's in the SVG namespace
-      return if root_name == 'svg' || root_namespace == 'http://www.w3.org/2000/svg'
+      return if root_name == "svg" || root_namespace == "http://www.w3.org/2000/svg"
 
       raise ParseError, "Root element must be 'svg', found '#{root_name}'"
     end
 
     def traverse_node(node, &block)
-      yield node if block_given?
+      yield node if block
 
       return unless node.respond_to?(:children)
 

@@ -1,24 +1,25 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
-require 'svg_conform'
+require "spec_helper"
+require "svg_conform"
 
-RSpec.describe 'SvgCheck Report Compatibility' do
-  let(:input_dir) { File.join(__dir__, '..', 'svgcheck', 'svgcheck', 'Tests') }
-  let(:reports_dir) { File.join(__dir__, 'fixtures', 'svgcheck_reports') }
+RSpec.describe "SvgCheck Report Compatibility" do
+  let(:input_dir) { File.join(__dir__, "..", "svgcheck", "svgcheck", "Tests") }
+  let(:reports_dir) { File.join(__dir__, "fixtures", "svgcheck_reports") }
 
-  describe 'IETF profile validation against svgcheck reports' do
+  describe "IETF profile validation against svgcheck reports" do
     # Get all generated svgcheck reports (excluding full-tiny.xml which is too large)
-    Dir.glob(File.join(__dir__, 'fixtures', 'svgcheck_reports', '*.yaml')).each do |report_file|
-      basename = File.basename(report_file, '.svgcheck.yaml')
-      next if basename == 'full-tiny.xml' # Skip the problematic file
+    Dir.glob(File.join(__dir__, "fixtures", "svgcheck_reports",
+                       "*.yaml")).each do |report_file|
+      basename = File.basename(report_file, ".svgcheck.yaml")
+      next if basename == "full-tiny.xml" # Skip the problematic file
 
       context basename.to_s do
         let(:input_file) { File.join(input_dir, basename) }
         let(:svgcheck_report) { SvgConform::ConformanceReport.load_from_file(report_file) }
 
-        it 'produces compatible validation results' do
-          skip 'Input file not found' unless File.exist?(input_file)
+        it "produces compatible validation results" do
+          skip "Input file not found" unless File.exist?(input_file)
 
           # Run SvgConform validation
           svg_content = File.read(input_file)
@@ -27,7 +28,7 @@ RSpec.describe 'SvgCheck Report Compatibility' do
 
           # Create SvgConform report with svgcheck mapping
           svg_conform_report = SvgConform::ConformanceReport.from_svg_conform_result(
-            basename, result, profile: 'svg_1_2_rfc', use_svgcheck_mapping: true
+            basename, result, profile: "svg_1_2_rfc", use_svgcheck_mapping: true
           )
 
           # Compare validation status
@@ -59,9 +60,9 @@ RSpec.describe 'SvgCheck Report Compatibility' do
           end
         end
 
-        it 'produces similar error messages' do
-          skip 'Input file not found' unless File.exist?(input_file)
-          skip 'No errors in svgcheck report' if svgcheck_report.errors.total_count == 0
+        it "produces similar error messages" do
+          skip "Input file not found" unless File.exist?(input_file)
+          skip "No errors in svgcheck report" if svgcheck_report.errors.total_count == 0
 
           # Run SvgConform validation
           svg_content = File.read(input_file)
@@ -70,7 +71,7 @@ RSpec.describe 'SvgCheck Report Compatibility' do
 
           # Create SvgConform report with svgcheck mapping
           svg_conform_report = SvgConform::ConformanceReport.from_svg_conform_result(
-            basename, result, profile: 'svg_1_2_rfc', use_svgcheck_mapping: true
+            basename, result, profile: "svg_1_2_rfc", use_svgcheck_mapping: true
           )
 
           # Compare individual error details
@@ -98,8 +99,8 @@ RSpec.describe 'SvgCheck Report Compatibility' do
           end
         end
 
-        it 'handles the same file without crashing' do
-          skip 'Input file not found' unless File.exist?(input_file)
+        it "handles the same file without crashing" do
+          skip "Input file not found" unless File.exist?(input_file)
 
           # Test that we can at least parse and validate the same files svgcheck can handle
           expect do
@@ -112,27 +113,29 @@ RSpec.describe 'SvgCheck Report Compatibility' do
     end
   end
 
-  describe 'Report format compatibility' do
-    let(:sample_report_file) { File.join(reports_dir, 'circle.svg.svgcheck.yaml') }
+  describe "Report format compatibility" do
+    let(:sample_report_file) do
+      File.join(reports_dir, "circle.svg.svgcheck.yaml")
+    end
 
-    it 'can load svgcheck reports' do
-      skip 'Sample report not found' unless File.exist?(sample_report_file)
+    it "can load svgcheck reports" do
+      skip "Sample report not found" unless File.exist?(sample_report_file)
 
       expect do
         SvgConform::ConformanceReport.load_from_file(sample_report_file)
-      end.not_to raise_error, 'Should be able to load svgcheck reports'
+      end.not_to raise_error, "Should be able to load svgcheck reports"
 
       report = SvgConform::ConformanceReport.load_from_file(sample_report_file)
-      expect(report.tool).to eq('svgcheck')
-      expect(report.filename).to eq('circle.svg')
-      expect(report.version).to include('svgcheck')
+      expect(report.tool).to eq("svgcheck")
+      expect(report.filename).to eq("circle.svg")
+      expect(report.version).to include("svgcheck")
     end
 
-    it 'generates reports in the same format' do
-      skip 'Sample report not found' unless File.exist?(sample_report_file)
+    it "generates reports in the same format" do
+      skip "Sample report not found" unless File.exist?(sample_report_file)
 
-      input_file = File.join(input_dir, 'circle.svg')
-      skip 'Input file not found' unless File.exist?(input_file)
+      input_file = File.join(input_dir, "circle.svg")
+      skip "Input file not found" unless File.exist?(input_file)
 
       # Generate SvgConform report
       svg_content = File.read(input_file)
@@ -140,7 +143,7 @@ RSpec.describe 'SvgCheck Report Compatibility' do
       result = validator.validate(svg_content, profile: :svg_1_2_rfc)
 
       svg_conform_report = SvgConform::ConformanceReport.from_svg_conform_result(
-        'circle.svg', result, profile: 'svg_1_2_rfc'
+        "circle.svg", result, profile: "svg_1_2_rfc"
       )
 
       # Load svgcheck report
@@ -161,16 +164,16 @@ RSpec.describe 'SvgCheck Report Compatibility' do
     end
   end
 
-  describe 'Summary statistics' do
-    it 'provides overall compatibility summary' do
+  describe "Summary statistics" do
+    it "provides overall compatibility summary" do
       total_files = 0
       matching_files = 0
       error_count_matches = 0
       validation_status_matches = 0
 
-      Dir.glob(File.join(reports_dir, '*.yaml')).each do |report_file|
-        basename = File.basename(report_file, '.svgcheck.yaml')
-        next if basename == 'full-tiny.xml' # Skip problematic file
+      Dir.glob(File.join(reports_dir, "*.yaml")).each do |report_file|
+        basename = File.basename(report_file, ".svgcheck.yaml")
+        next if basename == "full-tiny.xml" # Skip problematic file
 
         input_file = File.join(input_dir, basename)
         next unless File.exist?(input_file)
@@ -187,7 +190,7 @@ RSpec.describe 'SvgCheck Report Compatibility' do
           result = validator.validate(svg_content, profile: :svg_1_2_rfc)
 
           svg_conform_report = SvgConform::ConformanceReport.from_svg_conform_result(
-            basename, result, profile: 'svg_1_2_rfc', use_svgcheck_mapping: true
+            basename, result, profile: "svg_1_2_rfc", use_svgcheck_mapping: true
           )
 
           matching_files += 1
@@ -203,20 +206,20 @@ RSpec.describe 'SvgCheck Report Compatibility' do
       end
 
       puts "\n#{'=' * 60}"
-      puts 'SVGCHECK COMPATIBILITY SUMMARY'
-      puts '=' * 60
+      puts "SVGCHECK COMPATIBILITY SUMMARY"
+      puts "=" * 60
       puts "Total files processed: #{total_files}"
       puts "Successfully compared: #{matching_files}"
       puts "Validation status matches: #{validation_status_matches}/#{matching_files} (#{(validation_status_matches.to_f / matching_files * 100).round(1)}%)"
       puts "Error count matches: #{error_count_matches}/#{matching_files} (#{(error_count_matches.to_f / matching_files * 100).round(1)}%)"
-      puts '=' * 60
+      puts "=" * 60
 
       # We expect at least some level of compatibility
       if matching_files > 0
         expect(validation_status_matches.to_f / matching_files).to be >= 0.5,
-                                                                   'Should have at least 50% validation status compatibility'
+                                                                   "Should have at least 50% validation status compatibility"
       else
-        skip 'No svgcheck report files found to compare against'
+        skip "No svgcheck report files found to compare against"
       end
     end
   end

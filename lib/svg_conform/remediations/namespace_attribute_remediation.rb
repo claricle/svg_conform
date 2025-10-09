@@ -1,19 +1,23 @@
 # frozen_string_literal: true
 
-require 'set'
-require_relative 'base_remediation'
+require "set"
+require_relative "base_remediation"
 
 module SvgConform
   module Remediations
     # Remediation for removing disallowed namespace attributes and declarations
     class NamespaceAttributeRemediation < BaseRemediation
-      attribute :type, :string, default: -> { 'NamespaceAttributeRemediation' }
-      attribute :disallowed_namespaces, :string, collection: true, default: -> { [] }
-      attribute :allowed_namespaces, :string, collection: true, default: -> { [] }
+      attribute :type, :string, default: -> { "NamespaceAttributeRemediation" }
+      attribute :disallowed_namespaces, :string, collection: true, default: -> {
+        []
+      }
+      attribute :allowed_namespaces, :string, collection: true, default: -> {
+        []
+      }
 
       yaml do
-        map 'disallowed_namespaces', to: :disallowed_namespaces
-        map 'allowed_namespaces', to: :allowed_namespaces
+        map "disallowed_namespaces", to: :disallowed_namespaces
+        map "allowed_namespaces", to: :allowed_namespaces
       end
 
       def apply(document, _context)
@@ -31,7 +35,8 @@ module SvgConform
         document.traverse do |node|
           next unless element?(node)
 
-          changes.concat(remove_unused_namespace_declarations(node, removed_namespaces))
+          changes.concat(remove_unused_namespace_declarations(node,
+                                                              removed_namespaces))
         end
 
         changes
@@ -68,7 +73,8 @@ module SvgConform
           if attributes.respond_to?(:each_key)
             # Hash case
             attributes.each_key do |name|
-              if should_remove_attribute_by_name?(name.to_s, node, removed_namespaces)
+              if should_remove_attribute_by_name?(name.to_s, node,
+                                                  removed_namespaces)
                 attributes_to_remove << name.to_s
               end
             end
@@ -90,7 +96,7 @@ module SvgConform
               type: :attribute_removed,
               description: "Removed disallowed namespace attribute '#{attr_name}'",
               node_name: node.name,
-              attribute: attr_name
+              attribute: attr_name,
             }
           end
         end
@@ -107,12 +113,12 @@ module SvgConform
         if node.respond_to?(:attribute_nodes)
           node.attribute_nodes.each do |attr|
             attr_name = attr.name
-            next unless attr_name.start_with?('xmlns:')
+            next unless attr_name.start_with?("xmlns:")
 
             namespace_uri = attr.value
             # Also check if the namespace prefix itself was in disallowed_namespaces
             # since xmlns:lucid="lucid" means the URI is literally "lucid"
-            prefix = attr_name.sub('xmlns:', '')
+            prefix = attr_name.sub("xmlns:", "")
             if removed_namespaces.include?(namespace_uri) || disallowed_namespaces.include?(namespace_uri) || disallowed_namespaces.include?(prefix)
               attributes_to_remove << attr_name
             end
@@ -123,10 +129,10 @@ module SvgConform
           if attributes.respond_to?(:each_key)
             attributes.each_key do |name|
               name_str = name.to_s
-              next unless name_str.start_with?('xmlns:')
+              next unless name_str.start_with?("xmlns:")
 
               namespace_uri = get_attribute(node, name_str)
-              prefix = name_str.sub('xmlns:', '')
+              prefix = name_str.sub("xmlns:", "")
               if namespace_uri && (removed_namespaces.include?(namespace_uri) || disallowed_namespaces.include?(namespace_uri) || disallowed_namespaces.include?(prefix))
                 attributes_to_remove << name_str
               end
@@ -141,7 +147,7 @@ module SvgConform
               type: :attribute_removed,
               description: "Removed unused namespace declaration '#{attr_name}'",
               node_name: node.name,
-              attribute: attr_name
+              attribute: attr_name,
             }
           end
         end
@@ -150,20 +156,20 @@ module SvgConform
       end
 
       def namespace_disallowed?(namespace_uri)
-        if !allowed_namespaces.empty?
-          # Whitelist mode: only allowed namespaces are permitted
-          !allowed_namespaces.include?(namespace_uri)
-        else
+        if allowed_namespaces.empty?
           # Blacklist mode: disallowed namespaces are forbidden
           disallowed_namespaces.include?(namespace_uri)
+        else
+          # Whitelist mode: only allowed namespaces are permitted
+          !allowed_namespaces.include?(namespace_uri)
         end
       end
 
       def should_remove_attribute_by_name?(name, node, removed_namespaces)
         # Check if this is a namespaced attribute by looking for colon in name
-        return false unless name.include?(':')
+        return false unless name.include?(":")
 
-        prefix, = name.split(':', 2)
+        prefix, = name.split(":", 2)
 
         # Find the namespace URI for this prefix
         namespace_uri = find_namespace_uri(node, prefix)
@@ -208,7 +214,9 @@ module SvgConform
         current = node
         while current.respond_to?(:parent)
           if current.respond_to?(:namespace_definitions)
-            ns_def = current.namespace_definitions.find { |ns| ns.prefix == prefix }
+            ns_def = current.namespace_definitions.find do |ns|
+              ns.prefix == prefix
+            end
             if ns_def
               return ns_def.uri if ns_def.respond_to?(:uri)
               return ns_def.href if ns_def.respond_to?(:href)

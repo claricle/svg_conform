@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'open3'
-require 'fileutils'
+require "open3"
+require "fileutils"
 
 module SvgConform
   module ExternalCheckers
@@ -10,7 +10,8 @@ module SvgConform
       class OutputGenerator
         attr_reader :svgcheck_exec, :svgcheck_path
 
-        def initialize(svgcheck_exec: 'python3', svgcheck_path: 'svgcheck/svgcheck')
+        def initialize(svgcheck_exec: "python3",
+svgcheck_path: "svgcheck/svgcheck")
           @svgcheck_exec = svgcheck_exec
           @svgcheck_path = svgcheck_path
         end
@@ -28,7 +29,8 @@ module SvgConform
             results[:check] = generate_mode_output(input_file, :check)
             results[:repair] = generate_mode_output(input_file, :repair)
           else
-            raise ArgumentError, "Invalid mode: #{mode}. Must be :check, :repair, or :both"
+            raise ArgumentError,
+                  "Invalid mode: #{mode}. Must be :check, :repair, or :both"
           end
 
           results
@@ -40,7 +42,7 @@ module SvgConform
           unless available?
             return {
               success: false,
-              error: "svgcheck not available (#{@svgcheck_exec} or #{@svgcheck_path} not found)"
+              error: "svgcheck not available (#{@svgcheck_exec} or #{@svgcheck_path} not found)",
             }
           end
 
@@ -50,11 +52,11 @@ module SvgConform
             Dir.chdir(@svgcheck_path)
 
             # Build command based on mode
-            relative_input = File.join('Tests', File.basename(input_file))
+            relative_input = File.join("Tests", File.basename(input_file))
             cmd = if mode == :repair
-                    [@svgcheck_exec, 'run.py', '--repair', relative_input]
+                    [@svgcheck_exec, "run.py", "--repair", relative_input]
                   else
-                    [@svgcheck_exec, 'run.py', relative_input] # check mode - no --repair flag
+                    [@svgcheck_exec, "run.py", relative_input] # check mode - no --repair flag
                   end
 
             stdout, stderr, status = Open3.capture3(*cmd)
@@ -67,7 +69,7 @@ module SvgConform
               stdout: stdout,
               stderr: stderr,
               exit_code: status.exitstatus,
-              mode: mode
+              mode: mode,
             }
           rescue StandardError => e
             # Make sure we return to original directory even on error
@@ -75,7 +77,7 @@ module SvgConform
 
             {
               success: false,
-              error: "Error running svgcheck in #{mode} mode: #{e.message}"
+              error: "Error running svgcheck in #{mode} mode: #{e.message}",
             }
           end
         end

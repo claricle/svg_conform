@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require_relative '../svg_conform/external_checkers'
+require_relative "../svg_conform/external_checkers"
 
 namespace :svgcheck do
-  desc 'Generate svgcheck outputs for test files'
-  task :generate, [:mode] do |t, args|
-    mode = args[:mode] || 'both'
+  desc "Generate svgcheck outputs for test files"
+  task :generate, [:mode] do |_t, args|
+    mode = args[:mode] || "both"
 
     puts "🔧 Generating svgcheck outputs (mode: #{mode})..."
 
@@ -45,7 +45,7 @@ namespace :svgcheck do
             puts "    #{result_mode}: #{result[:error]}" unless result[:success]
           end
         end
-      rescue => e
+      rescue StandardError => e
         error_count += 1
         puts "  ❌ Error: #{e.message}"
       end
@@ -57,7 +57,7 @@ namespace :svgcheck do
     puts "  📁 Output directory: spec/fixtures/svgcheck"
   end
 
-  desc 'Compare svg_conform validation against svgcheck outputs'
+  desc "Compare svg_conform validation against svgcheck outputs"
   task :compare do
     puts "🔍 Comparing svg_conform validation against svgcheck outputs..."
 
@@ -70,7 +70,7 @@ namespace :svgcheck do
     puts "  ❌ Different reports: #{results[:different]}"
     puts "  ⚠️  Errors: #{results[:errors]}"
 
-    if results[:different] > 0
+    if results[:different].positive?
       puts "\n🔍 Files with differences:"
       results[:differences].each do |file, diff|
         puts "  #{file}: #{diff[:summary]}"
@@ -78,12 +78,12 @@ namespace :svgcheck do
     end
   end
 
-  desc 'Validate profile configuration against svgcheck source'
+  desc "Validate profile configuration against svgcheck source"
   task :validate_profile do
     puts "🔍 Validating svg_1_2_rfc profile against svgcheck source..."
 
     validator = SvgConform::ExternalCheckers::Svgcheck::ProfileValidator.new
-    results = validator.validate_profile('config/profiles/svg_1_2_rfc.yml')
+    results = validator.validate_profile("config/profiles/svg_1_2_rfc.yml")
 
     puts "\n📊 VALIDATION SUMMARY:"
     puts "  ✅ Matching configurations: #{results[:matches]}"
@@ -101,11 +101,11 @@ namespace :svgcheck do
   private
 
   def find_test_files
-    test_dir = 'svgcheck/svgcheck/Tests'
+    test_dir = "svgcheck/svgcheck/Tests"
     return [] unless Dir.exist?(test_dir)
 
     # Find all .svg and .xml files
-    pattern = File.join(test_dir, '*.{svg,xml}')
+    pattern = File.join(test_dir, "*.{svg,xml}")
     Dir.glob(pattern).map { |path| File.basename(path) }.sort
   end
 end

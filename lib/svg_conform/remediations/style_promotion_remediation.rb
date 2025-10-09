@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'base_remediation'
+require_relative "base_remediation"
 
 module SvgConform
   module Remediations
@@ -13,11 +13,11 @@ module SvgConform
         font-style opacity visibility display
       ].freeze
 
-      def apply(document, context)
+      def apply(document, _context)
         results = []
 
-        document.xpath('//*[@style]').each do |element|
-          style_attr = element['style']
+        document.xpath("//*[@style]").each do |element|
+          style_attr = element["style"]
           next if style_attr.nil? || style_attr.strip.empty?
 
           promoted_properties = promote_style_properties(element, style_attr)
@@ -51,9 +51,9 @@ module SvgConform
 
         # Update or remove style attribute
         if remaining_styles.empty?
-          element.remove_attribute('style')
+          element.remove_attribute("style")
         else
-          element['style'] = remaining_styles.join(';')
+          element["style"] = remaining_styles.join(";")
         end
 
         promoted
@@ -63,17 +63,17 @@ module SvgConform
         declarations = {}
 
         # Split by semicolon and parse each declaration
-        style_attr.split(';').each do |declaration|
+        style_attr.split(";").each do |declaration|
           next if declaration.strip.empty?
 
-          parts = declaration.split(':', 2)
+          parts = declaration.split(":", 2)
           next unless parts.length == 2
 
           property = parts[0].strip
           value = parts[1].strip
 
           # Remove any trailing semicolon from value
-          value = value.chomp(';')
+          value = value.chomp(";")
 
           declarations[property] = value
         end
@@ -81,11 +81,11 @@ module SvgConform
         declarations
       end
 
-      def create_promotion_result(element, property, value)
+      def create_promotion_result(element, property, _value)
         log_change(
           :style_promotion,
           "Style property '#{property}' promoted to attribute",
-          element
+          element,
         )
       end
     end

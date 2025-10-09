@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../external_checkers/svgcheck'
+require_relative "../external_checkers/svgcheck"
 
 module SvgConform
   module Compatibility
@@ -33,9 +33,9 @@ module SvgConform
         code_file = File.join(@context.outputs_dir, "#{filename}.code")
 
         report_generator.generate_from_files(filename,
-          output_file: output_file,
-          error_file: error_file,
-          code_file: code_file)
+                                             output_file: output_file,
+                                             error_file: error_file,
+                                             code_file: code_file)
       end
 
       def file_exists?(filename)
@@ -47,11 +47,11 @@ module SvgConform
       end
 
       def xml_file?(filename)
-        filename.end_with?('.xml')
+        filename.end_with?(".xml")
       end
 
       def svg_file?(filename)
-        filename.end_with?('.svg')
+        filename.end_with?(".svg")
       end
 
       def read_file_content(filename)
@@ -91,7 +91,9 @@ module SvgConform
       end
 
       def discover_batch_files
-        all_files = Dir.glob(File.join(@context.inputs_dir, '*')).map { |f| File.basename(f) }
+        all_files = Dir.glob(File.join(@context.inputs_dir, "*")).map do |f|
+          File.basename(f)
+        end
         svg_files = all_files.select { |f| svg_file?(f) }
 
         raise "No SVG files found in #{@context.inputs_dir}" if svg_files.empty?

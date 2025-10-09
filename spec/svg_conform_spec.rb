@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 RSpec.describe SvgConform do
-  it 'has a version number' do
+  it "has a version number" do
     expect(SvgConform::VERSION).not_to be nil
   end
 
-  it 'validates SVG documents' do
+  it "validates SVG documents" do
     svg_content = <<~SVG
       <svg width="100" height="100">
         <rect x="10" y="10" width="50" height="50" fill="red"/>
@@ -20,7 +20,7 @@ RSpec.describe SvgConform do
     expect(result).to respond_to(:warnings)
   end
 
-  it 'loads profiles correctly' do
+  it "loads profiles correctly" do
     svg_1_2_rfc_profile = SvgConform::Profiles.get(:svg_1_2_rfc)
     expect(svg_1_2_rfc_profile).not_to be_nil
     expect(svg_1_2_rfc_profile.requirements).not_to be_empty

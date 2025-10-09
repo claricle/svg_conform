@@ -1,31 +1,37 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
-require 'canon'
+require "spec_helper"
+require "canon"
 
 RSpec.describe SvgConform::Requirements::FontFamilyRequirement do
-  let(:fixtures_dir) { 'spec/fixtures/font_family' }
+  let(:fixtures_dir) { "spec/fixtures/font_family" }
 
   # Get all fixture files that have both input and expected repair versions
-  fixture_files = Dir.glob('spec/fixtures/font_family/inputs/*.svg').select do |input_file|
+  fixture_files = Dir.glob("spec/fixtures/font_family/inputs/*.svg").select do |input_file|
     basename = File.basename(input_file)
     File.exist?("spec/fixtures/font_family/repair/#{basename}")
-  end.map { |f| File.basename(f, '.svg') }
+  end.map do |f|
+    File.basename(f, ".svg")
+  end
 
   fixture_files.each do |fixture_name|
     describe "fixture: #{fixture_name}" do
-      let(:input_file) { "spec/fixtures/font_family/inputs/#{fixture_name}.svg" }
-      let(:expected_output_file) { "spec/fixtures/font_family/repair/#{fixture_name}.svg" }
+      let(:input_file) do
+        "spec/fixtures/font_family/inputs/#{fixture_name}.svg"
+      end
+      let(:expected_output_file) do
+        "spec/fixtures/font_family/repair/#{fixture_name}.svg"
+      end
 
-      it 'validates input file and identifies font family violations' do
+      it "validates input file and identifies font family violations" do
         skip "Input file not found" unless File.exist?(input_file)
 
         document = SvgConform::Document.from_file(input_file)
         requirement = described_class.new(
-          id: 'font_family',
-          description: 'Test font family requirement',
+          id: "font_family",
+          description: "Test font family requirement",
           allowed_families: %w[serif sans-serif monospace],
-          default_family: 'sans-serif'
+          default_family: "sans-serif",
         )
 
         context = SvgConform::ValidationContext.new(document, nil)
@@ -35,21 +41,21 @@ RSpec.describe SvgConform::Requirements::FontFamilyRequirement do
         puts "Found #{context.errors.count} font family violations in #{fixture_name}"
 
         context.errors.each do |error|
-          expect(error.requirement_id).to eq('font_family')
+          expect(error.requirement_id).to eq("font_family")
           expect(error.message).to be_a(String)
           expect(error.message).not_to be_empty
         end
       end
 
-      it 'correctly identifies specific font family violations' do
+      it "correctly identifies specific font family violations" do
         skip "Input file not found" unless File.exist?(input_file)
 
         document = SvgConform::Document.from_file(input_file)
         requirement = described_class.new(
-          id: 'font_family',
-          description: 'Test font family requirement',
+          id: "font_family",
+          description: "Test font family requirement",
           allowed_families: %w[serif sans-serif monospace],
-          default_family: 'sans-serif'
+          default_family: "sans-serif",
         )
 
         context = SvgConform::ValidationContext.new(document, nil)
@@ -61,7 +67,7 @@ RSpec.describe SvgConform::Requirements::FontFamilyRequirement do
         end
       end
 
-      it 'passes validation for documents with only allowed font families' do
+      it "passes validation for documents with only allowed font families" do
         # Create a simple valid document for testing
         valid_svg = <<~SVG
           <?xml version="1.0"?>
@@ -74,10 +80,10 @@ RSpec.describe SvgConform::Requirements::FontFamilyRequirement do
 
         document = SvgConform::Document.from_content(valid_svg)
         requirement = described_class.new(
-          id: 'font_family',
-          description: 'Test font family requirement',
+          id: "font_family",
+          description: "Test font family requirement",
           allowed_families: %w[serif sans-serif monospace],
-          default_family: 'sans-serif'
+          default_family: "sans-serif",
         )
 
         context = SvgConform::ValidationContext.new(document, nil)
@@ -88,48 +94,48 @@ RSpec.describe SvgConform::Requirements::FontFamilyRequirement do
     end
   end
 
-  describe 'configuration' do
-    it 'accepts custom allowed font families list' do
+  describe "configuration" do
+    it "accepts custom allowed font families list" do
       requirement = described_class.new(
-        id: 'test_font_family',
-        description: 'Test with custom font families',
-        allowed_families: %w[Arial Helvetica Times]
+        id: "test_font_family",
+        description: "Test with custom font families",
+        allowed_families: %w[Arial Helvetica Times],
       )
 
       expect(requirement.allowed_families).to eq(%w[Arial Helvetica Times])
     end
 
-    it 'supports default fallback configuration' do
+    it "supports default fallback configuration" do
       requirement = described_class.new(
-        id: 'test_font_family',
-        description: 'Test default fallback',
-        default_fallback: 'serif'
+        id: "test_font_family",
+        description: "Test default fallback",
+        default_fallback: "serif",
       )
 
-      expect(requirement.default_fallback).to eq('serif')
+      expect(requirement.default_fallback).to eq("serif")
     end
 
-    it 'has default allowed families' do
+    it "has default allowed families" do
       requirement = described_class.new(
-        id: 'test_font_family',
-        description: 'Test requirement'
+        id: "test_font_family",
+        description: "Test requirement",
       )
 
       expect(requirement.allowed_families).to eq(%w[serif sans-serif monospace])
     end
   end
 
-  describe 'font family validation logic' do
+  describe "font family validation logic" do
     let(:requirement) do
       described_class.new(
-        id: 'test_font_family',
-        description: 'Test font family requirement',
+        id: "test_font_family",
+        description: "Test font family requirement",
         allowed_families: %w[serif sans-serif monospace],
-        default_family: 'sans-serif'
+        default_family: "sans-serif",
       )
     end
 
-    it 'detects invalid font families in font-family attributes' do
+    it "detects invalid font families in font-family attributes" do
       invalid_svg = <<~SVG
         <?xml version="1.0"?>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
@@ -145,7 +151,7 @@ RSpec.describe SvgConform::Requirements::FontFamilyRequirement do
       expect(context.errors.first.message).to match(/Times New Roman/i)
     end
 
-    it 'does not check style attributes (handled by StylePromotionRequirement to avoid duplication)' do
+    it "does not check style attributes (handled by StylePromotionRequirement to avoid duplication)" do
       # FontFamilyRequirement only checks font-family attributes
       # Style properties are handled by StylePromotionRequirement
       svg_with_style = <<~SVG
@@ -163,7 +169,7 @@ RSpec.describe SvgConform::Requirements::FontFamilyRequirement do
       expect(context.errors).to be_empty
     end
 
-    it 'handles font family lists correctly' do
+    it "handles font family lists correctly" do
       invalid_svg = <<~SVG
         <?xml version="1.0"?>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">

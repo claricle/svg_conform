@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'lutaml/model'
+require "lutaml/model"
 
 module SvgConform
   # Individual error/warning entry in the report
@@ -20,19 +20,19 @@ module SvgConform
     attribute :context, :hash, default: -> { {} }
 
     yaml do
-      map 'type', to: :type
-      map 'requirement_id', to: :requirement_id
-      map 'message', to: :message
-      map 'element', to: :element
-      map 'attribute', to: :attribute
-      map 'value', to: :value
-      map 'line', to: :line
-      map 'column', to: :column
-      map 'xpath', to: :xpath
-      map 'severity', to: :severity
-      map 'category', to: :category
-      map 'remediation_available', to: :remediation_available
-      map 'context', to: :context
+      map "type", to: :type
+      map "requirement_id", to: :requirement_id
+      map "message", to: :message
+      map "element", to: :element
+      map "attribute", to: :attribute
+      map "value", to: :value
+      map "line", to: :line
+      map "column", to: :column
+      map "xpath", to: :xpath
+      map "severity", to: :severity
+      map "category", to: :category
+      map "remediation_available", to: :remediation_available
+      map "context", to: :context
     end
   end
 
@@ -43,9 +43,9 @@ module SvgConform
     attribute :issues, ConformanceIssue, collection: true, default: -> { [] }
 
     yaml do
-      map 'total_count', to: :total_count
-      map 'by_requirement', to: :by_requirement
-      map 'issues', to: :issues
+      map "total_count", to: :total_count
+      map "by_requirement", to: :by_requirement
+      map "issues", to: :issues
     end
   end
 
@@ -61,22 +61,23 @@ module SvgConform
     attribute :warnings, IssueSummary
 
     yaml do
-      map 'filename', to: :filename
-      map 'profile', to: :profile
-      map 'tool', to: :tool
-      map 'version', to: :version
-      map 'timestamp', to: :timestamp
-      map 'valid', to: :valid
-      map 'errors', to: :errors
-      map 'warnings', to: :warnings
+      map "filename", to: :filename
+      map "profile", to: :profile
+      map "tool", to: :tool
+      map "version", to: :version
+      map "timestamp", to: :timestamp
+      map "valid", to: :valid
+      map "errors", to: :errors
+      map "warnings", to: :warnings
     end
 
     # Create report from SvgConform ValidationResult
-    def self.from_svg_conform_result(filename, validation_result, profile: nil, use_svgcheck_mapping: false)
+    def self.from_svg_conform_result(filename, validation_result, profile: nil,
+use_svgcheck_mapping: false)
       report = new
       report.filename = filename
       report.profile = profile
-      report.tool = 'svg_conform'
+      report.tool = "svg_conform"
       report.version = SvgConform::VERSION
       report.timestamp = Time.now.iso8601
       report.valid = validation_result.valid?
@@ -92,11 +93,12 @@ module SvgConform
 
       # Use SvgcheckCompatibilityEngine for svgcheck compatibility
       if use_svgcheck_mapping
-        require_relative 'external_checkers/svgcheck/compatibility_engine'
+        require_relative "external_checkers/svgcheck/compatibility_engine"
         compatibility_engine = ExternalCheckers::Svgcheck::CompatibilityEngine.new
 
         # Check if file should be treated as unparseable by svgcheck
-        if compatibility_engine.should_mimic_parse_failure?(filename, validation_result)
+        if compatibility_engine.should_mimic_parse_failure?(filename,
+                                                            validation_result)
           # Return empty report like svgcheck does for unparseable files
           return report
         end
@@ -117,9 +119,13 @@ module SvgConform
         # Filter errors using compatibility engine or use direct mapping
         filtered_errors = if use_svgcheck_mapping
                             compatibility_engine ||= ExternalCheckers::Svgcheck::CompatibilityEngine.new
-                            compatibility_engine.filter_errors_for_svgcheck(all_errors, filename, validation_result)
+                            compatibility_engine.filter_errors_for_svgcheck(
+                              all_errors, filename, validation_result
+                            )
                           else
-                            all_errors.map { |error| [error, error.requirement_id] }
+                            all_errors.map do |error|
+                              [error, error.requirement_id]
+                            end
                           end
 
         error_groups = filtered_errors.group_by { |_error, req_id| req_id }
@@ -138,7 +144,7 @@ module SvgConform
           value = error.data[:value] if error.respond_to?(:data) && error.data
 
           issue = ConformanceIssue.new
-          issue.type = 'error'
+          issue.type = "error"
           issue.requirement_id = mapped_req_id
           issue.message = error.message
           issue.element = error.element_name
@@ -162,7 +168,7 @@ module SvgConform
         # Add ALL warnings (no sampling)
         report.warnings.issues = validation_result.warnings.map do |warning|
           issue = ConformanceIssue.new
-          issue.type = 'warning'
+          issue.type = "warning"
           issue.requirement_id = warning.requirement_id
           issue.message = warning.message
           issue.element = warning.element_name
@@ -175,10 +181,11 @@ module SvgConform
     end
 
     # Create report from svgcheck error output
-    def self.from_svgcheck_result(filename, error_content, _output_content = nil)
+    def self.from_svgcheck_result(filename, error_content,
+_output_content = nil)
       report = new
       report.filename = filename
-      report.tool = 'svgcheck'
+      report.tool = "svgcheck"
       report.timestamp = Time.now.iso8601
       report.valid = error_content.strip.empty?
       report.errors = IssueSummary.new
@@ -194,7 +201,7 @@ module SvgConform
       return report if error_content.strip.empty?
 
       # Parse svgcheck errors using the dedicated parser
-      require_relative 'external_checkers/svgcheck/parser'
+      require_relative "external_checkers/svgcheck/parser"
       parser = ExternalCheckers::Svgcheck::Parser.new
       parsed_report = parser.parse(error_content, nil, filename: filename)
       errors = parsed_report.errors.issues
@@ -204,7 +211,7 @@ module SvgConform
         report.valid = false
 
         # Group by type for summary
-        error_groups = errors.group_by { |e| e.requirement_id || 'unknown' }
+        error_groups = errors.group_by { |e| e.requirement_id || "unknown" }
         error_groups.each do |type, type_errors|
           report.errors.by_requirement[type] = type_errors.length
         end
@@ -238,7 +245,7 @@ module SvgConform
       {
         identical: differences.empty?,
         differences: differences,
-        summary: differences.empty? ? 'Reports are identical' : "#{differences.length} differences found"
+        summary: differences.empty? ? "Reports are identical" : "#{differences.length} differences found",
       }
     end
 

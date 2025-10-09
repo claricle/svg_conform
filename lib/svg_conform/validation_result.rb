@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
-require 'json'
+require "json"
 
 module SvgConform
   # Represents the result of validating an SVG document
   class ValidationResult
-    attr_reader :document, :profile, :errors, :warnings, :validity_errors, :fixes_applied, :fixed_document
+    attr_reader :document, :profile, :errors, :warnings, :validity_errors,
+                :fixes_applied, :fixed_document
 
     def initialize(document, profile, context)
       @document = document
@@ -95,7 +96,7 @@ module SvgConform
         errors: @errors.map(&:to_h),
         warnings: @warnings.map(&:to_h),
         fixes_applied: @fixes_applied.size,
-        fixable: fixable_count
+        fixable: fixable_count,
       }
     end
 
@@ -107,20 +108,20 @@ module SvgConform
 
     def to_text
       lines = []
-      lines << 'SVG Conformance Report'
-      lines << '=' * 22
-      lines << ''
+      lines << "SVG Conformance Report"
+      lines << "=" * 22
+      lines << ""
       lines << "File: #{@document.file_path || 'inline'}"
       lines << "Profile: #{@profile.name} (#{@profile.description})"
       lines << "Status: #{valid? ? 'VALID' : 'INVALID'}"
-      lines << ''
+      lines << ""
 
       if has_errors?
         lines << "Errors (#{error_count}):"
         @errors.each_with_index do |error, i|
           lines << "  #{i + 1}. #{error}"
         end
-        lines << ''
+        lines << ""
       end
 
       if has_warnings?
@@ -128,13 +129,13 @@ module SvgConform
         @warnings.each_with_index do |warning, i|
           lines << "  #{i + 1}. #{warning}"
         end
-        lines << ''
+        lines << ""
       end
 
       if fixable?
         lines << "Fixes Available: #{fixable_count}"
         lines << "Fixes Applied: #{@fixes_applied.size}" if fixed?
-        lines << ''
+        lines << ""
       end
 
       lines << "✓ Document is valid and conforms to the #{@profile.name} profile." if valid? && !has_warnings?
