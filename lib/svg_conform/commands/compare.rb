@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'paint'
+require "paint"
 
 module SvgConform
   module Commands
@@ -25,28 +25,34 @@ module SvgConform
           # Find or use specified svgcheck report
           svgcheck_report_path = find_svgcheck_report
           unless svgcheck_report_path && File.exist?(svgcheck_report_path)
-            puts Paint['Error: svgcheck report not found', :red]
-            puts Paint["Expected: #{svgcheck_report_path}", :dim] if svgcheck_report_path
+            puts Paint["Error: svgcheck report not found", :red]
+            if svgcheck_report_path
+              puts Paint["Expected: #{svgcheck_report_path}",
+                         :dim]
+            end
             exit 1
           end
 
           # Load svgcheck report using the new external checker parser
           parser = SvgConform::ExternalCheckers::Svgcheck::Parser.new
           error_content = File.read(svgcheck_report_path)
-          svgcheck_report = parser.parse(error_content, nil, filename: File.basename(@file))
+          svgcheck_report = parser.parse(error_content, nil,
+                                         filename: File.basename(@file))
 
           # Generate SvgConform report using the correct validation file
           validator = SvgConform::Validator.new
-          result = validator.validate_file(validation_file, profile: @options[:profile].to_sym)
+          result = validator.validate_file(validation_file,
+                                           profile: @options[:profile].to_sym)
           svg_conform_report = SvgConform::ConformanceReport.from_svg_conform_result(
             File.basename(@file),
             result,
-            profile: @options[:profile].to_sym
+            profile: @options[:profile].to_sym,
           )
 
           # Compare the reports
           comparator = SvgConform::ReportComparator.new
-          comparator.compare_reports(svg_conform_report, svgcheck_report, File.basename(@file))
+          comparator.compare_reports(svg_conform_report, svgcheck_report,
+                                     File.basename(@file))
         rescue StandardError => e
           puts Paint["Error: #{e.message}", :red]
           exit 1
@@ -57,8 +63,8 @@ module SvgConform
 
       def determine_validation_file(file)
         # If the file is in a Results directory, try to find the original in Tests directory
-        if file.include?('/Results/')
-          test_file = file.gsub('/Results/', '/Tests/')
+        if file.include?("/Results/")
+          test_file = file.gsub("/Results/", "/Tests/")
           return test_file if File.exist?(test_file)
         end
 
@@ -76,7 +82,7 @@ module SvgConform
         possible_paths = [
           "spec/fixtures/svgcheck_reports/#{base_name}.svgcheck.yaml",
           "#{File.dirname(@file)}/#{base_name}.svgcheck.yaml",
-          "#{@file}.svgcheck.yaml"
+          "#{@file}.svgcheck.yaml",
         ]
 
         possible_paths.find { |path| File.exist?(path) }

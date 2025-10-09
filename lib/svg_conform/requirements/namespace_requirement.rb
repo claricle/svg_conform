@@ -1,34 +1,38 @@
 # frozen_string_literal: true
 
-require_relative 'base_requirement'
+require_relative "base_requirement"
 
 module SvgConform
   module Requirements
     # Validates that SVG documents have proper namespace declarations
     class NamespaceRequirement < BaseRequirement
-      attribute :type, :string, default: -> { 'NamespaceRequirement' }
-      attribute :allowed_namespaces, :string, collection: true, default: -> { ['http://www.w3.org/2000/svg'] }
-      attribute :disallowed_namespaces, :string, collection: true, default: -> { [] }
-      attribute :required_namespace, :string, default: 'http://www.w3.org/2000/svg'
+      attribute :type, :string, default: -> { "NamespaceRequirement" }
+      attribute :allowed_namespaces, :string, collection: true, default: -> {
+        ["http://www.w3.org/2000/svg"]
+      }
+      attribute :disallowed_namespaces, :string, collection: true, default: -> {
+        []
+      }
+      attribute :required_namespace, :string, default: "http://www.w3.org/2000/svg"
       attribute :allow_rdf_metadata, :boolean, default: false
 
       # RDF-related namespaces commonly found in SVG metadata
       RDF_NAMESPACES = [
-        'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-        'http://creativecommons.org/ns#',
-        'http://purl.org/dc/elements/1.1/',
-        'http://purl.org/dc/dcmitype/',
-        'http://www.w3.org/2000/01/rdf-schema#'
+        "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+        "http://creativecommons.org/ns#",
+        "http://purl.org/dc/elements/1.1/",
+        "http://purl.org/dc/dcmitype/",
+        "http://www.w3.org/2000/01/rdf-schema#",
       ].freeze
 
       yaml do
-        map 'id', to: :id
-        map 'description', to: :description
-        map 'type', to: :type
-        map 'allowed_namespaces', to: :allowed_namespaces
-        map 'disallowed_namespaces', to: :disallowed_namespaces
-        map 'required_namespace', to: :required_namespace
-        map 'allow_rdf_metadata', to: :allow_rdf_metadata
+        map "id", to: :id
+        map "description", to: :description
+        map "type", to: :type
+        map "allowed_namespaces", to: :allowed_namespaces
+        map "disallowed_namespaces", to: :disallowed_namespaces
+        map "required_namespace", to: :required_namespace
+        map "allow_rdf_metadata", to: :allow_rdf_metadata
       end
 
       def validate_document(document, context)
@@ -36,12 +40,12 @@ module SvgConform
         return unless root
 
         # Check if root element is svg
-        unless root.name == 'svg'
+        unless root.name == "svg"
           context.add_error(
             requirement: self,
             node: root,
             message: "Root element must be 'svg'",
-            data: { element_name: root.name }
+            data: { element_name: root.name },
           )
           return
         end
@@ -53,14 +57,14 @@ module SvgConform
         if root.respond_to?(:namespace) && root.namespace
           namespace_str = root.namespace.to_s
           # Extract the URI from the namespace string like 'xmlns="http://www.w3.org/2000/svg"'
-          svg_namespace = ::Regexp.last_match(1) if namespace_str.match(/xmlns="([^"]+)"/)
+          svg_namespace = ::Regexp.last_match(1) if namespace_str =~ /xmlns="([^"]+)"/
         end
 
         # Fallback to checking xmlns attribute
-        svg_namespace ||= get_attribute(root, 'xmlns')
+        svg_namespace ||= get_attribute(root, "xmlns")
 
         # Default namespace (empty string) should be treated as SVG namespace
-        svg_namespace = '' if svg_namespace.nil?
+        svg_namespace = "" if svg_namespace.nil?
 
         # Check against allowed namespaces if configured
         if allowed_namespaces && !allowed_namespaces.empty? && !allowed_namespaces.include?(svg_namespace)
@@ -70,8 +74,8 @@ module SvgConform
             message: "Namespace '#{svg_namespace}' is not allowed. Only #{allowed_namespaces.join(', ')} are permitted",
             data: {
               current_namespace: svg_namespace,
-              allowed_namespaces: allowed_namespaces
-            }
+              allowed_namespaces: allowed_namespaces,
+            },
           )
           return
         end
@@ -84,8 +88,8 @@ module SvgConform
             message: "Namespace '#{svg_namespace}' is not allowed",
             data: {
               current_namespace: svg_namespace,
-              disallowed_namespaces: disallowed_namespaces
-            }
+              disallowed_namespaces: disallowed_namespaces,
+            },
           )
           return
         end
@@ -97,16 +101,16 @@ module SvgConform
           return
         end
 
-        return if svg_namespace == 'http://www.w3.org/2000/svg'
+        return if svg_namespace == "http://www.w3.org/2000/svg"
 
         context.add_error(
           requirement: self,
           node: root,
-          message: 'SVG namespace declaration missing or incorrect',
+          message: "SVG namespace declaration missing or incorrect",
           data: {
             current_namespace: svg_namespace,
-            expected_namespace: 'http://www.w3.org/2000/svg'
-          }
+            expected_namespace: "http://www.w3.org/2000/svg",
+          },
         )
 
         # Also check all elements for namespace violations
@@ -117,7 +121,7 @@ module SvgConform
         return unless element?(node)
 
         # Debug: Check all elements
-        puts "DEBUG: Checking element: #{node.name}" if node.name.include?(':')
+        puts "DEBUG: Checking element: #{node.name}" if node.name.include?(":")
 
         # Check if this element has a namespace
         element_namespace = nil
@@ -125,14 +129,14 @@ module SvgConform
         # Try to get namespace from the element
         if node.respond_to?(:namespace) && node.namespace
           namespace_str = node.namespace.to_s
-          puts "DEBUG: namespace_str = #{namespace_str}" if node.name.include?(':')
+          puts "DEBUG: namespace_str = #{namespace_str}" if node.name.include?(":")
           # Extract the URI from the namespace string
-          element_namespace = ::Regexp.last_match(1) if namespace_str.match(/xmlns[^=]*="([^"]+)"/)
+          element_namespace = ::Regexp.last_match(1) if namespace_str =~ /xmlns[^=]*="([^"]+)"/
         end
 
         # If no namespace found, check if element has a prefix (indicating it's namespaced)
-        if element_namespace.nil? && node.name.include?(':')
-          prefix = node.name.split(':').first
+        if element_namespace.nil? && node.name.include?(":")
+          prefix = node.name.split(":").first
           puts "DEBUG: Found prefixed element #{node.name}, prefix = #{prefix}"
           element_namespace = find_namespace_uri_for_prefix(node, prefix)
           puts "DEBUG: Found namespace URI = #{element_namespace}"
@@ -140,7 +144,7 @@ module SvgConform
 
         # Skip if no namespace (default SVG namespace)
         if element_namespace.nil? || element_namespace.empty?
-          puts "DEBUG: Skipping #{node.name} - no namespace found" if node.name.include?(':')
+          puts "DEBUG: Skipping #{node.name} - no namespace found" if node.name.include?(":")
           return
         end
 
@@ -163,8 +167,8 @@ module SvgConform
             data: {
               element_name: node.name,
               namespace: element_namespace,
-              allowed_namespaces: effective_allowed_namespaces
-            }
+              allowed_namespaces: effective_allowed_namespaces,
+            },
           )
           return
         end
@@ -181,8 +185,8 @@ module SvgConform
           data: {
             element_name: node.name,
             namespace: element_namespace,
-            disallowed_namespaces: disallowed_namespaces
-          }
+            disallowed_namespaces: disallowed_namespaces,
+          },
         )
       end
 
@@ -217,12 +221,12 @@ module SvgConform
         if node.respond_to?(:namespace) && node.namespace
           namespace_str = node.namespace.to_s
           # Extract the URI from the namespace string
-          element_namespace = ::Regexp.last_match(1) if namespace_str.match(/xmlns[^=]*="([^"]+)"/)
+          element_namespace = ::Regexp.last_match(1) if namespace_str =~ /xmlns[^=]*="([^"]+)"/
         end
 
         # If no namespace found, check if element has a prefix (indicating it's namespaced)
-        if element_namespace.nil? && node.name.include?(':')
-          prefix = node.name.split(':').first
+        if element_namespace.nil? && node.name.include?(":")
+          prefix = node.name.split(":").first
           element_namespace = find_namespace_uri_for_prefix(node, prefix)
         end
 
@@ -245,8 +249,8 @@ module SvgConform
             data: {
               element_name: node.name,
               namespace: element_namespace,
-              allowed_namespaces: effective_allowed_namespaces
-            }
+              allowed_namespaces: effective_allowed_namespaces,
+            },
           )
           return
         end
@@ -262,8 +266,8 @@ module SvgConform
           data: {
             element_name: node.name,
             namespace: element_namespace,
-            disallowed_namespaces: disallowed_namespaces
-          }
+            disallowed_namespaces: disallowed_namespaces,
+          },
         )
       end
 

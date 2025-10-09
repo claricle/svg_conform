@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'paint'
-require 'table_tennis'
+require "paint"
+require "table_tennis"
 
 module SvgConform
   module Commands
@@ -22,20 +22,21 @@ module SvgConform
         begin
           # Validate the file
           validator = SvgConform::Validator.new
-          result = validator.validate_file(@file, profile: @options[:profile].to_sym)
+          result = validator.validate_file(@file,
+                                           profile: @options[:profile].to_sym)
 
           # Generate report
           report = SvgConform::ConformanceReport.from_svg_conform_result(
             File.basename(@file),
             result,
-            profile: @options[:profile].to_sym
+            profile: @options[:profile].to_sym,
           )
 
           # Output based on format
           case @options[:format]
-          when 'yaml'
+          when "yaml"
             output_yaml(report)
-          when 'json'
+          when "json"
             output_json(report)
           else
             output_table(report)
@@ -55,8 +56,8 @@ module SvgConform
       private
 
       def output_table(report)
-        puts Paint['SVG Validation Report', :bold]
-        puts '=' * 50
+        puts Paint["SVG Validation Report", :bold]
+        puts "=" * 50
         puts "File: #{@file}"
         puts "Profile: #{@options[:profile]}"
         puts "Valid: #{report.valid? ? Paint['✓', :green] : Paint['✗', :red]}"
@@ -64,7 +65,7 @@ module SvgConform
         puts
 
         if report.errors.total_count.positive?
-          puts Paint['Validation Errors:', :bold]
+          puts Paint["Validation Errors:", :bold]
           puts
 
           # Group errors by type
@@ -72,18 +73,24 @@ module SvgConform
 
           error_groups.each do |message, errors|
             puts Paint["• #{message}", :red]
-            puts Paint["  (#{errors.size} occurrences)", :black] if errors.size > 1
+            if errors.size > 1
+              puts Paint["  (#{errors.size} occurrences)",
+                         :black]
+            end
 
             # Show first few locations
             errors.first(3).each do |error|
               puts Paint["    at #{error.element}", :black] if error.element
             end
 
-            puts Paint["    ... and #{errors.size - 3} more", :black] if errors.size > 3
+            if errors.size > 3
+              puts Paint["    ... and #{errors.size - 3} more",
+                         :black]
+            end
             puts
           end
         else
-          puts Paint['✓ No validation errors found', :green]
+          puts Paint["✓ No validation errors found", :green]
         end
       end
 
@@ -123,13 +130,18 @@ module SvgConform
 
           # Show remediation summary
           if remediation_result.issues_fixed.positive?
-            puts Paint["✓ Fixed #{remediation_result.issues_fixed} issue(s)", :green]
+            puts Paint["✓ Fixed #{remediation_result.issues_fixed} issue(s)",
+                       :green]
           else
-            puts Paint['No issues were fixed (file may already be valid)', :yellow]
+            puts Paint["No issues were fixed (file may already be valid)",
+                       :yellow]
           end
         else
-          puts Paint['Warning: Could not create remediated file', :yellow]
-          puts Paint["Error: #{remediation_result.error.message}", :red] if remediation_result.error?
+          puts Paint["Warning: Could not create remediated file", :yellow]
+          if remediation_result.error?
+            puts Paint["Error: #{remediation_result.error.message}",
+                       :red]
+          end
         end
       rescue StandardError => e
         puts Paint["Error creating remediated file: #{e.message}", :red]

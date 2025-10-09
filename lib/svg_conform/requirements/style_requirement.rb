@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'base_requirement'
+require_relative "base_requirement"
 
 module SvgConform
   module Requirements
@@ -9,26 +9,30 @@ module SvgConform
     # - Allowed style properties (whitelist/blacklist)
     # - Property value validation
     class StyleRequirement < BaseRequirement
-      attribute :type, :string, default: -> { 'StyleRequirement' }
-      attribute :allowed_properties, :string, collection: true, default: -> { [] }
-      attribute :disallowed_properties, :string, collection: true, default: -> { [] }
+      attribute :type, :string, default: -> { "StyleRequirement" }
+      attribute :allowed_properties, :string, collection: true, default: -> {
+        []
+      }
+      attribute :disallowed_properties, :string, collection: true, default: -> {
+        []
+      }
       attribute :property_values, :hash, default: -> { {} }
       attribute :property_types, :hash, default: -> { {} }
 
       yaml do
-        map 'id', to: :id
-        map 'description', to: :description
-        map 'type', to: :type
-        map 'allowed_properties', to: :allowed_properties
-        map 'disallowed_properties', to: :disallowed_properties
-        map 'property_values', to: :property_values
-        map 'property_types', to: :property_types
+        map "id", to: :id
+        map "description", to: :description
+        map "type", to: :type
+        map "allowed_properties", to: :allowed_properties
+        map "disallowed_properties", to: :disallowed_properties
+        map "property_values", to: :property_values
+        map "property_types", to: :property_types
       end
 
       def check(node, context)
         return unless element?(node)
 
-        style_value = get_attribute(node, 'style')
+        style_value = get_attribute(node, "style")
         return unless style_value
         return if style_value.strip.empty?
 
@@ -43,42 +47,42 @@ module SvgConform
 
       def check_malformed_syntax(style_value, node, context)
         # Check for malformed fields like ['malformed']
-        if style_value.match(/\[['"][^'"]*['"]\]/)
+        if /\[['"][^'"]*['"]\]/.match?(style_value)
           context.add_error(
             requirement_id: id,
             message: "Malformed field '#{style_value.match(/\[['"][^'"]*['"]\]/)[0]}' in style attribute found. Field removed.",
             node: node,
             severity: :error,
-            data: { attribute: 'style', value: style_value }
+            data: { attribute: "style", value: style_value },
           )
         end
 
         # Check for other malformed syntax patterns
         # Invalid property declarations without colons
-        style_value.split(';').each do |declaration|
+        style_value.split(";").each do |declaration|
           declaration = declaration.strip
           next if declaration.empty?
 
-          next if declaration.include?(':')
+          next if declaration.include?(":")
 
           context.add_error(
             requirement_id: id,
             message: "Malformed style declaration '#{declaration}' found. Declaration removed.",
             node: node,
             severity: :error,
-            data: { attribute: 'style', declaration: declaration }
+            data: { attribute: "style", declaration: declaration },
           )
         end
       end
 
       def check_style_properties(style_value, node, context)
-        style_value.split(';').each do |declaration|
+        style_value.split(";").each do |declaration|
           declaration = declaration.strip
           next if declaration.empty?
 
-          next unless declaration.include?(':')
+          next unless declaration.include?(":")
 
-          property, value = declaration.split(':', 2).map(&:strip)
+          property, value = declaration.split(":", 2).map(&:strip)
           property = property.downcase
 
           # Check if property is allowed
@@ -88,17 +92,18 @@ module SvgConform
               message: "Style property '#{property}' removed",
               node: node,
               severity: :error,
-              data: { attribute: 'style', property: property }
+              data: { attribute: "style", property: property },
             )
             next
           end
 
           # Skip value validation for color properties - handled by ColorRestrictionsRequirement
-          color_properties = %w[fill stroke color stop-color flood-color lighting-color]
+          color_properties = %w[fill stroke color stop-color flood-color
+                                lighting-color]
           next if color_properties.include?(property)
 
           # Skip value validation for font-family - handled by FontFamilyRequirement
-          next if property == 'font-family'
+          next if property == "font-family"
 
           # Check if property value is valid
           next unless property_value_invalid?(property, value)
@@ -108,7 +113,7 @@ module SvgConform
             message: "Invalid value '#{value}' for style property '#{property}'",
             node: node,
             severity: :error,
-            data: { attribute: 'style', property: property, value: value }
+            data: { attribute: "style", property: property, value: value },
           )
         end
       end
@@ -141,8 +146,8 @@ module SvgConform
             allowed_values = [allowed_values] if allowed_values.is_a?(String)
 
             # Separate literal values from type references (those starting with '<')
-            literal_values = allowed_values.reject { |v| v.start_with?('<') }
-            type_references = allowed_values.select { |v| v.start_with?('<') }
+            literal_values = allowed_values.reject { |v| v.start_with?("<") }
+            type_references = allowed_values.select { |v| v.start_with?("<") }
 
             # Check literal values first (case-insensitive)
             return false if literal_values.map(&:downcase).include?(value.downcase)
@@ -153,11 +158,10 @@ module SvgConform
                 return false if validate_property_type(value, type_ref)
               end
               # Value didn't match any type reference
-              return true
             else
               # No type references, and didn't match literals
-              return true
             end
+            return true
           end
         end
 
@@ -174,13 +178,13 @@ module SvgConform
       # Validate a property value against its type (from word_properties.py)
       def validate_property_type(value, type)
         case type
-        when '<color>'
+        when "<color>"
           validate_color_value(value)
-        when '<paint>'
+        when "<paint>"
           validate_paint_value(value)
-        when '<number>'
+        when "<number>"
           validate_number_value(value)
-        when '<integer>'
+        when "<integer>"
           validate_integer_value(value)
         else
           # Unknown type, allow it
@@ -190,7 +194,8 @@ module SvgConform
 
       # Validate color values (from basic_types['<color>'] in word_properties.py)
       def validate_color_value(value)
-        allowed_colors = ['black', '#ffffff', '#FFFFFF', 'white', '#000000', 'currentColor', 'inherit']
+        allowed_colors = ["black", "#ffffff", "#FFFFFF", "white", "#000000",
+                          "currentColor", "inherit"]
         # Case-insensitive comparison for all values
         allowed_colors_lower = allowed_colors.map(&:downcase)
         allowed_colors_lower.include?(value.downcase) || allowed_colors.include?(value)

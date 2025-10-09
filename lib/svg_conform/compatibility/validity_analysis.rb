@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'lutaml/model'
+require "lutaml/model"
 
 module SvgConform
   module Compatibility
@@ -85,7 +85,8 @@ module SvgConform
         @analysis_results = []
       end
 
-      def analyze_validity_mismatch(svg_conform_result, svgcheck_result, filename)
+      def analyze_validity_mismatch(svg_conform_result, svgcheck_result,
+filename)
         # Handle different result types
         svg_conform_valid = if svg_conform_result.respond_to?(:valid?)
                               svg_conform_result.valid?
@@ -101,7 +102,7 @@ module SvgConform
 
         analysis = ValidityAnalysis.new(
           svg_conform_valid: svg_conform_valid,
-          svgcheck_valid: svgcheck_valid
+          svgcheck_valid: svgcheck_valid,
         )
 
         if analysis.mismatch?
@@ -121,7 +122,7 @@ module SvgConform
             pattern = SemanticPattern.new(
               pattern_type: determine_pattern_type(svg_issue, svg_issue_check),
               svg_conform_message: svg_issue.to_s,
-              svgcheck_message: svg_issue_check.to_s
+              svgcheck_message: svg_issue_check.to_s,
             )
 
             # Try to map to existing semantic keys
@@ -138,10 +139,10 @@ module SvgConform
       def investigate_mismatch_reasons(analysis, svg_conform_result,
                                        svgcheck_result, _filename)
         if analysis.svg_conform_stricter?
-          analysis.add_mismatch_reason('SvgConform stricter validation')
+          analysis.add_mismatch_reason("SvgConform stricter validation")
           analyze_svg_conform_requirements(analysis, svg_conform_result)
         elsif analysis.svgcheck_stricter?
-          analysis.add_mismatch_reason('Svgcheck stricter validation')
+          analysis.add_mismatch_reason("Svgcheck stricter validation")
           analyze_svgcheck_requirements(analysis, svgcheck_result)
         end
       end
@@ -153,7 +154,7 @@ module SvgConform
         result.issues.each do |issue|
           requirement_type = extract_requirement_type(issue)
           analysis.add_requirement_difference(
-            "SvgConform requirement: #{requirement_type}"
+            "SvgConform requirement: #{requirement_type}",
           )
         end
       end
@@ -165,7 +166,7 @@ module SvgConform
         result.messages.each do |message|
           requirement_type = extract_svgcheck_requirement_type(message)
           analysis.add_requirement_difference(
-            "Svgcheck requirement: #{requirement_type}"
+            "Svgcheck requirement: #{requirement_type}",
           )
         end
       end
@@ -173,30 +174,30 @@ module SvgConform
       def extract_requirement_type(issue)
         case issue.to_s
         when /namespace/i
-          'namespace_requirement'
+          "namespace_requirement"
         when /viewbox/i
-          'viewbox_requirement'
+          "viewbox_requirement"
         when /font/i
-          'font_requirement'
+          "font_requirement"
         when /color/i
-          'color_requirement'
+          "color_requirement"
         else
-          'unknown_requirement'
+          "unknown_requirement"
         end
       end
 
       def extract_svgcheck_requirement_type(message)
         case message.to_s
         when /namespace/i
-          'namespace_validation'
+          "namespace_validation"
         when /viewbox/i
-          'viewbox_validation'
+          "viewbox_validation"
         when /font/i
-          'font_validation'
+          "font_validation"
         when /color/i
-          'color_validation'
+          "color_validation"
         else
-          'unknown_validation'
+          "unknown_validation"
         end
       end
 
@@ -204,11 +205,11 @@ module SvgConform
         svg_type = extract_requirement_type(svg_issue)
         svgcheck_type = extract_svgcheck_requirement_type(svgcheck_issue)
 
-        if svg_type.gsub('_requirement', '') ==
-           svgcheck_type.gsub('_validation', '')
-          'equivalent_validation'
+        if svg_type.gsub("_requirement", "") ==
+            svgcheck_type.gsub("_validation", "")
+          "equivalent_validation"
         else
-          'different_validation'
+          "different_validation"
         end
       end
 
@@ -228,19 +229,19 @@ module SvgConform
         # This would need to be enhanced to work with the pattern model
         # For now, return a basic mapping
         case pattern.pattern_type
-        when 'equivalent_validation'
-          'validation_equivalent'
-        when 'different_validation'
-          'validation_different'
+        when "equivalent_validation"
+          "validation_equivalent"
+        when "different_validation"
+          "validation_different"
         end
       end
 
       def calculate_mapping_confidence(pattern, _semantic_key)
         # Calculate confidence based on pattern similarity
         case pattern.pattern_type
-        when 'equivalent_validation'
+        when "equivalent_validation"
           0.9
-        when 'different_validation'
+        when "different_validation"
           0.5
         else
           0.1

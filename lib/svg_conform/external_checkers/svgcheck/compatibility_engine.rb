@@ -10,7 +10,7 @@ module SvgConform
         end
 
         # Check if file should be treated as unparseable by svgcheck
-        def should_mimic_parse_failure?(filename, validation_result)
+        def should_mimic_parse_failure?(_filename, _validation_result)
           # Implement parse failure detection logic based on svgcheck behavior
           # For now, return false - this would need to be enhanced based on actual svgcheck behavior
           false
@@ -27,17 +27,15 @@ module SvgConform
         end
 
         # Filter errors for svgcheck compatibility
-        def filter_errors_for_svgcheck(errors, filename, validation_result)
+        def filter_errors_for_svgcheck(errors, _filename, _validation_result)
           filtered_errors = []
 
           errors.each do |error|
             # Skip namespace_validation errors only for RDF/metadata namespaces
             # svgcheck skips these silently, but reports other namespace errors
-            if error.requirement_id == 'namespace_validation'
-              # Only skip RDF-related namespace errors
-              if rdf_namespace_error?(error)
-                next
-              end
+            # Only skip RDF-related namespace errors
+            if (error.requirement_id == "namespace_validation") && rdf_namespace_error?(error)
+              next
             end
 
             # Map svg_conform requirement IDs to svgcheck-compatible ones
@@ -57,17 +55,18 @@ module SvgConform
 
           # List of RDF/metadata namespaces that svgcheck silently skips
           rdf_namespaces = [
-            'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-            'http://creativecommons.org/ns#',
-            'http://purl.org/dc/elements/1.1/',
-            'http://purl.org/dc/dcmitype/',
-            'http://www.w3.org/2000/01/rdf-schema#'
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+            "http://creativecommons.org/ns#",
+            "http://purl.org/dc/elements/1.1/",
+            "http://purl.org/dc/dcmitype/",
+            "http://www.w3.org/2000/01/rdf-schema#",
           ]
 
           rdf_namespaces.any? { |ns| error.message.include?(ns) }
         end
 
-        def has_width_and_height_datatype_condition?(validation_result, filename)
+        def has_width_and_height_datatype_condition?(validation_result,
+_filename)
           # This would need to be implemented based on the specific logic
           # mentioned in the mapping config's "datatype_condition": "both_width_and_height_present"
           # For now, return true if there are validity errors
@@ -77,19 +76,19 @@ module SvgConform
         def map_requirement_id(requirement_id)
           # Map svg_conform requirement IDs to svgcheck-compatible requirement IDs
           mapping = {
-            'allowed_elements' => 'allowed_elements',
-            'namespace_attributes' => 'namespace_attributes',
-            'namespace_validation' => 'namespace_attributes', # Map to closest equivalent
-            'font_family' => 'style', # svgcheck reports font-family issues as style errors
-            'color_restrictions' => 'color_restrictions',
-            'viewbox_required' => 'viewbox_required',
-            'style' => 'style', # Direct mapping for StyleRequirement
-            'style_promotion' => 'style',
-            'style_syntax' => 'style',
-            'style_validation' => 'style',
-            'property_value' => 'style',
-            'required_attribute' => 'viewbox_required',
-            'namespace' => 'namespace_attributes'
+            "allowed_elements" => "allowed_elements",
+            "namespace_attributes" => "namespace_attributes",
+            "namespace_validation" => "namespace_attributes", # Map to closest equivalent
+            "font_family" => "style", # svgcheck reports font-family issues as style errors
+            "color_restrictions" => "color_restrictions",
+            "viewbox_required" => "viewbox_required",
+            "style" => "style", # Direct mapping for StyleRequirement
+            "style_promotion" => "style",
+            "style_syntax" => "style",
+            "style_validation" => "style",
+            "property_value" => "style",
+            "required_attribute" => "viewbox_required",
+            "namespace" => "namespace_attributes",
           }
 
           # Return nil for unmapped requirements (like invalid_id_references)
@@ -99,7 +98,7 @@ module SvgConform
         # Extract semantic meaning from error for comparison
         def extract_semantic_meaning(error)
           # Ensure we have a valid error object
-          return 'unknown' unless error.respond_to?(:message) && error.respond_to?(:requirement_id)
+          return "unknown" unless error.respond_to?(:message) && error.respond_to?(:requirement_id)
 
           # Try to create a semantic key based on the error type and context
           requirement = error.requirement_id
@@ -107,7 +106,7 @@ module SvgConform
 
           # Handle different types of errors semantically
           case requirement
-          when 'color_restrictions'
+          when "color_restrictions"
             # Extract color and attribute for semantic grouping
             if message&.include?("doesn't allow") && (match = message.match(/attribute ['"]([^'"]+)['"].*value ['"]([^'"]+)['"]/))
               attribute = match[1]
@@ -116,40 +115,40 @@ module SvgConform
             else
               requirement
             end
-          when 'font_family'
+          when "font_family"
             # Group font family errors by attribute and font
-            if message&.include?('font-family') && (match = message.match(/font-family.*['"]([^'"]+)['"]/))
+            if message&.include?("font-family") && (match = message.match(/font-family.*['"]([^'"]+)['"]/))
               font = match[1]
               "font_restriction:#{font}"
             else
               requirement
             end
-          when 'allowed_elements'
+          when "allowed_elements"
             # Group by element type
-            if message&.include?('not allowed') && (match = message.match(/Element ['"]([^'"]+)['"]/))
+            if message&.include?("not allowed") && (match = message.match(/Element ['"]([^'"]+)['"]/))
               element = match[1]
               "element_not_allowed:#{element}"
-            elsif message&.include?('does not allow the attribute') && (match = message.match(/element ['"]([^'"]+)['"].*attribute ['"]([^'"]+)['"]/))
+            elsif message&.include?("does not allow the attribute") && (match = message.match(/element ['"]([^'"]+)['"].*attribute ['"]([^'"]+)['"]/))
               element = match[1]
               attribute = match[2]
               "invalid_attribute:#{element}:#{attribute}"
             else
               requirement
             end
-          when 'namespace_attributes'
+          when "namespace_attributes"
             # Group by namespace issues
-            if message&.include?('namespace') && (match = message.match(/namespace ['"]([^'"]+)['"]/))
+            if message&.include?("namespace") && (match = message.match(/namespace ['"]([^'"]+)['"]/))
               namespace = match[1]
               "namespace_issue:#{namespace}"
             else
               requirement
             end
-          when 'viewbox_required'
+          when "viewbox_required"
             # ViewBox is generally consistent
-            'viewbox_required'
-          when 'style'
+            "viewbox_required"
+          when "style"
             # Group style issues by property
-            if message&.include?('style') && (match = message.match(/property ['"]([^'"]+)['"]/))
+            if message&.include?("style") && (match = message.match(/property ['"]([^'"]+)['"]/))
               property = match[1]
               "style_issue:#{property}"
             else
@@ -157,7 +156,7 @@ module SvgConform
             end
           else
             # Fallback to requirement_id for other cases
-            requirement || 'unknown'
+            requirement || "unknown"
           end
         end
       end

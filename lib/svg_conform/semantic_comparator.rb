@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'nokogiri'
+require "nokogiri"
 
 module SvgConform
   # Semantic comparison engine for comparing validation results and remediated content
@@ -19,7 +19,8 @@ module SvgConform
 
       # Compare features semantically
       comparison = {
-        overall_validity: compare_validity(svg_conform_features[:valid], svgcheck_features[:valid]),
+        overall_validity: compare_validity(svg_conform_features[:valid],
+                                           svgcheck_features[:valid]),
         requirement_coverage: compare_requirement_coverage(svg_conform_features[:requirements],
                                                            svgcheck_features[:requirements]),
         semantic_issues: compare_semantic_issues(svg_conform_features[:issues], svgcheck_features[:issues],
@@ -27,14 +28,15 @@ module SvgConform
         detailed_mapping: create_detailed_mapping(svg_conform_features[:issues], svgcheck_features[:issues],
                                                   repair_mode, mixed_mode),
         repair_mode: repair_mode,
-        mixed_mode: mixed_mode
+        mixed_mode: mixed_mode,
       }
 
       # Add validity_match for compatibility
       comparison[:validity_match] = comparison[:overall_validity][:match]
 
       # Calculate overall compatibility score
-      comparison[:compatibility_score] = calculate_compatibility_score(comparison)
+      comparison[:compatibility_score] =
+        calculate_compatibility_score(comparison)
       comparison
     end
 
@@ -44,7 +46,7 @@ module SvgConform
       svg_conform_doc = parse_svg_safely(svg_conform_content)
       svgcheck_doc = parse_svg_safely(svgcheck_content)
 
-      return { error: 'Failed to parse SVG content' } if svg_conform_doc.nil? || svgcheck_doc.nil?
+      return { error: "Failed to parse SVG content" } if svg_conform_doc.nil? || svgcheck_doc.nil?
 
       # Extract semantic features from both documents
       svg_conform_features = extract_svg_features(svg_conform_doc)
@@ -52,12 +54,19 @@ module SvgConform
 
       # Compare features
       {
-        structure_match: compare_structure(svg_conform_features[:structure], svgcheck_features[:structure]),
-        attributes_match: compare_attributes(svg_conform_features[:attributes], svgcheck_features[:attributes]),
-        content_match: compare_content(svg_conform_features[:content], svgcheck_features[:content]),
-        namespace_match: compare_namespaces(svg_conform_features[:namespaces], svgcheck_features[:namespaces]),
-        style_match: compare_styles(svg_conform_features[:styles], svgcheck_features[:styles]),
-        semantic_equivalence: calculate_semantic_equivalence(svg_conform_features, svgcheck_features)
+        structure_match: compare_structure(svg_conform_features[:structure],
+                                           svgcheck_features[:structure]),
+        attributes_match: compare_attributes(svg_conform_features[:attributes],
+                                             svgcheck_features[:attributes]),
+        content_match: compare_content(svg_conform_features[:content],
+                                       svgcheck_features[:content]),
+        namespace_match: compare_namespaces(svg_conform_features[:namespaces],
+                                            svgcheck_features[:namespaces]),
+        style_match: compare_styles(svg_conform_features[:styles],
+                                    svgcheck_features[:styles]),
+        semantic_equivalence: calculate_semantic_equivalence(
+          svg_conform_features, svgcheck_features
+        ),
       }
     end
 
@@ -77,7 +86,7 @@ module SvgConform
       {
         valid: report.respond_to?(:valid) ? report.valid : false,
         requirements: extract_requirement_types(issues),
-        issues: group_issues_semantically(issues)
+        issues: group_issues_semantically(issues),
       }
     end
 
@@ -86,7 +95,7 @@ module SvgConform
       requirement_counts = {}
 
       issues.each do |issue|
-        req_id = issue.respond_to?(:requirement_id) ? issue.requirement_id : 'unknown'
+        req_id = issue.respond_to?(:requirement_id) ? issue.requirement_id : "unknown"
         requirement_counts[req_id] = (requirement_counts[req_id] || 0) + 1
       end
 
@@ -112,7 +121,7 @@ module SvgConform
       message = if issue.respond_to?(:message)
                   issue.message
                 elsif issue.is_a?(Hash)
-                  issue[:message] || issue['message']
+                  issue[:message] || issue["message"]
                 else
                   issue.to_s
                 end
@@ -131,9 +140,9 @@ module SvgConform
       when /^Style property '([^']+)' removed$/
         "style_property_removed:#{::Regexp.last_match(1)}"
       when /^Error when calculating SVG size: (.+)$/
-        'informative:svg_size_calculation_error'
+        "informative:svg_size_calculation_error"
       when /^File does not conform to SVG requirements$/
-        'informative:file_nonconformant'
+        "informative:file_nonconformant"
 
       # Warning patterns from checksvg.py (10 patterns)
       when /^Element '([^']+)' in namespace '([^']+)' is not allowed$/
@@ -158,41 +167,41 @@ module SvgConform
       when /^The attribute '([^']+)' does not allow the value '([^']+)', attribute to be removed$/
         "invalid_attribute_value:#{::Regexp.last_match(1)}:#{normalize_value(::Regexp.last_match(2))}"
       when /^The attribute viewBox is required on the root svg element$/
-        'viewbox_required'
+        "viewbox_required"
       when /^Trying to put in the attribute with value '([^']+)'$/
-        'informative:viewbox_auto_added'
+        "informative:viewbox_auto_added"
       when /^The namespace ([^\s]+) is not permitted for svg elements\.$/
         "namespace_violation:element:#{normalize_namespace(::Regexp.last_match(1))}"
       when /^The element '([^']+)' is not allowed as a child of '([^']+)'$/
         "invalid_child:#{::Regexp.last_match(1)}:#{::Regexp.last_match(2)}"
       when /^Malformed namespace\. Should have errored during parsing$/
-        'informative:malformed_namespace'
+        "informative:malformed_namespace"
       when /^--no-xinclude option is deprecated and has no effect\.$/
-        'informative:deprecated_option'
+        "informative:deprecated_option"
 
       # Note patterns from checksvg.py (13 patterns)
       when /^modify_style check '([^']+)' in '([^']+)'$/
-        'informative:modify_style_check'
+        "informative:modify_style_check"
       when /^   modify_style - p=([^\s]+)  v=(.+)$/
-        'informative:modify_style_processing'
+        "informative:modify_style_processing"
       when /^value_ok look for (.+) in (.+)$/
-        'informative:value_validation'
+        "informative:value_validation"
       when /^  legal value list (.+)$/
-        'informative:legal_values'
+        "informative:legal_values"
       when /^ --- skip to end -- (.+)$/
-        'informative:validation_skip'
+        "informative:validation_skip"
       when /^Color or grayscale heuristic applied to: '([^']+)' yields shade: '([^']+)'$/
-        'informative:color_heuristic'
+        "informative:color_heuristic"
       when /^[^\s]+ tag = (.+)$/
-        'informative:element_processing'
+        "informative:element_processing"
       when /^[^\s]+ element [^:]+: (.+)$/
-        'informative:element_attributes'
+        "informative:element_attributes"
       when /^[^\s]+ attr ([^\s]+) = ([^\s]+) \(ns = ([^)]*)\)$/
-        'informative:attribute_processing'
+        "informative:attribute_processing"
       when /^[^\s]+child, tag = (.+)$/
-        'informative:child_processing'
+        "informative:child_processing"
       when /^Checking svg element at line (\d+) in file (.+)$/
-        'informative:svg_element_check'
+        "informative:svg_element_check"
 
       # SvgConform-specific patterns that map to svgcheck semantic equivalents
       when /^Color '([^']+)' in attribute '([^']+)' is not allowed in this profile$/
@@ -210,7 +219,7 @@ module SvgConform
         # Map SvgConform style font family restriction to svgcheck invalid_attribute_value pattern
         font_family = normalize_value(::Regexp.last_match(1))
         # Embedded font restrictions are profile differences
-        if font_family.include?('embedded')
+        if font_family.include?("embedded")
           "informative:profile_stricter_embedded_fonts:#{font_family}"
         else
           "invalid_attribute_value:font-family:#{font_family}"
@@ -219,14 +228,14 @@ module SvgConform
         # Map SvgConform font family restriction to svgcheck invalid_attribute_value pattern
         font_family = normalize_value(::Regexp.last_match(1))
         # Embedded font restrictions are profile differences
-        if font_family.include?('embedded')
+        if font_family.include?("embedded")
           "informative:profile_stricter_embedded_fonts:#{font_family}"
         else
           "invalid_attribute_value:font-family:#{font_family}"
         end
       when /^svg root element must have a viewbox attribute$/i
         # Map SvgConform viewBox requirement to svgcheck pattern (case insensitive)
-        'viewbox_required'
+        "viewbox_required"
       when /^Element '([^']+)' is not allowed in this profile$/
         # Map SvgConform element restriction to svgcheck invalid_child pattern
         element = ::Regexp.last_match(1)
@@ -254,7 +263,7 @@ module SvgConform
         "namespace_violation:element:#{normalize_namespace(::Regexp.last_match(1))}"
       when /^viewBox attribute must contain four numeric values/i
         # Map SvgConform viewBox format validation (more strict than svgcheck)
-        'viewbox_format_error'
+        "viewbox_format_error"
 
       # Everything else maps to "other" for non-svgcheck messages
       else
@@ -268,7 +277,7 @@ module SvgConform
         svg_conform: svg_conform_valid,
         svgcheck: svgcheck_valid,
         match: svg_conform_valid == svgcheck_valid,
-        semantic_match: true # Validity is always semantic
+        semantic_match: true, # Validity is always semantic
       }
     end
 
@@ -289,7 +298,7 @@ module SvgConform
                             svg_count.to_f / svgcheck_count
                           else
                             (svg_count.positive? ? Float::INFINITY : 1.0)
-                          end
+                          end,
         }
       end
 
@@ -297,7 +306,8 @@ module SvgConform
     end
 
     # Compare semantic issues
-    def self.compare_semantic_issues(svg_conform_issues, svgcheck_issues, repair_mode = false, _mixed_mode = false)
+    def self.compare_semantic_issues(svg_conform_issues, svgcheck_issues,
+repair_mode = false, _mixed_mode = false)
       all_semantic_keys = (svg_conform_issues.keys + svgcheck_issues.keys).uniq
 
       comparison = {}
@@ -308,9 +318,9 @@ module SvgConform
         # In repair mode, treat informational messages differently
         # Check if this is a repair notification by looking at the semantic key pattern
         is_repair_notification = repair_mode && (
-          key.start_with?('style_promotion:', 'informative:') ||
-          key.include?('replaced with') ||
-          key.start_with?('invalid_attribute_value:') # These are repair notifications in repair mode
+          key.start_with?("style_promotion:", "informative:") ||
+          key.include?("replaced with") ||
+          key.start_with?("invalid_attribute_value:") # These are repair notifications in repair mode
         )
 
         comparison[key] = if is_repair_notification
@@ -320,7 +330,7 @@ module SvgConform
                               svgcheck: svgcheck_count,
                               semantic_match: true, # Always consider repair notifications as matching
                               coverage: true,
-                              repair_notification: true
+                              repair_notification: true,
                             }
                           else
                             {
@@ -328,7 +338,7 @@ module SvgConform
                               svgcheck: svgcheck_count,
                               semantic_match: svg_count == svgcheck_count,
                               coverage: svgcheck_count.positive? ? (svg_count >= svgcheck_count) : svg_count.zero?,
-                              repair_notification: false
+                              repair_notification: false,
                             }
                           end
       end
@@ -337,23 +347,26 @@ module SvgConform
     end
 
     # Create detailed mapping between issues
-    def self.create_detailed_mapping(svg_conform_issues, svgcheck_issues, repair_mode = false, _mixed_mode = false)
+    def self.create_detailed_mapping(svg_conform_issues, svgcheck_issues,
+repair_mode = false, _mixed_mode = false)
       # In repair mode, separate validation issues from repair notifications
       if repair_mode
         svg_conform_validation = svg_conform_issues.reject do |k, _|
-          k.start_with?('style_promotion:', 'informative:') || k.start_with?('invalid_attribute_value:')
+          k.start_with?("style_promotion:", "informative:",
+                        "invalid_attribute_value:")
         end
         svgcheck_validation = svgcheck_issues.reject do |k, _|
-          k.start_with?('style_promotion:',
-                        'informative:') || k.include?('replaced with') || k.start_with?('invalid_attribute_value:')
+          k.start_with?("style_promotion:",
+                        "informative:") || k.include?("replaced with") || k.start_with?("invalid_attribute_value:")
         end
 
         svg_conform_notifications = svg_conform_issues.select do |k, _|
-          k.start_with?('style_promotion:', 'informative:') || k.start_with?('invalid_attribute_value:')
+          k.start_with?("style_promotion:", "informative:",
+                        "invalid_attribute_value:")
         end
         svgcheck_notifications = svgcheck_issues.select do |k, _|
-          k.start_with?('style_promotion:',
-                        'informative:') || k.include?('replaced with') || k.start_with?('invalid_attribute_value:')
+          k.start_with?("style_promotion:",
+                        "informative:") || k.include?("replaced with") || k.start_with?("invalid_attribute_value:")
         end
 
         {
@@ -364,8 +377,8 @@ module SvgConform
           total_svgcheck: svgcheck_validation.values.sum,
           repair_notifications: {
             svg_conform: svg_conform_notifications.values.sum,
-            svgcheck: svgcheck_notifications.values.sum
-          }
+            svgcheck: svgcheck_notifications.values.sum,
+          },
         }
       else
         {
@@ -373,7 +386,7 @@ module SvgConform
           svgcheck_only: svgcheck_issues.keys - svg_conform_issues.keys,
           common: svg_conform_issues.keys & svgcheck_issues.keys,
           total_svg_conform: svg_conform_issues.values.sum,
-          total_svgcheck: svgcheck_issues.values.sum
+          total_svgcheck: svgcheck_issues.values.sum,
         }
       end
     end
@@ -390,7 +403,7 @@ module SvgConform
       informational_issues = {}
 
       comparison[:semantic_issues].each do |key, issue|
-        if key.start_with?('style_promotion:', 'informative:')
+        if key.start_with?("style_promotion:", "informative:")
           informational_issues[key] = issue
         else
           validation_issues[key] = issue
@@ -401,7 +414,9 @@ module SvgConform
       if validation_issues.empty?
         semantic_score = 1.0
       else
-        semantic_scores = validation_issues.values.map { |issue| issue[:semantic_match] ? 1.0 : 0.0 }
+        semantic_scores = validation_issues.values.map do |issue|
+          issue[:semantic_match] ? 1.0 : 0.0
+        end
         semantic_score = semantic_scores.sum / semantic_scores.length
       end
 
@@ -410,8 +425,12 @@ module SvgConform
       total_svgcheck = comparison[:detailed_mapping][:total_svgcheck]
 
       # Subtract informational issues from both totals
-      informational_svg_conform = informational_issues.values.sum { |issue| issue[:svg_conform] }
-      informational_svgcheck = informational_issues.values.sum { |issue| issue[:svgcheck] }
+      informational_svg_conform = informational_issues.values.sum do |issue|
+        issue[:svg_conform]
+      end
+      informational_svgcheck = informational_issues.values.sum do |issue|
+        issue[:svgcheck]
+      end
 
       validation_svg_conform_total = total_svg_conform - informational_svg_conform
       validation_svgcheck_total = total_svgcheck - informational_svgcheck
@@ -420,7 +439,9 @@ module SvgConform
       # If SvgConform finds more issues than svgcheck, that's not a penalty
       coverage_score = if validation_svgcheck_total.positive?
                          # Standard case: measure how much of svgcheck we cover
-                         [validation_svg_conform_total.to_f / validation_svgcheck_total, 1.0].min
+                         [
+                           validation_svg_conform_total.to_f / validation_svgcheck_total, 1.0
+                         ].min
                        elsif validation_svg_conform_total.positive?
                          # SvgConform finds issues but svgcheck doesn't - this is fine (more strict)
                          1.0
@@ -444,7 +465,7 @@ module SvgConform
       informational_issues = {}
 
       comparison[:semantic_issues].each do |key, issue|
-        if key.start_with?('style_promotion:', 'informative:')
+        if key.start_with?("style_promotion:", "informative:")
           informational_issues[key] = issue
         else
           validation_issues[key] = issue
@@ -455,7 +476,9 @@ module SvgConform
       if validation_issues.empty?
         semantic_overlap_score = 1.0
       else
-        semantic_matches = validation_issues.values.count { |issue| issue[:semantic_match] }
+        semantic_matches = validation_issues.values.count do |issue|
+          issue[:semantic_match]
+        end
         total_unique_issues = validation_issues.size
         semantic_overlap_score = semantic_matches.to_f / total_unique_issues
       end
@@ -466,8 +489,12 @@ module SvgConform
       total_svgcheck = comparison[:detailed_mapping][:total_svgcheck]
 
       # Subtract informational issues from both totals
-      informational_svg_conform = informational_issues.values.sum { |issue| issue[:svg_conform] }
-      informational_svgcheck = informational_issues.values.sum { |issue| issue[:svgcheck] }
+      informational_svg_conform = informational_issues.values.sum do |issue|
+        issue[:svg_conform]
+      end
+      informational_svgcheck = informational_issues.values.sum do |issue|
+        issue[:svgcheck]
+      end
 
       validation_svg_conform_total = total_svg_conform - informational_svg_conform
       validation_svgcheck_total = total_svgcheck - informational_svgcheck
@@ -528,19 +555,19 @@ module SvgConform
         attributes: extract_attributes(doc),
         content: extract_content(doc),
         namespaces: extract_namespaces(doc),
-        styles: extract_styles(doc)
+        styles: extract_styles(doc),
       }
     end
 
     # Extract document structure
     def self.extract_structure(doc)
-      elements = doc.xpath('//*').map(&:name).uniq.sort
+      elements = doc.xpath("//*").map(&:name).uniq.sort
       hierarchy = extract_hierarchy(doc.root) if doc.root
 
       {
         elements: elements,
         hierarchy: hierarchy,
-        element_count: doc.xpath('//*').length
+        element_count: doc.xpath("//*").length,
       }
     end
 
@@ -550,7 +577,9 @@ module SvgConform
 
       {
         name: element.name,
-        children: element.children.select(&:element?).map { |child| extract_hierarchy(child, depth + 1) }
+        children: element.children.select(&:element?).map do |child|
+          extract_hierarchy(child, depth + 1)
+        end,
       }
     end
 
@@ -558,7 +587,7 @@ module SvgConform
     def self.extract_attributes(doc)
       attributes = {}
 
-      doc.xpath('//*').each do |element|
+      doc.xpath("//*").each do |element|
         element.attributes.each do |name, attr|
           key = "#{element.name}@#{name}"
           attributes[key] ||= []
@@ -572,8 +601,8 @@ module SvgConform
     # Extract text content
     def self.extract_content(doc)
       {
-        text_nodes: doc.xpath('//text()').map(&:content).reject(&:empty?),
-        cdata_sections: doc.xpath('//comment()').map(&:content)
+        text_nodes: doc.xpath("//text()").map(&:content).reject(&:empty?),
+        cdata_sections: doc.xpath("//comment()").map(&:content),
       }
     end
 
@@ -581,9 +610,9 @@ module SvgConform
     def self.extract_namespaces(doc)
       namespaces = {}
 
-      doc.xpath('//*').each do |element|
+      doc.xpath("//*").each do |element|
         element.namespace_definitions.each do |ns|
-          namespaces[ns.prefix || 'default'] = ns.href
+          namespaces[ns.prefix || "default"] = ns.href
         end
       end
 
@@ -594,8 +623,8 @@ module SvgConform
     def self.extract_styles(doc)
       styles = {}
 
-      doc.xpath('//*[@style]').each do |element|
-        style_attr = element['style']
+      doc.xpath("//*[@style]").each do |element|
+        style_attr = element["style"]
         parsed_styles = parse_style_attribute(style_attr)
         styles[element.name] ||= []
         styles[element.name] << parsed_styles
@@ -609,10 +638,10 @@ module SvgConform
       return {} if style_str.nil? || style_str.strip.empty?
 
       styles = {}
-      style_str.split(';').each do |declaration|
+      style_str.split(";").each do |declaration|
         next if declaration.strip.empty?
 
-        property, value = declaration.split(':', 2)
+        property, value = declaration.split(":", 2)
         next unless property && value
 
         styles[property.strip] = normalize_style_value(value.strip)
@@ -625,8 +654,9 @@ module SvgConform
     def self.compare_structure(struct1, struct2)
       {
         elements_match: struct1[:elements] == struct2[:elements],
-        hierarchy_match: compare_hierarchy(struct1[:hierarchy], struct2[:hierarchy]),
-        element_count_match: struct1[:element_count] == struct2[:element_count]
+        hierarchy_match: compare_hierarchy(struct1[:hierarchy],
+                                           struct2[:hierarchy]),
+        element_count_match: struct1[:element_count] == struct2[:element_count],
       }
     end
 
@@ -656,7 +686,7 @@ module SvgConform
       {
         exact_match: matches.all?,
         partial_match_ratio: matches.count(true).to_f / matches.length,
-        differing_attributes: all_keys.select.with_index { |_, i| !matches[i] }
+        differing_attributes: all_keys.select.with_index { |_, i| !matches[i] },
       }
     end
 
@@ -664,7 +694,7 @@ module SvgConform
     def self.compare_content(content1, content2)
       {
         text_match: content1[:text_nodes].sort == content2[:text_nodes].sort,
-        cdata_match: content1[:cdata_sections].sort == content2[:cdata_sections].sort
+        cdata_match: content1[:cdata_sections].sort == content2[:cdata_sections].sort,
       }
     end
 
@@ -674,7 +704,7 @@ module SvgConform
         exact_match: ns1 == ns2,
         common_namespaces: ns1.keys & ns2.keys,
         svg_conform_only: ns1.keys - ns2.keys,
-        svgcheck_only: ns2.keys - ns1.keys
+        svgcheck_only: ns2.keys - ns1.keys,
       }
     end
 
@@ -689,7 +719,7 @@ module SvgConform
 
         element_comparisons[element] = {
           count_match: elem_styles1.length == elem_styles2.length,
-          semantic_match: compare_style_semantics(elem_styles1, elem_styles2)
+          semantic_match: compare_style_semantics(elem_styles1, elem_styles2),
         }
       end
 
@@ -720,11 +750,11 @@ module SvgConform
     def self.normalize_namespace(namespace)
       case namespace
       when /inkscape/i
-        'inkscape'
+        "inkscape"
       when /sodipodi/i
-        'sodipodi'
+        "sodipodi"
       when /w3\.org.*svg/i
-        'svg'
+        "svg"
       else
         namespace
       end
@@ -735,7 +765,7 @@ module SvgConform
       normalized = value.downcase.strip
 
       # Handle array-like values from svgcheck (e.g., "['malformed']" -> "malformed")
-      normalized = ::Regexp.last_match(1) if normalized.match(/^\['([^']+)'\]$/)
+      normalized = ::Regexp.last_match(1) if normalized =~ /^\['([^']+)'\]$/
 
       normalized
     end
@@ -746,25 +776,25 @@ module SvgConform
 
       # Map common color equivalents
       case normalized
-      when 'white', '#fff', '#ffffff', 'rgb(255,255,255)', 'rgb(255, 255, 255)', 'rgb(100%,100%,100%)', 'rgb(100%, 100%, 100%)'
-        'white'
-      when 'black', '#000', '#000000', 'rgb(0,0,0)', 'rgb(0, 0, 0)', 'rgb(0%,0%,0%)', 'rgb(0%, 0%, 0%)'
-        'black'
-      when 'red', '#f00', '#ff0000', 'rgb(255,0,0)', 'rgb(255, 0, 0)', 'rgb(100%,0%,0%)', 'rgb(100%, 0%, 0%)'
-        'red'
-      when 'green', '#0f0', '#00ff00', 'rgb(0,255,0)', 'rgb(0, 255, 0)', 'rgb(0%,100%,0%)', 'rgb(0%, 100%, 0%)'
-        'green'
-      when 'blue', '#00f', '#0000ff', 'rgb(0,0,255)', 'rgb(0, 0, 255)', 'rgb(0%,0%,100%)', 'rgb(0%, 0%, 100%)'
-        'blue'
-      when 'grey', 'gray'
-        'grey'
+      when "white", "#fff", "#ffffff", "rgb(255,255,255)", "rgb(255, 255, 255)", "rgb(100%,100%,100%)", "rgb(100%, 100%, 100%)"
+        "white"
+      when "black", "#000", "#000000", "rgb(0,0,0)", "rgb(0, 0, 0)", "rgb(0%,0%,0%)", "rgb(0%, 0%, 0%)"
+        "black"
+      when "red", "#f00", "#ff0000", "rgb(255,0,0)", "rgb(255, 0, 0)", "rgb(100%,0%,0%)", "rgb(100%, 0%, 0%)"
+        "red"
+      when "green", "#0f0", "#00ff00", "rgb(0,255,0)", "rgb(0, 255, 0)", "rgb(0%,100%,0%)", "rgb(0%, 100%, 0%)"
+        "green"
+      when "blue", "#00f", "#0000ff", "rgb(0,0,255)", "rgb(0, 0, 255)", "rgb(0%,0%,100%)", "rgb(0%, 0%, 100%)"
+        "blue"
+      when "grey", "gray"
+        "grey"
       else
         # For hex colors, normalize to lowercase without spaces
-        if normalized.match(/^#[0-9a-f]+$/i)
+        if /^#[0-9a-f]+$/i.match?(normalized)
           normalized.downcase
-        elsif normalized.match(/^rgb\s*\(/i)
+        elsif /^rgb\s*\(/i.match?(normalized)
           # Normalize RGB format by removing spaces
-          normalized.gsub(/\s+/, '')
+          normalized.gsub(/\s+/, "")
         else
           normalized
         end
@@ -773,7 +803,7 @@ module SvgConform
 
     def self.normalize_message(message)
       # Extract key semantic components from message
-      message.downcase.gsub(/['":]/, '').strip
+      message.downcase.gsub(/['":]/, "").strip
     end
 
     def self.normalize_attribute_value(value)

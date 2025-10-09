@@ -8,13 +8,16 @@ module SvgConform
     def initialize(options = {})
       @options = {
         fix: false,
-        strict: false
+        strict: false,
       }.merge(options)
     end
 
     # Validate an SVG file
     def validate_file(file_path, profile: :svg_1_2_rfc, **options)
-      raise ValidationError, "File not found: #{file_path}" unless File.exist?(file_path)
+      unless File.exist?(file_path)
+        raise ValidationError,
+              "File not found: #{file_path}"
+      end
 
       document = Document.from_file(file_path)
       validate_document(document, profile: profile, **options)
@@ -45,7 +48,8 @@ module SvgConform
       results = {}
 
       file_paths.each do |file_path|
-        results[file_path] = validate_file(file_path, profile: profile, **options)
+        results[file_path] =
+          validate_file(file_path, profile: profile, **options)
       rescue StandardError => e
         results[file_path] = create_error_result(file_path, e)
       end
@@ -63,7 +67,8 @@ module SvgConform
     def resolve_profile(profile)
       case profile
       when Symbol, String
-        SvgConform::Profiles.get(profile) || raise(ProfileError, "Unknown profile: #{profile}")
+        SvgConform::Profiles.get(profile) || raise(ProfileError,
+                                                   "Unknown profile: #{profile}")
       when Profile
         profile
       else
@@ -79,7 +84,7 @@ module SvgConform
         warnings: [],
         file_path: file_path,
         error?: true,
-        to_s: -> { "Error processing #{file_path}: #{error.message}" }
+        to_s: -> { "Error processing #{file_path}: #{error.message}" },
       )
     end
   end

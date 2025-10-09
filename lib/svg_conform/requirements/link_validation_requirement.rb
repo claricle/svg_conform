@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'base_requirement'
+require_relative "base_requirement"
 
 module SvgConform
   module Requirements
@@ -9,12 +9,12 @@ module SvgConform
         return unless element?(node)
 
         # Check href attributes (both href and xlink:href)
-        href_value = get_attribute(node, 'href')
+        href_value = get_attribute(node, "href")
 
         # Check for xlink:href if regular href is not present
         if href_value.nil? && node.respond_to?(:attributes)
           xlink_href = node.attributes.find do |attr|
-            attr.name == 'href' && attr.namespace&.uri == 'http://www.w3.org/1999/xlink'
+            attr.name == "href" && attr.namespace&.uri == "http://www.w3.org/1999/xlink"
           end
           href_value = xlink_href&.value
         end
@@ -24,7 +24,7 @@ module SvgConform
             requirement_id: id,
             message: "Link href '#{href_value}' contains non-ASCII characters",
             node: node,
-            severity: :error
+            severity: :error,
           )
         end
 
@@ -40,7 +40,7 @@ module SvgConform
             requirement_id: id,
             message: "IRI attribute '#{attr_name}' value '#{iri_value}' contains non-ASCII characters",
             node: node,
-            severity: :error
+            severity: :error,
           )
         end
       end

@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-source 'https://rubygems.org'
+source "https://rubygems.org"
 
 # Specify your gem's dependencies in svg_conform.gemspec
 gemspec
 
-gem 'canon'
-gem 'nokogiri'
-gem 'rake'
-gem 'rspec'
-gem 'rubocop'
+gem "canon"
+gem "rake"
+gem "rspec"
+gem "rubocop"
+gem "rubocop-performance"
+gem "rubocop-rake"

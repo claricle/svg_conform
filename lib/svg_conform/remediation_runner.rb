@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative 'validator'
-require_relative 'remediation_engine'
-require_relative 'document'
+require_relative "validator"
+require_relative "remediation_engine"
+require_relative "document"
 
 module SvgConform
   # Runner for applying SvgConform remediations to SVG content
@@ -13,7 +13,7 @@ module SvgConform
       @profile = resolve_profile(profile)
       @options = {
         verbose: false,
-        strict: false
+        strict: false,
       }.merge(options)
     end
 
@@ -46,7 +46,7 @@ module SvgConform
         initial_validation: initial_validation,
         final_validation: final_validation,
         remediation_results: remediation_results,
-        remediation_engine: remediation_engine
+        remediation_engine: remediation_engine,
       )
     end
 
@@ -105,7 +105,7 @@ module SvgConform
         final_validation: nil,
         remediation_results: [],
         remediation_engine: nil,
-        error: error
+        error: error,
       )
     end
   end
@@ -177,13 +177,13 @@ module SvgConform
 
     # Get summary of changes
     def changes_summary
-      return 'Error occurred' if @error
-      return 'No validation performed' if @initial_validation.nil?
+      return "Error occurred" if @error
+      return "No validation performed" if @initial_validation.nil?
 
       if content_modified?
         "#{issues_fixed} issues fixed, #{remediations_applied} remediations applied"
       else
-        'No changes needed'
+        "No changes needed"
       end
     end
 
@@ -199,7 +199,7 @@ module SvgConform
         changes_summary: changes_summary,
         initial_errors: @initial_validation&.failed_requirements&.length || 0,
         final_errors: @final_validation&.failed_requirements&.length || 0,
-        remediation_details: @remediation_results&.map(&:to_h) || []
+        remediation_details: @remediation_results&.map(&:to_h) || [],
       }
     end
 
@@ -211,7 +211,7 @@ module SvgConform
         @filename,
         @final_validation,
         profile: @remediation_engine&.profile&.name || :unknown,
-        use_svgcheck_mapping: true
+        use_svgcheck_mapping: true,
       )
     end
 
@@ -219,7 +219,7 @@ module SvgConform
 
     def normalize_content(content)
       # Normalize whitespace and formatting for comparison
-      content.gsub(/\s+/, ' ').strip
+      content.gsub(/\s+/, " ").strip
     end
   end
 end

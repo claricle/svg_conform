@@ -28,10 +28,14 @@ module SvgConform
 
     # Get remediations that would apply to given failed requirements
     def applicable_remediations(failed_requirements)
-      failed_requirement_ids = failed_requirements.map { |req| req.requirement_id || req.rule&.id }
+      failed_requirement_ids = failed_requirements.map do |req|
+        req.requirement_id || req.rule&.id
+      end
 
       @profile.remediations.select do |remediation|
-        remediation.target_requirements.any? { |req_id| failed_requirement_ids.include?(req_id) }
+        remediation.target_requirements.any? do |req_id|
+          failed_requirement_ids.include?(req_id)
+        end
       end
     end
 
@@ -42,7 +46,7 @@ module SvgConform
 
     # Get summary of remediation results
     def summary
-      return 'No remediations applied' if @results.empty?
+      return "No remediations applied" if @results.empty?
 
       successful = @results.count(&:success?)
       failed = @results.count(&:failure?)

@@ -1,24 +1,28 @@
 # frozen_string_literal: true
 
-require_relative 'base_requirement'
+require_relative "base_requirement"
 
 module SvgConform
   module Requirements
     # Validates that elements don't have attributes from disallowed namespaces
     # or only have attributes from allowed namespaces (whitelist mode)
     class NamespaceAttributesRequirement < BaseRequirement
-      attribute :type, :string, default: -> { 'NamespaceAttributesRequirement' }
-      attribute :disallowed_namespaces, :string, collection: true, default: -> { [] }
-      attribute :allowed_namespaces, :string, collection: true, default: -> { [] }
+      attribute :type, :string, default: -> { "NamespaceAttributesRequirement" }
+      attribute :disallowed_namespaces, :string, collection: true, default: -> {
+        []
+      }
+      attribute :allowed_namespaces, :string, collection: true, default: -> {
+        []
+      }
       attribute :exempt_elements, :string, collection: true, default: -> { [] }
 
       yaml do
-        map 'id', to: :id
-        map 'description', to: :description
-        map 'type', to: :type
-        map 'disallowed_namespaces', to: :disallowed_namespaces
-        map 'allowed_namespaces', to: :allowed_namespaces
-        map 'exempt_elements', to: :exempt_elements
+        map "id", to: :id
+        map "description", to: :description
+        map "type", to: :type
+        map "disallowed_namespaces", to: :disallowed_namespaces
+        map "allowed_namespaces", to: :allowed_namespaces
+        map "exempt_elements", to: :exempt_elements
       end
 
       def check(node, context)
@@ -46,12 +50,12 @@ module SvgConform
           next unless namespace_uri
 
           # Determine if this namespace is invalid based on configuration
-          invalid_namespace = if !allowed_namespaces.empty?
-                                # Whitelist mode: only allowed namespaces are permitted
-                                !allowed_namespaces.include?(namespace_uri)
-                              else
+          invalid_namespace = if allowed_namespaces.empty?
                                 # Blacklist mode: disallowed namespaces are forbidden
                                 disallowed_namespaces.include?(namespace_uri)
+                              else
+                                # Whitelist mode: only allowed namespaces are permitted
+                                !allowed_namespaces.include?(namespace_uri)
                               end
 
           next unless invalid_namespace
@@ -68,7 +72,7 @@ module SvgConform
             message: "Element '#{node.name}' does not allow attributes with namespace '#{namespace_uri}'",
             node: node,
             severity: :error,
-            data: { attribute: attr_name, namespace: namespace_uri }
+            data: { attribute: attr_name, namespace: namespace_uri },
           )
         end
       end
@@ -107,12 +111,12 @@ module SvgConform
           return unless namespace_uri && !namespace_uri.empty?
 
           # Determine if this namespace is invalid based on configuration
-          invalid_namespace = if !allowed_namespaces.empty?
-                                # Whitelist mode: only allowed namespaces are permitted
-                                !allowed_namespaces.include?(namespace_uri)
-                              else
+          invalid_namespace = if allowed_namespaces.empty?
                                 # Blacklist mode: disallowed namespaces are forbidden
                                 disallowed_namespaces.include?(namespace_uri)
+                              else
+                                # Whitelist mode: only allowed namespaces are permitted
+                                !allowed_namespaces.include?(namespace_uri)
                               end
 
           return unless invalid_namespace
@@ -129,7 +133,7 @@ module SvgConform
             message: "Element '#{node.name}' does not allow attributes with namespace '#{namespace_uri}'",
             node: node,
             severity: :error,
-            data: { attribute: attr_name, namespace: namespace_uri }
+            data: { attribute: attr_name, namespace: namespace_uri },
           )
         else
           # Fallback to name-based checking for attributes without namespace objects
@@ -143,9 +147,9 @@ module SvgConform
         name_str = name.to_s
 
         # Check if this is a namespaced attribute by looking for colon in name
-        return unless name_str.include?(':')
+        return unless name_str.include?(":")
 
-        prefix, = name_str.split(':', 2)
+        prefix, = name_str.split(":", 2)
 
         # Find the namespace URI for this prefix
         namespace_uri = find_namespace_uri(node, prefix)
@@ -153,12 +157,12 @@ module SvgConform
         return unless namespace_uri
 
         # Determine if this namespace is invalid based on configuration
-        invalid_namespace = if !allowed_namespaces.empty?
-                              # Whitelist mode: only allowed namespaces are permitted
-                              !allowed_namespaces.include?(namespace_uri)
-                            else
+        invalid_namespace = if allowed_namespaces.empty?
                               # Blacklist mode: disallowed namespaces are forbidden
                               disallowed_namespaces.include?(namespace_uri)
+                            else
+                              # Whitelist mode: only allowed namespaces are permitted
+                              !allowed_namespaces.include?(namespace_uri)
                             end
 
         return unless invalid_namespace
@@ -168,7 +172,7 @@ module SvgConform
           message: "Element '#{node.name}' does not allow attributes with namespace '#{namespace_uri}'",
           node: node,
           severity: :error,
-          data: { attribute: name, namespace: namespace_uri }
+          data: { attribute: name, namespace: namespace_uri },
         )
       end
 
@@ -177,7 +181,9 @@ module SvgConform
         current = node
         while current.respond_to?(:parent)
           if current.respond_to?(:namespace_definitions)
-            ns_def = current.namespace_definitions.find { |ns| ns.prefix == prefix }
+            ns_def = current.namespace_definitions.find do |ns|
+              ns.prefix == prefix
+            end
             if ns_def
               return ns_def.uri if ns_def.respond_to?(:uri)
               return ns_def.href if ns_def.respond_to?(:href)

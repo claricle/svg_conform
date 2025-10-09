@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require_relative 'analysis_context'
-require_relative 'comparison_result'
-require_relative 'file_processor'
-require_relative 'svg_analysis_engine'
-require_relative 'xml_analysis_engine'
-require_relative 'report_formatter'
+require_relative "analysis_context"
+require_relative "comparison_result"
+require_relative "file_processor"
+require_relative "svg_analysis_engine"
+require_relative "xml_analysis_engine"
+require_relative "report_formatter"
 
 module SvgConform
   module Compatibility
@@ -77,7 +77,7 @@ module SvgConform
         end
       rescue StandardError => e
         puts "❌ Error analyzing #{filename}: #{e.message}"
-        puts e.backtrace.first(5).join("\n") if ENV['DEBUG']
+        puts e.backtrace.first(5).join("\n") if ENV["DEBUG"]
         nil
       end
     end

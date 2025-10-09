@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative 'profile'
+require_relative "profile"
 
 module SvgConform
   module Profiles
-    PROFILES_DIR = File.expand_path('../../config/profiles', __dir__)
+    PROFILES_DIR = File.expand_path("../../config/profiles", __dir__)
     @@cache = {}
 
     def self.get(profile_id)
@@ -21,8 +21,8 @@ module SvgConform
     def self.available_profiles
       return @@cache.keys.map(&:to_sym) if @@cache.any?
 
-      profile_files = Dir.glob(File.join(PROFILES_DIR, '*.yml'))
-      profile_files.map { |file| File.basename(file, '.yml').to_sym }
+      profile_files = Dir.glob(File.join(PROFILES_DIR, "*.yml"))
+      profile_files.map { |file| File.basename(file, ".yml").to_sym }
     end
 
     def self.load(profile_name)
@@ -42,7 +42,10 @@ module SvgConform
 
       profile_file = File.join(PROFILES_DIR, "#{profile_name}.yml")
 
-      raise ProfileError, "Profile not found: #{profile_name} (expected: #{profile_file})" unless File.exist?(profile_file)
+      unless File.exist?(profile_file)
+        raise ProfileError,
+              "Profile not found: #{profile_name} (expected: #{profile_file})"
+      end
 
       begin
         profile = Profile.load_from_file(profile_file)

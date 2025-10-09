@@ -1,22 +1,22 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
-require 'canon'
-require 'tempfile'
+require "spec_helper"
+require "canon"
+require "tempfile"
 
-RSpec.describe 'SVG 1.2 RFC Profile' do
-  let(:svg_1_2_rfc_profile_path) { 'config/profiles/svg_1_2_rfc.yml' }
-  let(:fixtures_base_dir) { 'spec/fixtures' }
+RSpec.describe "SVG 1.2 RFC Profile" do
+  let(:svg_1_2_rfc_profile_path) { "config/profiles/svg_1_2_rfc.yml" }
+  let(:fixtures_base_dir) { "spec/fixtures" }
 
-  describe 'profile loading' do
-    it 'loads the SVG 1.2 RFC profile successfully' do
+  describe "profile loading" do
+    it "loads the SVG 1.2 RFC profile successfully" do
       profile = SvgConform::Profile.load_from_file(svg_1_2_rfc_profile_path)
       expect(profile).not_to be_nil
-      expect(profile.name).to eq('svg_1_2_rfc')
-      expect(profile.description).to include('RFC 7996')
+      expect(profile.name).to eq("svg_1_2_rfc")
+      expect(profile.description).to include("RFC 7996")
     end
 
-    it 'has all expected requirements' do
+    it "has all expected requirements" do
       profile = SvgConform::Profile.load_from_file(svg_1_2_rfc_profile_path)
       requirement_ids = profile.requirements.map(&:id)
 
@@ -37,7 +37,7 @@ RSpec.describe 'SVG 1.2 RFC Profile' do
       expect(requirement_ids).to include(*expected_requirements)
     end
 
-    it 'has all expected remediations' do
+    it "has all expected remediations" do
       profile = SvgConform::Profile.load_from_file(svg_1_2_rfc_profile_path)
       remediation_ids = profile.remediations.map(&:id)
 
@@ -68,7 +68,7 @@ RSpec.describe 'SVG 1.2 RFC Profile' do
     viewbox_required
   ].freeze
 
-  FIXTURES_BASE_DIR = 'spec/fixtures'
+  FIXTURES_BASE_DIR = "spec/fixtures"
 
   REQUIREMENTS_TO_TEST.each do |requirement_name|
     fixtures_dir_path = File.join(FIXTURES_BASE_DIR, requirement_name)
@@ -78,18 +78,25 @@ RSpec.describe 'SVG 1.2 RFC Profile' do
 
     describe "#{requirement_name} requirement" do
       # Get all fixture files that have both input and expected repair versions
-      fixture_files = Dir.glob(File.join(fixtures_dir_path, 'inputs/*.svg')).select do |input_file|
+      fixture_files = Dir.glob(File.join(fixtures_dir_path,
+                                         "inputs/*.svg")).select do |input_file|
         basename = File.basename(input_file)
-        File.exist?(File.join(fixtures_dir_path, 'repair', basename))
-      end.map { |f| File.basename(f, '.svg') }
+        File.exist?(File.join(fixtures_dir_path, "repair", basename))
+      end.map do |f|
+        File.basename(f, ".svg")
+      end
 
       fixture_files.each do |fixture_name|
         describe "fixture: #{fixture_name}" do
           let(:fixtures_dir) { File.join(FIXTURES_BASE_DIR, requirement_name) }
-          let(:input_file) { File.join(fixtures_dir, 'inputs', "#{fixture_name}.svg") }
-          let(:expected_output_file) { File.join(fixtures_dir, 'repair', "#{fixture_name}.svg") }
+          let(:input_file) do
+            File.join(fixtures_dir, "inputs", "#{fixture_name}.svg")
+          end
+          let(:expected_output_file) do
+            File.join(fixtures_dir, "repair", "#{fixture_name}.svg")
+          end
 
-          it 'validates input file and identifies violations' do
+          it "validates input file and identifies violations" do
             skip "Input file not found" unless File.exist?(input_file)
 
             document = SvgConform::Document.from_file(input_file)
@@ -104,7 +111,7 @@ RSpec.describe 'SVG 1.2 RFC Profile' do
             puts "Found #{validation_result.errors.count} violations in #{fixture_name}"
           end
 
-          it 'applies available remediations successfully' do
+          it "applies available remediations successfully" do
             skip "Expected repair file not found" unless File.exist?(expected_output_file)
             skip "Input file not found" unless File.exist?(input_file)
 
@@ -128,7 +135,8 @@ RSpec.describe 'SVG 1.2 RFC Profile' do
             puts "  Changes applied: #{changes.count}" if changes.any?
 
             # For requirements with implemented remediations, expect fewer errors
-            requirements_with_remediations = %w[color_restrictions font_family viewbox_required]
+            requirements_with_remediations = %w[color_restrictions font_family
+                                                viewbox_required]
 
             if requirements_with_remediations.include?(requirement_name)
               expect(final_error_count).to be < initial_error_count
@@ -138,7 +146,7 @@ RSpec.describe 'SVG 1.2 RFC Profile' do
             end
           end
 
-          it 'maintains XML structure integrity after processing' do
+          it "maintains XML structure integrity after processing" do
             skip "Input file not found" unless File.exist?(input_file)
 
             # Load the document and apply profile remediations
@@ -152,18 +160,22 @@ RSpec.describe 'SVG 1.2 RFC Profile' do
             expect(document.to_xml).to match(/<svg\s+[^>]*>.*<\/svg>/m)
 
             # Should maintain root element structure
-            expect(document.root.name).to eq('svg')
+            expect(document.root.name).to eq("svg")
           end
         end
       end
     end
   end
 
-  describe 'comprehensive test' do
-    let(:comprehensive_input) { 'spec/fixtures/comprehensive/inputs/multiple_violations.svg' }
-    let(:comprehensive_expected) { 'spec/fixtures/comprehensive/repair/multiple_violations.svg' }
+  describe "comprehensive test" do
+    let(:comprehensive_input) do
+      "spec/fixtures/comprehensive/inputs/multiple_violations.svg"
+    end
+    let(:comprehensive_expected) do
+      "spec/fixtures/comprehensive/repair/multiple_violations.svg"
+    end
 
-    it 'handles multiple violations across different requirements' do
+    it "handles multiple violations across different requirements" do
       skip "Comprehensive fixtures not found" unless File.exist?(comprehensive_input)
 
       document = SvgConform::Document.from_file(comprehensive_input)

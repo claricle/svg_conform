@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
-require 'set'
+require "set"
 
 module SvgConform
   # Context object passed to rules during validation
   class ValidationContext
-    attr_reader :document, :profile, :errors, :warnings, :fixes, :validity_errors
+    attr_reader :document, :profile, :errors, :warnings, :fixes,
+                :validity_errors
 
     def initialize(document, profile)
       @document = document
@@ -47,7 +48,8 @@ module SvgConform
       @structurally_invalid_node_ids.include?(node_id)
     end
 
-    def add_error(node:, message:, rule: nil, requirement: nil, requirement_id: nil, severity: nil, fix: nil, data: {})
+    def add_error(node:, message:, rule: nil, requirement: nil,
+requirement_id: nil, severity: nil, fix: nil, data: {})
       # Support both old rule system and new requirements system
       rule_or_requirement = requirement || rule
 
@@ -59,7 +61,7 @@ module SvgConform
         fix: fix,
         data: data,
         requirement_id: requirement_id,
-        severity: severity
+        severity: severity,
       )
 
       # Handle special severity types
@@ -78,7 +80,7 @@ module SvgConform
         rule: rule,
         node: node,
         message: message,
-        fix: fix
+        fix: fix,
       )
       @warnings << warning
       warning
@@ -159,9 +161,11 @@ module SvgConform
 
   # Base class for validation issues
   class ValidationIssue
-    attr_reader :type, :rule, :node, :message, :fix, :data, :requirement_id_override, :severity
+    attr_reader :type, :rule, :node, :message, :fix, :data,
+                :requirement_id_override, :severity
 
-    def initialize(type:, rule:, node:, message:, fix: nil, data: {}, requirement_id: nil, severity: nil, violation_type: nil)
+    def initialize(type:, rule:, node:, message:, fix: nil, data: {},
+requirement_id: nil, severity: nil, violation_type: nil)
       @type = type
       @rule = rule
       @node = node
@@ -180,10 +184,11 @@ module SvgConform
         @rule.id.to_s
       elsif @rule.respond_to?(:class) && @rule.class.respond_to?(:name)
         # Extract ID from class name for requirements
-        class_name = @rule.class.name.split('::').last
-        class_name.gsub(/Requirement$/, '').downcase.gsub(/([a-z])([A-Z])/, '\1_\2').downcase
+        class_name = @rule.class.name.split("::").last
+        class_name.gsub(/Requirement$/, "").downcase.gsub(/([a-z])([A-Z])/,
+                                                          '\1_\2').downcase
       else
-        'unknown'
+        "unknown"
       end
     end
 
@@ -234,7 +239,7 @@ module SvgConform
         line: line,
         column: column,
         element: element_name,
-        fixable: fixable?
+        fixable: fixable?,
       }
     end
 
@@ -318,9 +323,9 @@ module SvgConform
     end
 
     def to_s
-      location = line ? " at line #{line}" : ''
+      location = line ? " at line #{line}" : ""
       location += ":#{column}" if column
-      rule_info = rule_id ? " (#{rule_id})" : ''
+      rule_info = rule_id ? " (#{rule_id})" : ""
       remediation_info = remediable? ? " [#{remediation_type}]" : " [NOT REMEDIABLE]"
       "#{@message}#{location}#{rule_info}#{remediation_info}"
     end
@@ -339,7 +344,7 @@ module SvgConform
         remediation_type: remediation_type,
         remediation_confidence: remediation_confidence,
         suggested_action: suggested_action,
-        affects_content: affects_content?
+        affects_content: affects_content?,
       }
     end
 
@@ -350,11 +355,11 @@ module SvgConform
       msg = @message.downcase
 
       # First check for structural violations (non-remediable)
-      return :structural_violation if msg.include?('root element must be') ||
-                                      msg.include?('malformed') ||
-                                      msg.include?('invalid document') ||
-                                      msg.include?('required element missing') ||
-                                      msg.include?('invalid hierarchy')
+      return :structural_violation if msg.include?("root element must be") ||
+        msg.include?("malformed") ||
+        msg.include?("invalid document") ||
+        msg.include?("required element missing") ||
+        msg.include?("invalid hierarchy")
 
       # Then check requirement-based violations (remediable)
       case req_id
@@ -374,13 +379,13 @@ module SvgConform
         :style_violation
       else
         # Check message content for clues
-        return :color_violation if msg.include?('color')
-        return :font_violation if msg.include?('font')
-        return :content_violation if msg.include?('forbidden')
-        return :reference_violation if msg.include?('reference') || msg.include?('href')
-        return :namespace_violation if msg.include?('namespace')
-        return :viewbox_violation if msg.include?('viewbox')
-        return :style_violation if msg.include?('style')
+        return :color_violation if msg.include?("color")
+        return :font_violation if msg.include?("font")
+        return :content_violation if msg.include?("forbidden")
+        return :reference_violation if msg.include?("reference") || msg.include?("href")
+        return :namespace_violation if msg.include?("namespace")
+        return :viewbox_violation if msg.include?("viewbox")
+        return :style_violation if msg.include?("style")
 
         :unknown_violation
       end
@@ -392,10 +397,11 @@ module SvgConform
 
       if @rule.respond_to?(:class) && @rule.class.respond_to?(:name)
         # Extract ID from class name for requirements
-        class_name = @rule.class.name.split('::').last
-        class_name.gsub(/Requirement$/, '').downcase.gsub(/([a-z])([A-Z])/, '\1_\2').downcase
+        class_name = @rule.class.name.split("::").last
+        class_name.gsub(/Requirement$/, "").downcase.gsub(/([a-z])([A-Z])/,
+                                                          '\1_\2').downcase
       else
-        'unknown'
+        "unknown"
       end
     end
   end

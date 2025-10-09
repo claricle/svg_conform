@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'lutaml/model'
-require_relative 'requirements'
-require_relative 'remediations'
+require "lutaml/model"
+require_relative "requirements"
+require_relative "remediations"
 
 module SvgConform
   # Base class for SVG validation profiles using lutaml-model serialization
@@ -10,18 +10,21 @@ module SvgConform
     attribute :name, :string
     attribute :description, :string
     attribute :import, :string
-    attribute :requirements, SvgConform::Requirements::BaseRequirement, collection: true, polymorphic: true
-    attribute :remediations, SvgConform::Remediations::BaseRemediation, collection: true, polymorphic: true
+    attribute :requirements, SvgConform::Requirements::BaseRequirement,
+              collection: true, polymorphic: true
+    attribute :remediations, SvgConform::Remediations::BaseRemediation,
+              collection: true, polymorphic: true
 
     def self.build_class_map(dir_name, namespace, excluded_file)
       target_dir = File.expand_path(dir_name, __dir__)
       class_map = {}
 
-      Dir.glob(File.join(target_dir, "*_#{dir_name.chomp('s')}.rb")).each do |file|
-        filename = File.basename(file, '.rb')
+      Dir.glob(File.join(target_dir,
+                         "*_#{dir_name.chomp('s')}.rb")).each do |file|
+        filename = File.basename(file, ".rb")
         next if filename == excluded_file
 
-        class_name = filename.split('_').map(&:capitalize).join
+        class_name = filename.split("_").map(&:capitalize).join
         class_map[class_name] = "SvgConform::#{namespace}::#{class_name}"
       end
 
@@ -30,23 +33,23 @@ module SvgConform
 
     # Build class maps dynamically from filesystem
     REQUIREMENTS_CLASS_MAP = build_class_map(
-      'requirements', 'Requirements', 'base_requirement'
+      "requirements", "Requirements", "base_requirement"
     )
     REMEDIATIONS_CLASS_MAP = build_class_map(
-      'remediations', 'Remediations', 'base_remediation'
+      "remediations", "Remediations", "base_remediation"
     )
 
     yaml do
-      map 'name', to: :name
-      map 'description', to: :description
-      map 'import', to: :import
-      map 'requirements', to: :requirements, polymorphic: {
-        attribute: 'type',
-        class_map: REQUIREMENTS_CLASS_MAP
+      map "name", to: :name
+      map "description", to: :description
+      map "import", to: :import
+      map "requirements", to: :requirements, polymorphic: {
+        attribute: "type",
+        class_map: REQUIREMENTS_CLASS_MAP,
       }
-      map 'remediations', to: :remediations, polymorphic: {
-        attribute: 'type',
-        class_map: REMEDIATIONS_CLASS_MAP
+      map "remediations", to: :remediations, polymorphic: {
+        attribute: "type",
+        class_map: REMEDIATIONS_CLASS_MAP,
       }
     end
 

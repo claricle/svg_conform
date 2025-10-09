@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-require_relative 'base_remediation'
+require_relative "base_remediation"
 
 module SvgConform
   module Remediations
     # Remediation action to remove external CSS references
     class NoExternalCssRemediation < BaseRemediation
-      attribute :type, :string, default: -> { 'NoExternalCssRemediation' }
-      attribute :strategy, :string, default: 'remove_external_references'
+      attribute :type, :string, default: -> { "NoExternalCssRemediation" }
+      attribute :strategy, :string, default: "remove_external_references"
       attribute :preserve_inline_styles, :boolean, default: true
       attribute :log_removed_elements, :boolean, default: true
 
@@ -15,14 +15,16 @@ module SvgConform
         changes = []
 
         case @strategy
-        when 'remove_external_references'
+        when "remove_external_references"
           changes += remove_external_link_elements(document, context)
-          changes += remove_external_imports_from_style_elements(document, context)
-          changes += remove_external_urls_from_style_attributes(document, context)
+          changes += remove_external_imports_from_style_elements(document,
+                                                                 context)
+          changes += remove_external_urls_from_style_attributes(document,
+                                                                context)
         else
           context.add_error(
             message: "Unknown remediation strategy: #{@strategy}",
-            node: document.root
+            node: document.root,
           )
           return []
         end
@@ -41,19 +43,22 @@ module SvgConform
         changes = []
 
         document.traverse do |node|
-          next unless element?(node) && node.name == 'link'
+          next unless element?(node) && node.name == "link"
 
-          rel = get_attribute(node, 'rel')
-          href = get_attribute(node, 'href')
+          rel = get_attribute(node, "rel")
+          href = get_attribute(node, "href")
 
-          if rel&.downcase == 'stylesheet' && href && !allowed_url?(href)
-            log_removal(context, "Removing external CSS link: #{href}") if @log_removed_elements
+          if rel&.downcase == "stylesheet" && href && !allowed_url?(href)
+            if @log_removed_elements
+              log_removal(context,
+                          "Removing external CSS link: #{href}")
+            end
             node.remove
             changes << {
               type: :element_removed,
               description: "Removed external CSS link: #{href}",
               node_name: node.name,
-              href: href
+              href: href,
             }
           end
         end
@@ -65,9 +70,9 @@ module SvgConform
         changes = []
 
         document.traverse do |node|
-          next unless element?(node) && node.name == 'style'
+          next unless element?(node) && node.name == "style"
 
-          content = node.text || ''
+          content = node.text || ""
           original_content = content.dup
 
           # Remove @import url() statements
@@ -76,14 +81,17 @@ module SvgConform
             if allowed_url?(url)
               match # Keep allowed URLs
             else
-              log_removal(context, "Removing external CSS import: #{url}") if @log_removed_elements
+              if @log_removed_elements
+                log_removal(context,
+                            "Removing external CSS import: #{url}")
+              end
               changes << {
                 type: :content_modified,
                 description: "Removed external CSS import: #{url}",
                 node_name: node.name,
-                url: url
+                url: url,
               }
-              '' # Remove disallowed URLs
+              "" # Remove disallowed URLs
             end
           end
 
@@ -93,14 +101,17 @@ module SvgConform
             if allowed_url?(url)
               match # Keep allowed URLs
             else
-              log_removal(context, "Removing external CSS import: #{url}") if @log_removed_elements
+              if @log_removed_elements
+                log_removal(context,
+                            "Removing external CSS import: #{url}")
+              end
               changes << {
                 type: :content_modified,
                 description: "Removed external CSS import: #{url}",
                 node_name: node.name,
-                url: url
+                url: url,
               }
-              '' # Remove disallowed URLs
+              "" # Remove disallowed URLs
             end
           end
 
@@ -120,7 +131,7 @@ module SvgConform
         document.traverse do |node|
           next unless element?(node)
 
-          style_value = get_attribute(node, 'style')
+          style_value = get_attribute(node, "style")
           next unless style_value
 
           original_style = style_value.dup
@@ -131,20 +142,26 @@ module SvgConform
             if allowed_url?(url)
               match # Keep allowed URLs
             else
-              log_removal(context, "Removing external URL from style attribute: #{url}") if @log_removed_elements
+              if @log_removed_elements
+                log_removal(context,
+                            "Removing external URL from style attribute: #{url}")
+              end
               changes << {
                 type: :attribute_modified,
                 description: "Removed external URL from style attribute: #{url}",
                 node_name: node.name,
-                attribute_name: 'style',
-                url: url
+                attribute_name: "style",
+                url: url,
               }
-              '' # Remove disallowed URLs
+              "" # Remove disallowed URLs
             end
           end
 
           # Update the attribute if it changed
-          set_attribute(node, 'style', style_value) if style_value != original_style
+          if style_value != original_style
+            set_attribute(node, "style",
+                          style_value)
+          end
         end
 
         changes
@@ -154,10 +171,10 @@ module SvgConform
         return true if url.nil? || url.empty?
 
         # Data URLs are typically allowed
-        return true if url.start_with?('data:')
+        return true if url.start_with?("data:")
 
         # Fragment identifiers (internal references) are allowed
-        return true if url.start_with?('#')
+        return true if url.start_with?("#")
 
         # For remediation, we're more restrictive - only allow data: and fragment URLs
         false

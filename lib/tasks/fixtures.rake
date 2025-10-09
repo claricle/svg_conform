@@ -1,21 +1,23 @@
 # frozen_string_literal: true
 
-require 'fileutils'
+require "fileutils"
 
 namespace :fixtures do
-  desc 'Generate YAML conformance reports for all test fixtures'
+  desc "Generate YAML conformance reports for all test fixtures"
   task :generate_reports do
-    puts 'Generating YAML conformance reports for all test fixtures...'
+    puts "Generating YAML conformance reports for all test fixtures..."
 
-    require_relative '../svg_conform'
+    require_relative "../svg_conform"
 
     # Create reports directory
-    reports_dir = 'spec/fixtures/reports'
+    reports_dir = "spec/fixtures/reports"
     FileUtils.mkdir_p(reports_dir)
 
     # Get all test files
-    input_dir = 'spec/fixtures/svgcheck/inputs'
-    test_files = Dir.glob("#{input_dir}/*.{svg,xml}").map { |f| File.basename(f) }
+    input_dir = "spec/fixtures/svgcheck/inputs"
+    test_files = Dir.glob("#{input_dir}/*.{svg,xml}").map do |f|
+      File.basename(f)
+    end
 
     puts "Found #{test_files.length} test files to process..."
 
@@ -29,16 +31,16 @@ namespace :fixtures do
       input_path = "#{input_dir}/#{filename}"
 
       # Read expected error output if it exists
-      error_file = filename.sub(/\.(svg|xml)$/, '.err')
+      error_file = filename.sub(/\.(svg|xml)$/, ".err")
       error_path = "spec/fixtures/svgcheck/expected_dynamic/#{error_file}"
 
-      error_content = ''
+      error_content = ""
       error_content = File.read(error_path) if File.exist?(error_path)
 
       # Generate svgcheck report
       svgcheck_report = SvgConform::ConformanceReport.from_svgcheck_result(
         filename,
-        error_content
+        error_content,
       )
 
       # Save svgcheck report
@@ -48,12 +50,13 @@ namespace :fixtures do
       # Generate svg_conform report
       begin
         # Load and validate with svg_conform using the convenience method
-        validation_result = SvgConform.validate_file(input_path, profile: :svg_1_2_rfc)
+        validation_result = SvgConform.validate_file(input_path,
+                                                     profile: :svg_1_2_rfc)
 
         svg_conform_report = SvgConform::ConformanceReport.from_svg_conform_result(
           filename,
           validation_result,
-          profile: 'svg_1_2_rfc'
+          profile: "svg_1_2_rfc",
         )
 
         # Save svg_conform report
@@ -68,21 +71,21 @@ namespace :fixtures do
         # Still save a minimal svg_conform report
         error_report = SvgConform::ConformanceReport.new
         error_report.filename = filename
-        error_report.tool = 'svg_conform'
+        error_report.tool = "svg_conform"
         error_report.version = SvgConform::VERSION
         error_report.timestamp = Time.now.iso8601
         error_report.valid = false
         error_report.errors = SvgConform::IssueSummary.new
         error_report.errors.total_count = 1
-        error_report.errors.by_requirement = { 'parse_error' => 1 }
+        error_report.errors.by_requirement = { "parse_error" => 1 }
         error_report.errors.sample_issues = [
           SvgConform::ConformanceIssue.new(
-            type: 'error',
-            requirement_id: 'parse_error',
+            type: "error",
+            requirement_id: "parse_error",
             message: e.message,
-            element: 'document',
-            line: 1
-          )
+            element: "document",
+            line: 1,
+          ),
         ]
         error_report.warnings = SvgConform::IssueSummary.new
         error_report.warnings.total_count = 0
@@ -98,8 +101,8 @@ namespace :fixtures do
     end
 
     puts "\n#{'=' * 60}"
-    puts 'FIXTURE REPORT GENERATION SUMMARY'
-    puts '=' * 60
+    puts "FIXTURE REPORT GENERATION SUMMARY"
+    puts "=" * 60
     puts "Total files processed: #{test_files.length}"
     puts "Successful reports: #{success_count}"
     puts "Error reports: #{error_count}"
@@ -107,18 +110,20 @@ namespace :fixtures do
 
     # List generated files
     puts "\nGenerated files:"
-    Dir.glob("#{reports_dir}/*").sort.each { |f| puts "  - #{File.basename(f)}" }
+    Dir.glob("#{reports_dir}/*").sort.each do |f|
+      puts "  - #{File.basename(f)}"
+    end
 
     puts "\n✅ Fixture report generation complete!"
   end
 
-  desc 'Validate all fixture reports can be loaded'
+  desc "Validate all fixture reports can be loaded"
   task :validate_reports do
-    puts 'Validating all fixture reports can be loaded...'
+    puts "Validating all fixture reports can be loaded..."
 
-    require_relative '../svg_conform'
+    require_relative "../svg_conform"
 
-    reports_dir = 'spec/fixtures/reports'
+    reports_dir = "spec/fixtures/reports"
     unless Dir.exist?(reports_dir)
       puts "❌ Reports directory not found. Run 'rake fixtures:generate_reports' first."
       exit 1
@@ -143,13 +148,13 @@ namespace :fixtures do
         report = SvgConform::ConformanceReport.load_from_file(report_file)
 
         # Basic validation
-        raise 'Missing filename' unless report.filename
-        raise 'Missing tool' unless report.tool
-        raise 'Missing timestamp' unless report.timestamp
-        raise 'Missing errors summary' unless report.errors
-        raise 'Missing warnings summary' unless report.warnings
+        raise "Missing filename" unless report.filename
+        raise "Missing tool" unless report.tool
+        raise "Missing timestamp" unless report.timestamp
+        raise "Missing errors summary" unless report.errors
+        raise "Missing warnings summary" unless report.warnings
 
-        puts '✅'
+        puts "✅"
         success_count += 1
       rescue StandardError => e
         puts "❌ #{e.message}"
@@ -158,8 +163,8 @@ namespace :fixtures do
     end
 
     puts "\n#{'=' * 60}"
-    puts 'FIXTURE REPORT VALIDATION SUMMARY'
-    puts '=' * 60
+    puts "FIXTURE REPORT VALIDATION SUMMARY"
+    puts "=" * 60
     puts "Total reports: #{report_files.length}"
     puts "Valid reports: #{success_count}"
     puts "Invalid reports: #{error_count}"
@@ -172,13 +177,13 @@ namespace :fixtures do
     end
   end
 
-  desc 'Compare fixture reports between tools'
+  desc "Compare fixture reports between tools"
   task :compare_reports do
-    puts 'Comparing fixture reports between svg_conform and svgcheck...'
+    puts "Comparing fixture reports between svg_conform and svgcheck..."
 
-    require_relative '../svg_conform'
+    require_relative "../svg_conform"
 
-    reports_dir = 'spec/fixtures/reports'
+    reports_dir = "spec/fixtures/reports"
     unless Dir.exist?(reports_dir)
       puts "❌ Reports directory not found. Run 'rake fixtures:generate_reports' first."
       exit 1
@@ -186,7 +191,7 @@ namespace :fixtures do
 
     # Get all base filenames (without tool suffix)
     base_files = Dir.glob("#{reports_dir}/*.svg_conform.yml").map do |f|
-      File.basename(f, '.svg_conform.yml')
+      File.basename(f, ".svg_conform.yml")
     end
 
     puts "Found #{base_files.length} test cases to compare..."
@@ -210,15 +215,15 @@ namespace :fixtures do
         comparison = svg_conform_report.compare_with(svgcheck_report)
 
         if comparison[:identical]
-          puts '  ✅ Reports are identical'
+          puts "  ✅ Reports are identical"
           identical_count += 1
         else
-          puts '  ❌ Reports differ:'
+          puts "  ❌ Reports differ:"
           comparison[:differences].each { |diff| puts "    - #{diff}" }
           different_count += 1
           differences << {
             file: base_filename,
-            differences: comparison[:differences]
+            differences: comparison[:differences],
           }
         end
       rescue StandardError => e
@@ -226,14 +231,14 @@ namespace :fixtures do
         different_count += 1
         differences << {
           file: base_filename,
-          differences: ["Comparison error: #{e.message}"]
+          differences: ["Comparison error: #{e.message}"],
         }
       end
     end
 
     puts "\n#{'=' * 60}"
-    puts 'FIXTURE REPORT COMPARISON SUMMARY'
-    puts '=' * 60
+    puts "FIXTURE REPORT COMPARISON SUMMARY"
+    puts "=" * 60
     puts "Total comparisons: #{base_files.length}"
     puts "Identical reports: #{identical_count}"
     puts "Different reports: #{different_count}"
@@ -250,11 +255,11 @@ namespace :fixtures do
     puts "\n#{different_count.positive? ? '❌' : '✅'} Comparison complete!"
   end
 
-  desc 'Clean all generated fixture reports'
+  desc "Clean all generated fixture reports"
   task :clean_reports do
-    puts 'Cleaning all generated fixture reports...'
+    puts "Cleaning all generated fixture reports..."
 
-    reports_dir = 'spec/fixtures/reports'
+    reports_dir = "spec/fixtures/reports"
     if Dir.exist?(reports_dir)
       FileUtils.rm_rf(reports_dir)
       puts "✅ Cleaned #{reports_dir}/"
@@ -263,20 +268,20 @@ namespace :fixtures do
     end
   end
 
-  desc 'Regenerate all fixture reports (clean + generate)'
+  desc "Regenerate all fixture reports (clean + generate)"
   task regenerate_reports: %i[clean_reports generate_reports]
 
-  desc 'Full fixture workflow (generate + validate + compare)'
+  desc "Full fixture workflow (generate + validate + compare)"
   task all: %i[generate_reports validate_reports compare_reports]
 
-  desc 'Show fixture report statistics'
+  desc "Show fixture report statistics"
   task :stats do
-    puts 'Fixture Report Statistics'
-    puts '=' * 40
+    puts "Fixture Report Statistics"
+    puts "=" * 40
 
-    require_relative '../svg_conform'
+    require_relative "../svg_conform"
 
-    reports_dir = 'spec/fixtures/reports'
+    reports_dir = "spec/fixtures/reports"
     unless Dir.exist?(reports_dir)
       puts "❌ Reports directory not found. Run 'rake fixtures:generate_reports' first."
       exit 1

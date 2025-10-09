@@ -1,36 +1,36 @@
 # frozen_string_literal: true
 
-require_relative 'base_requirement'
+require_relative "base_requirement"
 
 module SvgConform
   module Requirements
     # Validates that SVG documents have proper viewBox attributes
     class ViewboxRequiredRequirement < BaseRequirement
-      attribute :type, :string, default: -> { 'ViewboxRequiredRequirement' }
+      attribute :type, :string, default: -> { "ViewboxRequiredRequirement" }
 
       yaml do
-        map 'id', to: :id
-        map 'description', to: :description
-        map 'type', to: :type
+        map "id", to: :id
+        map "description", to: :description
+        map "type", to: :type
       end
 
       def validate_document(document, context)
         root = document.root
-        return unless root&.name == 'svg'
+        return unless root&.name == "svg"
 
-        viewbox = get_attribute(root, 'viewBox')
+        viewbox = get_attribute(root, "viewBox")
 
         if viewbox.nil? || viewbox.empty?
           context.add_error(
             requirement: self,
             node: root,
-            message: 'SVG root element must have a viewBox attribute',
-            data: { missing_attribute: 'viewBox' }
+            message: "SVG root element must have a viewBox attribute",
+            data: { missing_attribute: "viewBox" },
           )
 
           # Add informational message about calculated viewBox if width/height are present
-          width = get_attribute(root, 'width')
-          height = get_attribute(root, 'height')
+          width = get_attribute(root, "width")
+          height = get_attribute(root, "height")
 
           if width && height && valid_number?(width) && valid_number?(height)
             calculated_viewbox = "0 0 #{width.to_f} #{height.to_f}"
@@ -41,8 +41,8 @@ module SvgConform
               data: {
                 calculated_viewbox: calculated_viewbox,
                 source_width: width,
-                source_height: height
-              }
+                source_height: height,
+              },
             )
           end
           return
@@ -50,17 +50,17 @@ module SvgConform
 
         # Validate viewBox format (should be "min-x min-y width height")
         # Also accept comma-separated with parentheses like "(0, 0, 100, 100)" (svgcheck is lenient)
-        normalized_viewbox = viewbox.strip.gsub(/[(),]/, ' ').squeeze(' ')
+        normalized_viewbox = viewbox.strip.gsub(/[(),]/, " ").squeeze(" ")
         parts = normalized_viewbox.strip.split(/\s+/)
         unless parts.length == 4 && parts.all? { |part| valid_number?(part) }
           context.add_error(
             requirement: self,
             node: root,
-            message: 'viewBox attribute must contain four numeric values (min-x min-y width height)',
+            message: "viewBox attribute must contain four numeric values (min-x min-y width height)",
             data: {
               viewbox_value: viewbox,
-              parsed_parts: parts
-            }
+              parsed_parts: parts,
+            },
           )
           return
         end
@@ -74,12 +74,12 @@ module SvgConform
         context.add_error(
           requirement: self,
           node: root,
-          message: 'viewBox width and height must be positive values',
+          message: "viewBox width and height must be positive values",
           data: {
             viewbox_value: viewbox,
             width: width,
-            height: height
-          }
+            height: height,
+          },
         )
       end
 

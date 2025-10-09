@@ -12,8 +12,8 @@ module SvgConform
       ].freeze
 
       def validate_document(document, context)
-        document.xpath('//*[@style]').each do |element|
-          style_attr = element['style']
+        document.xpath("//*[@style]").each do |element|
+          style_attr = element["style"]
           next if style_attr.nil? || style_attr.strip.empty?
 
           validate_style_properties(element, style_attr, context)
@@ -36,12 +36,12 @@ module SvgConform
             node: element,
             severity: :info,
             data: {
-              attribute: 'style',
+              attribute: "style",
               property: property,
               value: value,
               element: element.name,
-              suggestion: "Move '#{property}:#{value}' from style to #{property} attribute"
-            }
+              suggestion: "Move '#{property}:#{value}' from style to #{property} attribute",
+            },
           )
         end
       end
@@ -50,17 +50,17 @@ module SvgConform
         declarations = {}
 
         # Split by semicolon and parse each declaration
-        style_attr.split(';').each do |declaration|
+        style_attr.split(";").each do |declaration|
           next if declaration.strip.empty?
 
-          parts = declaration.split(':', 2)
+          parts = declaration.split(":", 2)
           next unless parts.length == 2
 
           property = parts[0].strip
           value = parts[1].strip
 
           # Remove any trailing semicolon from value
-          value = value.chomp(';')
+          value = value.chomp(";")
 
           declarations[property] = value
         end

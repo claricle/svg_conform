@@ -7,10 +7,10 @@ module SvgConform
       attr_reader :mode, :profile, :semantic, :svgcheck_dir, :file, :output_file
 
       def initialize(options = {})
-        @mode = (options[:mode] || 'check').to_sym
+        @mode = (options[:mode] || "check").to_sym
         @profile = options[:profile]&.to_sym || :svg_1_2_rfc_compatible
         @semantic = options[:semantic] || false
-        @svgcheck_dir = options[:svgcheck_dir] || 'spec/fixtures/svgcheck'
+        @svgcheck_dir = options[:svgcheck_dir] || "spec/fixtures/svgcheck"
         @file = options[:file]
         @output_file = options[:output]
       end
@@ -40,7 +40,7 @@ module SvgConform
       end
 
       def inputs_dir
-        File.join(@svgcheck_dir, 'inputs')
+        File.join(@svgcheck_dir, "inputs")
       end
 
       def outputs_dir
@@ -60,7 +60,7 @@ module SvgConform
           semantic: @semantic,
           svgcheck_dir: @svgcheck_dir,
           file: @file,
-          output_file: @output_file
+          output_file: @output_file,
         }
       end
     end

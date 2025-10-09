@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'json'
+require "json"
 
 module SvgConform
   # Analyzes compatibility between svg_conform and svgcheck results
@@ -13,13 +13,16 @@ module SvgConform
 
     # Analyze all test files and compare results
     def analyze_all_files
-      input_dir = File.join(__dir__, '..', '..', 'spec', 'fixtures', 'svgcheck', 'inputs')
-      check_dir = File.join(__dir__, '..', '..', 'spec', 'fixtures', 'svgcheck', 'check')
-      repair_dir = File.join(__dir__, '..', '..', 'spec', 'fixtures', 'svgcheck', 'repair')
+      input_dir = File.join(__dir__, "..", "..", "spec", "fixtures",
+                            "svgcheck", "inputs")
+      check_dir = File.join(__dir__, "..", "..", "spec", "fixtures",
+                            "svgcheck", "check")
+      repair_dir = File.join(__dir__, "..", "..", "spec", "fixtures",
+                             "svgcheck", "repair")
 
-      Dir.glob(File.join(input_dir, '*.svg')).each do |input_file|
-        basename = File.basename(input_file, '.svg')
-        next if basename.start_with?('rfc') # Skip non-SVG files
+      Dir.glob(File.join(input_dir, "*.svg")).each do |input_file|
+        basename = File.basename(input_file, ".svg")
+        next if basename.start_with?("rfc") # Skip non-SVG files
 
         puts "Analyzing #{basename}..."
         result = analyze_file(input_file, check_dir, repair_dir)
@@ -31,7 +34,7 @@ module SvgConform
 
     # Analyze a single file
     def analyze_file(input_file, check_dir, repair_dir)
-      basename = File.basename(input_file, '.svg')
+      basename = File.basename(input_file, ".svg")
 
       # Load svgcheck results
       svgcheck_out = load_svgcheck_file(check_dir, "#{basename}.svg.out")
@@ -45,7 +48,7 @@ module SvgConform
 
       # Parse svgcheck results
       svgcheck_errors = parse_svgcheck_errors(svgcheck_out)
-      svgcheck_valid = svgcheck_out.include?('INFO: File conforms to SVG requirements')
+      svgcheck_valid = svgcheck_out.include?("INFO: File conforms to SVG requirements")
 
       # Compare results
       {
@@ -58,64 +61,67 @@ module SvgConform
           exit_code: svgcheck_code&.strip&.to_i,
           raw_output: svgcheck_out,
           raw_error: svgcheck_err,
-          repaired_content: svgcheck_repair
+          repaired_content: svgcheck_repair,
         },
         our_results: {
           valid: our_validation[:valid],
           errors: our_validation[:errors],
           error_count: our_validation[:errors].length,
-          remediated_content: our_remediation
+          remediated_content: our_remediation,
         },
-        compatibility: analyze_compatibility(svgcheck_errors, svgcheck_valid, our_validation)
+        compatibility: analyze_compatibility(svgcheck_errors, svgcheck_valid,
+                                             our_validation),
       }
     end
 
     # Generate a detailed report
     def generate_report
-      return 'No analysis results available' if @results.empty?
+      return "No analysis results available" if @results.empty?
 
       report = []
-      report << 'SVG Conform vs SVGCheck Compatibility Analysis'
-      report << '=' * 50
-      report << ''
+      report << "SVG Conform vs SVGCheck Compatibility Analysis"
+      report << "=" * 50
+      report << ""
 
       # Summary statistics
       total_files = @results.length
-      compatible_files = @results.count { |_, r| r[:compatibility][:overall_compatible] }
+      compatible_files = @results.count do |_, r|
+        r[:compatibility][:overall_compatible]
+      end
 
-      report << 'Summary:'
+      report << "Summary:"
       report << "  Total files analyzed: #{total_files}"
       report << "  Compatible files: #{compatible_files}"
       report << "  Compatibility rate: #{(compatible_files.to_f / total_files * 100).round(1)}%"
-      report << ''
+      report << ""
 
       # Detailed analysis for each file
       @results.each do |basename, result|
         report << "File: #{basename}"
-        report << '-' * 30
+        report << "-" * 30
 
         # Validation comparison
         svgcheck_valid = result[:svgcheck][:valid]
         our_valid = result[:our_results][:valid]
 
-        report << '  Validation:'
+        report << "  Validation:"
         report << "    SVGCheck: #{svgcheck_valid ? 'VALID' : 'INVALID'} (#{result[:svgcheck][:error_count]} errors)"
         report << "    Our tool:  #{our_valid ? 'VALID' : 'INVALID'} (#{result[:our_results][:error_count]} errors)"
         report << "    Match: #{svgcheck_valid == our_valid ? 'YES' : 'NO'}"
 
         # Error analysis
         if result[:svgcheck][:error_count].positive? || result[:our_results][:error_count].positive?
-          report << '  Errors:'
+          report << "  Errors:"
 
           if result[:svgcheck][:error_count].positive?
-            report << '    SVGCheck errors:'
+            report << "    SVGCheck errors:"
             result[:svgcheck][:errors].each do |error|
               report << "      - Line #{error[:line]}: #{error[:message]}"
             end
           end
 
           if result[:our_results][:error_count].positive?
-            report << '    Our errors:'
+            report << "    Our errors:"
             result[:our_results][:errors].each do |error|
               report << "      - #{error}"
             end
@@ -125,22 +131,26 @@ module SvgConform
         # Compatibility issues
         compatibility = result[:compatibility]
         unless compatibility[:issues].empty?
-          report << '  Compatibility Issues:'
+          report << "  Compatibility Issues:"
           compatibility[:issues].each do |issue|
             report << "    - #{issue}"
           end
         end
 
-        report << ''
+        report << ""
       end
 
       # Pattern analysis
-      report << 'Common Patterns:'
-      report << '-' * 20
+      report << "Common Patterns:"
+      report << "-" * 20
 
       # Find common error types
-      all_svgcheck_errors = @results.values.flat_map { |r| r[:svgcheck][:errors] }
-      error_patterns = all_svgcheck_errors.group_by { |e| extract_error_pattern(e[:message]) }
+      all_svgcheck_errors = @results.values.flat_map do |r|
+        r[:svgcheck][:errors]
+      end
+      error_patterns = all_svgcheck_errors.group_by do |e|
+        extract_error_pattern(e[:message])
+      end
 
       error_patterns.each do |pattern, errors|
         report << "  #{pattern}: #{errors.length} occurrences"
@@ -167,12 +177,12 @@ module SvgConform
 
       {
         valid: result.valid?,
-        errors: result.errors.map { |e| "Line #{e.line || '?'}: #{e.message}" }
+        errors: result.errors.map { |e| "Line #{e.line || '?'}: #{e.message}" },
       }
     rescue StandardError => e
       {
         valid: false,
-        errors: ["ERROR: #{e.message}"]
+        errors: ["ERROR: #{e.message}"],
       }
     end
 
@@ -194,21 +204,21 @@ module SvgConform
       output.lines.each do |line|
         line = line.strip
         next if line.empty?
-        next if line.start_with?('INFO:')
-        next if line.include?('File conforms to SVG requirements')
+        next if line.start_with?("INFO:")
+        next if line.include?("File conforms to SVG requirements")
 
         # Parse error format: "filename:line: message"
-        if line.match(/^(.+):(\d+): (.+)$/)
+        if line =~ /^(.+):(\d+): (.+)$/
           errors << {
             file: Regexp.last_match(1),
             line: Regexp.last_match(2).to_i,
-            message: Regexp.last_match(3)
+            message: Regexp.last_match(3),
           }
-        elsif line.start_with?('ERROR:')
+        elsif line.start_with?("ERROR:")
           errors << {
-            file: '',
+            file: "",
             line: 0,
-            message: line
+            message: line,
           }
         end
       end
@@ -222,9 +232,9 @@ module SvgConform
       # Check if validation results match
       if svgcheck_valid != our_validation[:valid]
         if svgcheck_valid && !our_validation[:valid]
-          issues << 'We reject a file that svgcheck accepts'
+          issues << "We reject a file that svgcheck accepts"
         elsif !svgcheck_valid && our_validation[:valid]
-          issues << 'We accept a file that svgcheck rejects'
+          issues << "We accept a file that svgcheck rejects"
         end
       end
 
@@ -233,8 +243,12 @@ module SvgConform
       issues << "Error count differs by #{error_count_diff}" if error_count_diff.positive?
 
       # Check for missing error types
-      svgcheck_error_types = svgcheck_errors.map { |e| extract_error_pattern(e[:message]) }.uniq
-      our_error_types = our_validation[:errors].map { |e| extract_error_pattern(e) }.uniq
+      svgcheck_error_types = svgcheck_errors.map do |e|
+        extract_error_pattern(e[:message])
+      end.uniq
+      our_error_types = our_validation[:errors].map do |e|
+        extract_error_pattern(e)
+      end.uniq
 
       missing_types = svgcheck_error_types - our_error_types
       extra_types = our_error_types - svgcheck_error_types
@@ -246,7 +260,7 @@ module SvgConform
         overall_compatible: issues.empty?,
         issues: issues,
         error_count_match: svgcheck_errors.length == our_validation[:errors].length,
-        validation_result_match: svgcheck_valid == our_validation[:valid]
+        validation_result_match: svgcheck_valid == our_validation[:valid],
       }
     end
 
@@ -258,13 +272,13 @@ module SvgConform
       when /Color '([^']+)' in attribute '(\w+)'/
         "invalid_color:#{Regexp.last_match(2)}"
       when /viewBox/i
-        'viewbox_issue'
+        "viewbox_issue"
       when /namespace/i
-        'namespace_issue'
+        "namespace_issue"
       when /font/i
-        'font_issue'
+        "font_issue"
       else
-        error_message.split(':').first || error_message
+        error_message.split(":").first || error_message
       end
     end
   end

@@ -2,20 +2,21 @@
 # frozen_string_literal: true
 
 # Demo script showing SvgConform capabilities
-require_relative '../lib/svg_conform'
+require_relative "../lib/svg_conform"
 
-puts 'SvgConform Demo'
-puts '=' * 50
+puts "SvgConform Demo"
+puts "=" * 50
 
 # Test with actual fixture files
-fixtures_dir = File.join(__dir__, '..', 'spec', 'fixtures', 'svgcheck', 'inputs')
-test_files = ['viewBox-height.svg', 'colors.svg', 'IETF-test.svg', 'good.svg']
+fixtures_dir = File.join(__dir__, "..", "spec", "fixtures", "svgcheck",
+                         "inputs")
+test_files = ["viewBox-height.svg", "colors.svg", "IETF-test.svg", "good.svg"]
 
 validator = SvgConform::Validator.new
 
 # Show available profiles
 puts "\n1. Available Profiles:"
-puts '-' * 30
+puts "-" * 30
 
 SvgConform::Profiles.available_profiles.each do |name|
   profile = SvgConform::Profiles.get(name)
@@ -29,7 +30,7 @@ test_files.each do |filename|
 
   puts "\n#{'=' * 60}"
   puts "Testing file: #{filename}"
-  puts '=' * 60
+  puts "=" * 60
 
   # Read and display the SVG content
   svg_content = File.read(file_path)
@@ -40,7 +41,7 @@ test_files.each do |filename|
   # Test each profile
   SvgConform::Profiles.available_profiles.each do |profile_name|
     puts "\n#{profile_name.to_s.upcase} Profile Results:"
-    puts '-' * 40
+    puts "-" * 40
 
     begin
       result = validator.validate_file(file_path, profile: profile_name)
@@ -71,17 +72,18 @@ test_files.each do |filename|
         result.apply_fixes
 
         if result.fixed?
-          puts '✓ Fixes applied successfully!'
-          puts 'Fixed SVG preview (first 200 chars):'
+          puts "✓ Fixes applied successfully!"
+          puts "Fixed SVG preview (first 200 chars):"
           fixed_content = result.fixed_document.to_xml
-          puts fixed_content[0..200] + (fixed_content.length > 200 ? '...' : '')
+          puts fixed_content[0..200] + (fixed_content.length > 200 ? "..." : "")
 
           # Re-validate the fixed document
-          fixed_result = validator.validate(fixed_content, profile: profile_name)
+          fixed_result = validator.validate(fixed_content,
+                                            profile: profile_name)
           puts "\nRe-validation: #{fixed_result.valid? ? 'VALID ✓' : 'INVALID ✗'}"
           puts "Remaining errors: #{fixed_result.error_count}"
         else
-          puts '✗ Could not apply fixes'
+          puts "✗ Could not apply fixes"
         end
       end
     rescue StandardError => e
@@ -92,11 +94,11 @@ end
 
 # Performance test
 puts "\n#{'=' * 60}"
-puts 'Performance Test'
-puts '=' * 60
+puts "Performance Test"
+puts "=" * 60
 
-require 'benchmark'
-test_file = File.join(fixtures_dir, 'good.svg')
+require "benchmark"
+test_file = File.join(fixtures_dir, "good.svg")
 
 if File.exist?(test_file)
   time = Benchmark.realtime do
@@ -108,7 +110,7 @@ if File.exist?(test_file)
   puts "Validated #{test_file} 100 times in #{time.round(3)} seconds"
   puts "Average: #{(time * 1000 / 100).round(2)}ms per validation"
 else
-  puts 'Performance test skipped - test file not found'
+  puts "Performance test skipped - test file not found"
 end
 
 puts "\nDemo completed!"

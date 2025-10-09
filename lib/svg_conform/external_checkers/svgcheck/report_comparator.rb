@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative '../../conformance_report'
-require_relative '../../validator'
-require_relative '../../profiles'
+require_relative "../../conformance_report"
+require_relative "../../validator"
+require_relative "../../profiles"
 
 module SvgConform
   module ExternalCheckers
@@ -11,7 +11,8 @@ module SvgConform
       class ReportComparator
         attr_reader :test_files_dir, :svgcheck_outputs_dir
 
-        def initialize(test_files_dir: 'svgcheck/svgcheck/Tests', svgcheck_outputs_dir: 'spec/fixtures/svgcheck')
+        def initialize(test_files_dir: "svgcheck/svgcheck/Tests",
+svgcheck_outputs_dir: "spec/fixtures/svgcheck")
           @test_files_dir = test_files_dir
           @svgcheck_outputs_dir = svgcheck_outputs_dir
         end
@@ -25,27 +26,24 @@ module SvgConform
             matching: 0,
             different: 0,
             errors: 0,
-            differences: {}
+            differences: {},
           }
 
           test_files.each do |filename|
-            begin
-              comparison = compare_file(filename)
+            comparison = compare_file(filename)
 
-              if comparison[:identical]
-                results[:matching] += 1
-              else
-                results[:different] += 1
-                results[:differences][filename] = comparison
-              end
-
-            rescue => e
-              results[:errors] += 1
-              results[:differences][filename] = {
-                error: e.message,
-                summary: "Error during comparison: #{e.message}"
-              }
+            if comparison[:identical]
+              results[:matching] += 1
+            else
+              results[:different] += 1
+              results[:differences][filename] = comparison
             end
+          rescue StandardError => e
+            results[:errors] += 1
+            results[:differences][filename] = {
+              error: e.message,
+              summary: "Error during comparison: #{e.message}",
+            }
           end
 
           results
@@ -56,13 +54,17 @@ module SvgConform
           svg_conform_report = generate_svg_conform_report(filename)
           svgcheck_report = load_svgcheck_report(filename)
 
-          return { error: 'No svgcheck report found', identical: false } unless svgcheck_report
+          unless svgcheck_report
+            return { error: "No svgcheck report found",
+                     identical: false }
+          end
 
           # Perform detailed comparison
           comparison = svg_conform_report.compare_with(svgcheck_report)
 
           # Add semantic comparison
-          semantic_comparison = perform_semantic_comparison(svg_conform_report, svgcheck_report)
+          semantic_comparison = perform_semantic_comparison(svg_conform_report,
+                                                            svgcheck_report)
           comparison[:semantic] = semantic_comparison
 
           comparison
@@ -73,7 +75,7 @@ module SvgConform
         def find_test_files
           return [] unless Dir.exist?(@test_files_dir)
 
-          pattern = File.join(@test_files_dir, '*.{svg,xml}')
+          pattern = File.join(@test_files_dir, "*.{svg,xml}")
           Dir.glob(pattern).map { |path| File.basename(path) }.sort
         end
 
@@ -92,18 +94,20 @@ module SvgConform
           ConformanceReport.from_svg_conform_result(
             filename,
             validation_result,
-            profile: 'svg_1_2_rfc',
-            use_svgcheck_mapping: true
+            profile: "svg_1_2_rfc",
+            use_svgcheck_mapping: true,
           )
         end
 
         def load_svgcheck_report(filename)
-          base_name = File.basename(filename, '.*')
+          base_name = File.basename(filename, ".*")
           extension = File.extname(filename)
 
           # Try to load from check mode first, then repair mode
-          check_error_file = File.join(@svgcheck_outputs_dir, 'check', "#{base_name}#{extension}.out")
-          repair_error_file = File.join(@svgcheck_outputs_dir, 'repair', "#{base_name}#{extension}.out")
+          check_error_file = File.join(@svgcheck_outputs_dir, "check",
+                                       "#{base_name}#{extension}.out")
+          repair_error_file = File.join(@svgcheck_outputs_dir, "repair",
+                                        "#{base_name}#{extension}.out")
 
           error_file = if File.exist?(check_error_file)
                          check_error_file
@@ -137,7 +141,7 @@ module SvgConform
               semantic_key: semantic_key,
               svg_conform_count: svg_count,
               svgcheck_count: svgcheck_count,
-              difference: svg_count - svgcheck_count
+              difference: svg_count - svgcheck_count,
             }
           end
 
@@ -145,7 +149,7 @@ module SvgConform
             total_semantic_groups: all_semantic_keys.length,
             matching_groups: all_semantic_keys.length - semantic_issues.length,
             mismatched_groups: semantic_issues.length,
-            issues: semantic_issues
+            issues: semantic_issues,
           }
         end
 

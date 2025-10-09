@@ -1,12 +1,12 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative '../lib/svg_conform'
+require_relative "../lib/svg_conform"
 
 # Demo script showing the new requirements and remediations system
 class RequirementsDemo
   def run
-    puts '=== SvgConform Requirements & Remediations Demo ==='
+    puts "=== SvgConform Requirements & Remediations Demo ==="
     puts
 
     # Demo 1: Load profile from YAML
@@ -25,12 +25,12 @@ class RequirementsDemo
   private
 
   def demo_yaml_profile_loading
-    puts '1. Loading Profiles from YAML Configuration'
-    puts '=' * 50
+    puts "1. Loading Profiles from YAML Configuration"
+    puts "=" * 50
 
     begin
       # Load IETF profile from YAML
-      svg_1_2_rfc_profile = SvgConform::ProfileRegistry.load_profile('svg_1_2_rfc')
+      svg_1_2_rfc_profile = SvgConform::ProfileRegistry.load_profile("svg_1_2_rfc")
       puts "✓ Loaded IETF profile: #{svg_1_2_rfc_profile.name}"
       puts "  Description: #{svg_1_2_rfc_profile.description}"
       puts "  Requirements: #{svg_1_2_rfc_profile.requirement_count}"
@@ -38,7 +38,7 @@ class RequirementsDemo
       puts
 
       # Load Lucid fix profile
-      lucid_profile = SvgConform::ProfileRegistry.load_profile('lucid_fix')
+      lucid_profile = SvgConform::ProfileRegistry.load_profile("lucid_fix")
       puts "✓ Loaded Lucid Fix profile: #{lucid_profile.name}"
       puts "  Description: #{lucid_profile.description}"
       puts "  Requirements: #{lucid_profile.requirement_count}"
@@ -57,8 +57,8 @@ class RequirementsDemo
   end
 
   def demo_requirements_validation
-    puts '2. Requirements-based Validation'
-    puts '=' * 50
+    puts "2. Requirements-based Validation"
+    puts "=" * 50
 
     # Create a test SVG with invalid use element
     invalid_svg = <<~SVG
@@ -72,12 +72,13 @@ class RequirementsDemo
       </svg>
     SVG
 
-    puts 'Test SVG with invalid use element:'
+    puts "Test SVG with invalid use element:"
     puts invalid_svg
     puts
 
     # Create a simple profile with requirements
-    profile = SvgConform::Profile.new(:test_requirements, 'Test Requirements Profile')
+    profile = SvgConform::Profile.new(:test_requirements,
+                                      "Test Requirements Profile")
 
     begin
       # Add invalid ID references requirement
@@ -88,14 +89,14 @@ class RequirementsDemo
       document = SvgConform::Document.new(invalid_svg)
       result = profile.validate(document)
 
-      puts 'Validation Results:'
+      puts "Validation Results:"
       puts "  Valid: #{result.valid?}"
       puts "  Errors: #{result.error_count}"
       puts "  Warnings: #{result.warning_count}"
       puts
 
       if result.errors.any?
-        puts 'Errors found:'
+        puts "Errors found:"
         result.errors.each_with_index do |error, i|
           puts "  #{i + 1}. #{error.message}"
           puts "     Node: #{error.node.name}" if error.node
@@ -111,8 +112,8 @@ class RequirementsDemo
   end
 
   def demo_remediations
-    puts '3. Applying Remediations'
-    puts '=' * 50
+    puts "3. Applying Remediations"
+    puts "=" * 50
 
     # Create test SVG with issues
     problematic_svg = <<~SVG
@@ -126,13 +127,14 @@ class RequirementsDemo
       </svg>
     SVG
 
-    puts 'Original SVG with invalid use elements:'
+    puts "Original SVG with invalid use elements:"
     puts problematic_svg
     puts
 
     begin
       # Create profile with requirements and remediations
-      profile = SvgConform::Profile.new(:test_remediations, 'Test Remediations Profile')
+      profile = SvgConform::Profile.new(:test_remediations,
+                                        "Test Remediations Profile")
 
       # Add requirement
       requirement = SvgConform::Requirements::InvalidIdReferencesRequirement.new
@@ -151,7 +153,9 @@ class RequirementsDemo
       if result.errors.any?
         # Debug: Show requirement IDs
         puts "Failed requirement IDs: #{result.failed_requirements.map(&:requirement_id)}"
-        puts "Available remediations: #{profile.remediations.map { |r| "#{r.id} (targets: #{r.target_requirements})" }}"
+        puts "Available remediations: #{profile.remediations.map do |r|
+          "#{r.id} (targets: #{r.target_requirements})"
+        end}"
         puts
 
         # Apply remediations
@@ -162,7 +166,7 @@ class RequirementsDemo
         puts "Summary: #{engine.summary}"
         puts
 
-        puts 'Fixed SVG:'
+        puts "Fixed SVG:"
         puts document.to_xml
         puts
       end
@@ -174,8 +178,8 @@ class RequirementsDemo
   end
 
   def demo_lucid_fix
-    puts '4. Lucid SVG Fix Scenario'
-    puts '=' * 50
+    puts "4. Lucid SVG Fix Scenario"
+    puts "=" * 50
 
     # Simulate a Lucid-generated SVG with invalid use elements
     lucid_svg = <<~SVG
@@ -194,13 +198,13 @@ class RequirementsDemo
       </svg>
     SVG
 
-    puts 'Lucid-style SVG with invalid use elements:'
+    puts "Lucid-style SVG with invalid use elements:"
     puts lucid_svg
     puts
 
     begin
       # Load the Lucid fix profile
-      profile = SvgConform::ProfileRegistry.load_profile('lucid_fix')
+      profile = SvgConform::ProfileRegistry.load_profile("lucid_fix")
 
       # Process the SVG
       document = SvgConform::Document.new(lucid_svg)
@@ -213,11 +217,11 @@ class RequirementsDemo
         engine = SvgConform::RemediationEngine.new(profile)
         engine.apply_remediations(document, result)
 
-        puts 'Applied Lucid fix remediations'
+        puts "Applied Lucid fix remediations"
         puts "Summary: #{engine.summary}"
         puts
 
-        puts 'Fixed SVG (invalid use elements removed):'
+        puts "Fixed SVG (invalid use elements removed):"
         puts document.to_xml
         puts
       end
