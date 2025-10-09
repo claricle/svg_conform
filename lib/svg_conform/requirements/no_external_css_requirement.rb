@@ -35,12 +35,13 @@ module SvgConform
         end
       end
 
-      def should_check_node?(node)
-        element?(node) && (
-          node.name == 'style' ||
+      def should_check_node?(node, context = nil)
+        return false unless element?(node)
+        return false if context && context.node_structurally_invalid?(node)
+
+        node.name == 'style' ||
           node.name == 'link' ||
           has_style_attribute?(node)
-        )
       end
 
       private

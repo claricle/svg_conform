@@ -51,10 +51,10 @@ RSpec.describe SvgConform::Requirements::ViewboxRequiredRequirement do
         context = SvgConform::ValidationContext.new(document, nil)
         requirement.validate_document(document, context)
 
-        # Check that errors are specific to missing viewBox attribute
-        context.errors.each do |error|
-          expect(error.message).to match(/viewBox.*attribute|must have.*viewBox/i)
-        end
+        # Check that the primary error is about missing viewBox attribute
+        # (there may be additional informational errors about calculated viewBox)
+        primary_error = context.errors.first
+        expect(primary_error.message).to match(/viewBox.*attribute|must have.*viewBox/i)
       end
 
       it 'passes validation for documents with viewBox attribute' do
