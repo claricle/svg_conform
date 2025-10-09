@@ -2,7 +2,7 @@
 
 RSpec.describe SvgConform do
   it "has a version number" do
-    expect(SvgConform::VERSION).not_to be nil
+    expect(SvgConform::VERSION).not_to be_nil
   end
 
   it "validates SVG documents" do
