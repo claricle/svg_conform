@@ -22,13 +22,18 @@ module SvgConform
       # Validate the entire document (called once per requirement)
       def validate_document(document, context)
         document.traverse do |node|
-          check(node, context) if should_check_node?(node)
+          check(node, context) if should_check_node?(node, context)
         end
       end
 
       # Determine if this requirement should check a specific node
-      def should_check_node?(node)
-        node.respond_to?(:name) && node.respond_to?(:attributes)
+      def should_check_node?(node, context = nil)
+        return false unless node.respond_to?(:name) && node.respond_to?(:attributes)
+
+        # Skip structurally invalid nodes (and their children are automatically skipped by marking the parent)
+        return false if context && context.node_structurally_invalid?(node)
+
+        true
       end
 
       # Helper method to check if a node is an element

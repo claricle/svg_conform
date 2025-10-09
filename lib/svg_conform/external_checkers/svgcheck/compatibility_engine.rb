@@ -31,6 +31,15 @@ module SvgConform
           filtered_errors = []
 
           errors.each do |error|
+            # Skip namespace_validation errors only for RDF/metadata namespaces
+            # svgcheck skips these silently, but reports other namespace errors
+            if error.requirement_id == 'namespace_validation'
+              # Only skip RDF-related namespace errors
+              if rdf_namespace_error?(error)
+                next
+              end
+            end
+
             # Map svg_conform requirement IDs to svgcheck-compatible ones
             mapped_req_id = map_requirement_id(error.requirement_id)
             next if mapped_req_id.nil? # Skip unmapped requirements
@@ -42,6 +51,21 @@ module SvgConform
         end
 
         private
+
+        def rdf_namespace_error?(error)
+          return false unless error.respond_to?(:message)
+
+          # List of RDF/metadata namespaces that svgcheck silently skips
+          rdf_namespaces = [
+            'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+            'http://creativecommons.org/ns#',
+            'http://purl.org/dc/elements/1.1/',
+            'http://purl.org/dc/dcmitype/',
+            'http://www.w3.org/2000/01/rdf-schema#'
+          ]
+
+          rdf_namespaces.any? { |ns| error.message.include?(ns) }
+        end
 
         def has_width_and_height_datatype_condition?(validation_result, filename)
           # This would need to be implemented based on the specific logic
@@ -56,9 +80,10 @@ module SvgConform
             'allowed_elements' => 'allowed_elements',
             'namespace_attributes' => 'namespace_attributes',
             'namespace_validation' => 'namespace_attributes', # Map to closest equivalent
-            'font_family' => 'font_family',
+            'font_family' => 'style', # svgcheck reports font-family issues as style errors
             'color_restrictions' => 'color_restrictions',
             'viewbox_required' => 'viewbox_required',
+            'style' => 'style', # Direct mapping for StyleRequirement
             'style_promotion' => 'style',
             'style_syntax' => 'style',
             'style_validation' => 'style',

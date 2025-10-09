@@ -10,6 +10,7 @@ module SvgConform
       attribute :type, :string, default: -> { 'NamespaceAttributesRequirement' }
       attribute :disallowed_namespaces, :string, collection: true, default: -> { [] }
       attribute :allowed_namespaces, :string, collection: true, default: -> { [] }
+      attribute :exempt_elements, :string, collection: true, default: -> { [] }
 
       yaml do
         map 'id', to: :id
@@ -17,10 +18,14 @@ module SvgConform
         map 'type', to: :type
         map 'disallowed_namespaces', to: :disallowed_namespaces
         map 'allowed_namespaces', to: :allowed_namespaces
+        map 'exempt_elements', to: :exempt_elements
       end
 
       def check(node, context)
         return unless element?(node)
+
+        # Skip validation for exempt elements (e.g., RDF metadata elements)
+        return if exempt_elements.include?(node.name)
 
         # Try to get attributes using different methods depending on what's available
         if node.respond_to?(:attribute_nodes)

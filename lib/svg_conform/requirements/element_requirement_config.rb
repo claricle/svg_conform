@@ -8,10 +8,12 @@ module SvgConform
     class ElementRequirementConfig < Lutaml::Model::Serializable
       attribute :tag, :string
       attribute :attr, :string, collection: true, default: -> { [] }
+      attribute :allowed_children, :string, collection: true, default: -> { [] }
 
       yaml do
         map 'tag', to: :tag
         map 'attributes', to: :attr
+        map 'allowed_children', to: :allowed_children
       end
 
       # Check if an attribute is allowed for this element

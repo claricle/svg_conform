@@ -1,0 +1,212 @@
+= RDF Metadata Support Configuration
+:toc:
+:toclevels: 3
+
+== Overview
+
+The `svg_conform` library provides configurable support for RDF (Resource Description Framework) metadata in SVG files. This allows profiles to choose whether to accept or reject RDF metadata namespaces commonly found in SVG files exported from graphics applications.
+
+== Background
+
+Many SVG authoring tools (like Inkscape, Adobe Illustrator, etc.) embed RDF metadata in SVG files using namespaces such as:
+
+* `http://www.w3.org/1999/02/22-rdf-syntax-ns#` (RDF)
+* `http://creativecommons.org/ns#` (Creative Commons)
+* `http://purl.org/dc/elements/1.1/` (Dublin Core)
+* `http://purl.org/dc/dcmitype/` (Dublin Core MIME types)
+* `http://www.w3.org/2000/01/rdf-schema#` (RDF Schema)
+
+== Configuration
+
+=== Requirements Configuration
+
+Both `NamespaceRequirement` and `AllowedElementsRequirement` support the `allow_rdf_metadata` configuration option:
+
+[source,yaml]
+----
+requirements:
+  - id: "namespace_validation"
+    type: "NamespaceRequirement"
+    allow_rdf_metadata: true  # or false
+    allowed_namespaces:
+      - "http://www.w3.org/2000/svg"
+      - ""
+
+  - id: "allowed_elements"
+    type: "AllowedElementsRequirement"
+    skip_foreign_namespaces: true
+    allow_rdf_metadata: true  # or false
+    allowed_namespaces:
+      - "http://www.w3.org/2000/svg"
+      - ""
+----
+
+=== Configuration Options
+
+`allow_rdf_metadata`:: Boolean flag to enable/disable RDF metadata support
+* `true`: RDF namespace elements are silently allowed and not validated
+* `false`: RDF namespace elements trigger validation errors (default for strict conformance)
+
+== Usage Examples
+
+=== Strict SVG 1.2 RFC (No RDF)
+
+For strict RFC 7996 conformance that rejects any non-SVG namespaces:
+
+[source,yaml]
+----
+# config/profiles/svg_1_2_rfc.yml
+requirements:
+  - id: "namespace_validation"
+    type: "NamespaceRequirement"
+    allow_rdf_metadata: false  # Strict: no foreign namespaces
+    allowed_namespaces:
+      - "http://www.w3.org/2000/svg"
+      - ""
+----
+
+This configuration will generate errors for RDF metadata, which can then be:
+
+* Reported to users for manual removal
+* Filtered by the compatibility engine for svgcheck comparison
+* Remediated by future RDF removal tools
+
+=== Permissive SVG 1.2 RFC (With RDF)
+
+For workflows that accept RDF metadata (e.g., design tool exports):
+
+[source,yaml]
+----
+# config/profiles/svg_1_2_rfc_with_rdf.yml
+requirements:
+  - id: "namespace_validation"
+    type: "NamespaceRequirement"
+    allow_rdf_metadata: true  # Allow RDF metadata
+    allowed_namespaces:
+      - "http://www.w3.org/2000/svg"
+      - ""
+
+  - id: "allowed_elements"
+    type: "AllowedElementsRequirement"
+    skip_foreign_namespaces: true
+    allow_rdf_metadata: true  # Skip RDF element validation
+    allowed_namespaces:
+      - "http://www.w3.org/2000/svg"
+      - ""
+----
+
+With this configuration:
+
+* RDF elements like `<rdf:RDF>`, `<cc:Work>`, `<dc:format>` are silently allowed
+* No validation errors generated for RDF content
+* Focus remains on SVG content validation
+
+== Implementation Details
+
+=== Generic Namespace Checking
+
+The implementation uses generic namespace detection, not hardcoded element names:
+
+[source,ruby]
+----
+def foreign_namespace?(node)
+  element_namespace = get_element_namespace(node)
+
+  # Build effective allowed namespaces
+  effective_allowed_namespaces = allowed_namespaces
+  if allow_rdf_metadata
+    effective_allowed_namespaces = allowed_namespaces + RDF_NAMESPACES
+  end
+
+  !effective_allowed_namespaces.include?(element_namespace)
+end
+----
+
+=== No Hardcoding
+
+* RDF namespaces defined as constants, not scattered throughout code
+* Element names not hardcoded (e.g., no special cases for "RDF", "Work", etc.)
+* Behavior entirely driven by YAML configuration
+
+=== Consistency Across Requirements
+
+Both requirements use the same RDF namespace list for consistency:
+
+[source,ruby]
+----
+RDF_NAMESPACES = [
+  'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+  'http://creativecommons.org/ns#',
+  'http://purl.org/dc/elements/1.1/',
+  'http://purl.org/dc/dcmitype/',
+  'http://www.w3.org/2000/01/rdf-schema#'
+].freeze
+----
+
+== SVGCheck Compatibility
+
+For svgcheck compatibility testing, the profile should use:
+
+[source,yaml]
+----
+allow_rdf_metadata: false  # Generate errors for RDF elements
+----
+
+The compatibility engine then filters these errors for report comparison, matching svgcheck's behavior of silently skipping RDF elements.
+
+This approach allows:
+
+* Full validation in normal mode (reports all issues)
+* Accurate svgcheck compatibility testing (filtered comparison)
+* User awareness of RDF metadata presence
+
+== Benefits
+
+✅ **Configurable**: Enable/disable RDF support per profile
+
+✅ **Generic**: Works with any RDF namespace, not just specific elements
+
+✅ **Maintainable**: Easy to add new RDF namespaces
+
+✅ **Flexible**: Different profiles for different workflows
+
+✅ **No Hardcoding**: All logic configuration-driven
+
+== Example Workflows
+
+=== Design Tool Export Workflow
+
+Use `svg_1_2_rfc_with_rdf` profile:
+
+[source,bash]
+----
+svg_conform check diagram.svg --profile svg_1_2_rfc_with_rdf
+----
+
+Result: RDF metadata silently allowed, focus on SVG content validation
+
+=== RFC Publication Workflow
+
+Use `svg_1_2_rfc` profile:
+
+[source,bash]
+----
+svg_conform check diagram.svg --profile svg_1_2_rfc
+----
+
+Result: RDF metadata reported as errors, strict conformance enforced
+
+=== Testing Against SVGCheck
+
+Use `svg_1_2_rfc` profile with compatibility mode:
+
+[source,ruby]
+----
+report = ConformanceReport.from_svg_conform_result(
+  filename, result,
+  profile: 'svg_1_2_rfc',
+  use_svgcheck_mapping: true  # Filters RDF errors for comparison
+)
+----
+
+Result: RDF errors filtered out to match svgcheck's silent behavior

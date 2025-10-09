@@ -14,6 +14,18 @@ module SvgConform
       attribute :check_invalid_attributes, :boolean, default: false
       attribute :check_parent_child, :boolean, default: false
       attribute :parent_child_rules, :string, default: -> { {} }
+      attribute :skip_foreign_namespaces, :boolean, default: false
+      attribute :allowed_namespaces, :string, collection: true, default: -> { [] }
+      attribute :allow_rdf_metadata, :boolean, default: false
+
+      # RDF-related namespaces (same as in NamespaceRequirement for consistency)
+      RDF_NAMESPACES = [
+        'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+        'http://creativecommons.org/ns#',
+        'http://purl.org/dc/elements/1.1/',
+        'http://purl.org/dc/dcmitype/',
+        'http://www.w3.org/2000/01/rdf-schema#'
+      ].freeze
 
       yaml do
         map 'id', to: :id
@@ -23,10 +35,19 @@ module SvgConform
         map 'disallowed_elements', to: :disallowed_elements
         map 'check_attributes', to: :check_attributes
         map 'check_invalid_attributes', to: :check_invalid_attributes
+        map 'check_parent_child', to: :check_parent_child
+        map 'skip_foreign_namespaces', to: :skip_foreign_namespaces
+        map 'allowed_namespaces', to: :allowed_namespaces
+        map 'allow_rdf_metadata', to: :allow_rdf_metadata
       end
 
       def check(node, context)
         return unless element?(node)
+
+        # Skip foreign namespace elements if configured (let NamespaceRequirement handle them)
+        if skip_foreign_namespaces && foreign_namespace?(node)
+          return
+        end
 
         element_name = node.name
 
@@ -53,6 +74,10 @@ module SvgConform
               severity: :error,
               data: { element: element_name, parent: parent_name }
             )
+            # Mark node as structurally invalid so other requirements skip it
+            context.mark_node_structurally_invalid(node)
+            # Return early - don't check attributes or element allowance for invalid structure
+            return
           end
         end
 
@@ -67,6 +92,10 @@ module SvgConform
               severity: :error,
               data: { element: element_name }
             )
+            # Mark as structurally invalid so children aren't validated
+            # (matches svgcheck behavior: invalid element removed with all children)
+            context.mark_node_structurally_invalid(node)
+            return
           end
         end
 
@@ -92,19 +121,20 @@ module SvgConform
       end
 
       def invalid_parent_child?(parent_name, child_name)
-        # Define invalid parent-child relationships based on SVG spec and svgcheck behavior
-        invalid_relationships = {
-          'desc' => %w[circle rect path ellipse line polyline polygon g use image text],
-          'title' => %w[circle rect path ellipse line polyline polygon g use image text],
-          'metadata' => %w[circle rect path ellipse line polyline polygon g use image text],
-          'defs' => %w[clipPath font font-face missing-glyph glyph] # Based on svgcheck reports - these are NOT allowed in defs
-        }
+        return false unless element_configs&.any?
 
-        # Check if this parent-child combination is invalid
-        invalid_children = invalid_relationships[parent_name]
-        return false unless invalid_children
+        # Find the configuration for the parent element
+        parent_config = element_configs.find { |config| config.tag == parent_name }
+        return false unless parent_config
 
-        invalid_children.include?(child_name)
+        # If allowed_children is defined and not empty, use it
+        if parent_config.allowed_children && parent_config.allowed_children.any?
+          # Child must be in the allowed list
+          return !parent_config.allowed_children.include?(child_name)
+        end
+
+        # No restrictions defined for this parent
+        false
       end
 
       def collect_attribute_errors(node)
@@ -244,8 +274,71 @@ module SvgConform
         prioritized
       end
 
-      def should_check_node?(node)
-        element?(node)
+      def should_check_node?(node, context = nil)
+        return false unless element?(node)
+        return false if context && context.node_structurally_invalid?(node)
+        true
+      end
+
+      def foreign_namespace?(node)
+        return false unless skip_foreign_namespaces
+
+        # Check if element has a namespace
+        element_namespace = get_element_namespace(node)
+
+        # No namespace or empty namespace means SVG namespace (default)
+        return false if element_namespace.nil? || element_namespace.empty?
+
+        # Check if namespace is in allowed list
+        # If allow_rdf_metadata is enabled, also allow RDF namespaces
+        effective_allowed_namespaces = allowed_namespaces
+        if allow_rdf_metadata
+          effective_allowed_namespaces = allowed_namespaces + RDF_NAMESPACES
+        end
+
+        return false if effective_allowed_namespaces.empty?
+
+        !effective_allowed_namespaces.include?(element_namespace)
+      end
+
+      def get_element_namespace(node)
+        # Try to get namespace from the element
+        if node.respond_to?(:namespace) && node.namespace
+          namespace_str = node.namespace.to_s
+          # Extract the URI from the namespace string
+          if namespace_str.match(/xmlns[^=]*="([^"]+)"/)
+            return ::Regexp.last_match(1)
+          end
+        end
+
+        # If no namespace found, check if element has a prefix (indicating it's namespaced)
+        if node.name.include?(':')
+          prefix = node.name.split(':').first
+          return find_namespace_uri_for_prefix(node, prefix)
+        end
+
+        nil
+      end
+
+      def find_namespace_uri_for_prefix(node, prefix)
+        # Check current node and ancestors for namespace declarations
+        current = node
+        while current
+          # Check for xmlns:prefix attribute
+          xmlns_attr = "xmlns:#{prefix}"
+          if current.respond_to?(:attributes) && current.attributes[xmlns_attr]
+            return current.attributes[xmlns_attr]
+          end
+
+          # Check using get_attribute method
+          namespace_uri = get_attribute(current, xmlns_attr)
+          return namespace_uri if namespace_uri
+
+          # Move to parent
+          current = current.respond_to?(:parent) ? current.parent : nil
+        end
+
+        nil
       end
     end
   end

@@ -6,6 +6,11 @@ requirements:
   - id: "allowed_elements"
     type: "AllowedElementsRequirement"
     description: "Validates allowed SVG elements and attributes per RFC 7996 Section 2.1"
+    skip_foreign_namespaces: true
+    allow_rdf_metadata: false  # RDF errors generated but filtered by compatibility engine for svgcheck
+    allowed_namespaces:
+      - "http://www.w3.org/2000/svg"
+      - ""  # Default namespace (no prefix)
     element_configs:
       # Direct encoding from svgcheck word_properties.py elements dictionary
       - tag: "svg"
@@ -199,6 +204,7 @@ requirements:
   - id: "namespace_validation"
     type: "NamespaceRequirement"
     description: "Only allows SVG namespace elements per RFC 7996 Section 2.1"
+    allow_rdf_metadata: false  # RDF errors generated but filtered by compatibility engine for svgcheck
     allowed_namespaces:
       - "http://www.w3.org/2000/svg"
       - ""  # Default namespace (no prefix)
@@ -212,6 +218,15 @@ requirements:
       - "http://www.w3.org/1999/xlink"
       - "http://www.w3.org/XML/1998/namespace"  # XML namespace (xml:space, xml:lang, etc.)
       - ""  # Default namespace (no prefix)
+    exempt_elements:
+      # RDF metadata elements that svgcheck allows to have RDF namespace attributes
+      - "RDF"
+      - "Work"
+      - "format"
+      - "type"
+      - "title"
+      - "creator"
+      - "description"
 
   # RFC 7996 Section 2.1: ViewBox required on root SVG element
   - id: "viewbox_required"

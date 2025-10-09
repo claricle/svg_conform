@@ -93,6 +93,13 @@ module SvgConform
             next
           end
 
+          # Skip value validation for color properties - handled by ColorRestrictionsRequirement
+          color_properties = %w[fill stroke color stop-color flood-color lighting-color]
+          next if color_properties.include?(property)
+
+          # Skip value validation for font-family - handled by FontFamilyRequirement
+          next if property == 'font-family'
+
           # Check if property value is valid
           next unless property_value_invalid?(property, value)
 
@@ -133,8 +140,24 @@ module SvgConform
             # Convert to array if it's a single value
             allowed_values = [allowed_values] if allowed_values.is_a?(String)
 
-            # Check if the value is in the allowed list
-            return !allowed_values.include?(value.downcase)
+            # Separate literal values from type references (those starting with '<')
+            literal_values = allowed_values.reject { |v| v.start_with?('<') }
+            type_references = allowed_values.select { |v| v.start_with?('<') }
+
+            # Check literal values first (case-insensitive)
+            return false if literal_values.map(&:downcase).include?(value.downcase)
+
+            # If there are type references, validate against those types
+            if type_references.any?
+              type_references.each do |type_ref|
+                return false if validate_property_type(value, type_ref)
+              end
+              # Value didn't match any type reference
+              return true
+            else
+              # No type references, and didn't match literals
+              return true
+            end
           end
         end
 
@@ -168,7 +191,9 @@ module SvgConform
       # Validate color values (from basic_types['<color>'] in word_properties.py)
       def validate_color_value(value)
         allowed_colors = ['black', '#ffffff', '#FFFFFF', 'white', '#000000', 'currentColor', 'inherit']
-        allowed_colors.include?(value.downcase) || allowed_colors.include?(value)
+        # Case-insensitive comparison for all values
+        allowed_colors_lower = allowed_colors.map(&:downcase)
+        allowed_colors_lower.include?(value.downcase) || allowed_colors.include?(value)
       end
 
       # Validate paint values (from basic_types['<paint>'] in word_properties.py)

@@ -10,6 +10,16 @@ module SvgConform
       attribute :allowed_namespaces, :string, collection: true, default: -> { ['http://www.w3.org/2000/svg'] }
       attribute :disallowed_namespaces, :string, collection: true, default: -> { [] }
       attribute :required_namespace, :string, default: 'http://www.w3.org/2000/svg'
+      attribute :allow_rdf_metadata, :boolean, default: false
+
+      # RDF-related namespaces commonly found in SVG metadata
+      RDF_NAMESPACES = [
+        'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+        'http://creativecommons.org/ns#',
+        'http://purl.org/dc/elements/1.1/',
+        'http://purl.org/dc/dcmitype/',
+        'http://www.w3.org/2000/01/rdf-schema#'
+      ].freeze
 
       yaml do
         map 'id', to: :id
@@ -18,6 +28,7 @@ module SvgConform
         map 'allowed_namespaces', to: :allowed_namespaces
         map 'disallowed_namespaces', to: :disallowed_namespaces
         map 'required_namespace', to: :required_namespace
+        map 'allow_rdf_metadata', to: :allow_rdf_metadata
       end
 
       def validate_document(document, context)
@@ -136,7 +147,13 @@ module SvgConform
         puts "DEBUG: Element #{node.name} has namespace #{element_namespace}"
 
         # Check against allowed namespaces if configured
-        if allowed_namespaces && !allowed_namespaces.empty? && !allowed_namespaces.include?(element_namespace)
+        # If allow_rdf_metadata is enabled, also allow RDF namespaces
+        effective_allowed_namespaces = allowed_namespaces
+        if allow_rdf_metadata
+          effective_allowed_namespaces = allowed_namespaces + RDF_NAMESPACES
+        end
+
+        if effective_allowed_namespaces && !effective_allowed_namespaces.empty? && !effective_allowed_namespaces.include?(element_namespace)
           puts "DEBUG: Adding error for disallowed namespace #{element_namespace}"
           context.add_error(
             requirement_id: id,
@@ -146,7 +163,7 @@ module SvgConform
             data: {
               element_name: node.name,
               namespace: element_namespace,
-              allowed_namespaces: allowed_namespaces
+              allowed_namespaces: effective_allowed_namespaces
             }
           )
           return
@@ -213,7 +230,13 @@ module SvgConform
         return if element_namespace.nil? || element_namespace.empty?
 
         # Check against allowed namespaces if configured
-        if allowed_namespaces && !allowed_namespaces.empty? && !allowed_namespaces.include?(element_namespace)
+        # If allow_rdf_metadata is enabled, also allow RDF namespaces
+        effective_allowed_namespaces = allowed_namespaces
+        if allow_rdf_metadata
+          effective_allowed_namespaces = allowed_namespaces + RDF_NAMESPACES
+        end
+
+        if effective_allowed_namespaces && !effective_allowed_namespaces.empty? && !effective_allowed_namespaces.include?(element_namespace)
           context.add_error(
             requirement_id: id,
             message: "The namespace #{element_namespace} is not permitted for svg elements.",
@@ -222,7 +245,7 @@ module SvgConform
             data: {
               element_name: node.name,
               namespace: element_namespace,
-              allowed_namespaces: allowed_namespaces
+              allowed_namespaces: effective_allowed_namespaces
             }
           )
           return

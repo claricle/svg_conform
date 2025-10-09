@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'set'
+
 module SvgConform
   # Context object passed to rules during validation
   class ValidationContext
@@ -13,6 +15,36 @@ module SvgConform
       @validity_errors = []
       @infos = []
       @data = {}
+      @structurally_invalid_node_ids = Set.new
+    end
+
+    # Mark a node as structurally invalid (e.g., invalid parent-child relationship)
+    # Other requirements should skip attribute validation on these nodes
+    # Also marks all descendants as invalid since they'll be removed with the parent
+    def mark_node_structurally_invalid(node)
+      node_id = generate_node_id(node)
+      @structurally_invalid_node_ids.add(node_id)
+
+      # Mark all descendants as invalid too
+      mark_descendants_invalid(node)
+    end
+
+    # Mark all descendants of a node as structurally invalid
+    def mark_descendants_invalid(node)
+      return unless node.respond_to?(:children)
+
+      node.children.each do |child|
+        child_id = generate_node_id(child)
+        @structurally_invalid_node_ids.add(child_id)
+        # Recursively mark descendants
+        mark_descendants_invalid(child)
+      end
+    end
+
+    # Check if a node is structurally invalid
+    def node_structurally_invalid?(node)
+      node_id = generate_node_id(node)
+      @structurally_invalid_node_ids.include?(node_id)
     end
 
     def add_error(node:, message:, rule: nil, requirement: nil, requirement_id: nil, severity: nil, fix: nil, data: {})
@@ -82,6 +114,46 @@ module SvgConform
 
     def get_data(key)
       @data[key]
+    end
+
+    # Generate a unique identifier for a node based on its path
+    # Builds a stable path by walking up the parent chain
+    def generate_node_id(node)
+      return nil unless node.respond_to?(:name)
+
+      # Build path by walking up parent chain
+      path_parts = []
+      current = node
+
+      while current
+        if current.respond_to?(:name) && current.name
+          # Count previous siblings of the same type for position
+          position = 1
+          if current.respond_to?(:previous_sibling)
+            sibling = current.previous_sibling
+            while sibling
+              position += 1 if sibling.respond_to?(:name) && sibling.name == current.name
+              sibling = sibling.previous_sibling if sibling.respond_to?(:previous_sibling)
+            end
+          end
+
+          path_parts.unshift("#{current.name}[#{position}]")
+        end
+
+        # Stop if we reach the document root (doesn't have parent)
+        break unless current.respond_to?(:parent)
+
+        begin
+          current = current.parent
+        rescue NoMethodError
+          # Parent method failed, we're at root
+          break
+        end
+
+        break unless current
+      end
+
+      "/#{path_parts.join('/')}"
     end
   end
 

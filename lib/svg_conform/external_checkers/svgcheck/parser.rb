@@ -106,9 +106,12 @@ module SvgConform
             end
           end
 
+          # Apply requirement_mappings to normalize requirement IDs
+          normalized_requirement_id = apply_requirement_mapping(requirement_id)
+
           issue = SvgConform::ConformanceIssue.new
           issue.type = 'error'
-          issue.requirement_id = requirement_id
+          issue.requirement_id = normalized_requirement_id
           issue.message = line
 
           # Extract semantic information from the match
@@ -123,6 +126,14 @@ module SvgConform
           end
 
           issue
+        end
+
+        def apply_requirement_mapping(requirement_id)
+          return requirement_id unless @mapping_config['requirement_mappings']
+
+          # Apply requirement_mappings to normalize requirement IDs
+          mappings = @mapping_config['requirement_mappings']
+          mappings[requirement_id.to_s] || requirement_id
         end
 
         def create_unmapped_error(line)

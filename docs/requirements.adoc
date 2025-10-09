@@ -1,0 +1,709 @@
+= SVG Requirements
+:toc: left
+:toclevels: 3
+:sectlinks:
+:sectanchors:
+:source-highlighter: rouge
+
+== Overview
+
+**Requirements** are the core validation logic that check SVG documents for conformance issues. There are two types of requirements:
+
+=== Structural Requirements
+
+Structural requirements validate the basic structure and syntax of SVG documents.
+
+=== Logical Requirements
+
+Logical requirements validate the content and semantics of SVG documents.
+
+Requirements can be configured with specific parameters to customize their behavior for different use cases. Each requirement type provides configuration options that affect how validation is performed.
+
+== Available requirements
+
+SvgConform provides 15 different requirement types that can be configured in profiles to validate specific aspects of SVG documents.
+
+=== Structural requirements
+
+These validate the fundamental structure and syntax of SVG documents:
+
+[[namespace-requirement]]
+==== NamespaceRequirement
+
+Ensures proper SVG namespace declarations on elements.
+
+**Configuration Options**:
+
+`allowed_namespaces`:: List of permitted namespace URIs. Default includes SVG and XLink namespaces.
+`required_namespace`:: The namespace URI that must be present on the root element. Default: `"http://www.w3.org/2000/svg"`.
+`allow_rdf_metadata`:: Boolean flag to permit RDF/Dublin Core metadata namespaces. When `true`, RDF namespaces are silently allowed. When `false` (default), RDF namespace errors are generated. Default: `false`.
+
+Configuration:
+[source,yaml]
+----
+- id: "svg_namespace"
+  type: "NamespaceRequirement"
+  description: "Validate SVG namespace usage"
+  allowed_namespaces:
+    - "http://www.w3.org/2000/svg"
+    - ""
+  required_namespace: "http://www.w3.org/2000/svg"
+  allow_rdf_metadata: false  # or true for permissive RDF handling
+----
+
+.Strict RDF validation (default)
+[example]
+[source,yaml]
+----
+- id: "namespace_validation"
+  type: "NamespaceRequirement"
+  allow_rdf_metadata: false  # Strict: RDF errors generated
+  allowed_namespaces:
+    - "http://www.w3.org/2000/svg"
+    - ""
+----
+
+RDF namespace elements will trigger validation errors that can be filtered for svgcheck compatibility or reported to users.
+
+.Permissive RDF handling
+[example]
+[source,yaml]
+----
+- id: "namespace_validation"
+  type: "NamespaceRequirement"
+  allow_rdf_metadata: true  # Permissive: RDF silently allowed
+  allowed_namespaces:
+    - "http://www.w3.org/2000/svg"
+    - ""
+----
+
+RDF/Dublin Core metadata elements are silently accepted without generating errors.
+
+Features:
+* Validates root SVG element has correct namespace
+* Removes elements with disallowed namespaces
+* Supports whitelist and blacklist modes
+* **Configurable RDF metadata support**: Control whether RDF namespaces are allowed
+* **Generic namespace detection**: No hardcoded element names
+
+**Supported RDF Namespaces** (when `allow_rdf_metadata: true`):
+- `http://www.w3.org/1999/02/22-rdf-syntax-ns#`
+- `http://creativecommons.org/ns#`
+- `http://purl.org/dc/elements/1.1/`
+- `http://purl.org/dc/dcmitype/`
+- `http://www.w3.org/2000/01/rdf-schema#`
+
+For complete RDF metadata configuration details, see link:rdf_metadata_support.adoc[RDF Metadata Support Documentation].
+
+**Target Remediations**: link:remediation.adoc#namespace-remediation[NamespaceRemediation]
+
+[[allowed-elements-requirement]]
+==== AllowedElementsRequirement
+
+Restricts which SVG elements and attributes are permitted.
+
+**Configuration Options**:
+
+`element_configs`:: List of element configuration objects defining allowed elements and their attributes.
+`check_attributes`:: Boolean flag to enable attribute validation. Default: `false`.
+`check_parent_child`:: Boolean flag to enable parent-child relationship validation. Default: `false`.
+`skip_foreign_namespaces`:: Boolean flag to skip validation of foreign namespace elements. When `true`, elements in non-SVG namespaces are skipped and handled by NamespaceRequirement instead. Default: `false`.
+`allowed_namespaces`:: List of namespace URIs that are considered valid (not foreign). Used with `skip_foreign_namespaces`. Default: `[]`.
+`allow_rdf_metadata`:: Boolean flag to permit RDF/Dublin Core metadata namespaces. When `true`, RDF namespace elements are considered valid and skipped. Default: `false`.
+
+Each element configuration object supports:
+- `tag`: Element name (required)
+- `attributes`: List of allowed attribute names
+- `required_attributes`: List of mandatory attribute names
+- `allowed_children`: List of allowed child element names
+
+Configuration:
+[source,yaml]
+----
+- id: "svg_elements"
+  type: "AllowedElementsRequirement"
+  description: "Restrict to allowed SVG elements"
+  skip_foreign_namespaces: true
+  allow_rdf_metadata: false
+  allowed_namespaces:
+    - "http://www.w3.org/2000/svg"
+    - ""
+  element_configs:
+    - tag: "svg"
+      attributes: ["width", "height", "viewBox", "xmlns"]
+      required_attributes: ["viewBox"]
+      allowed_children: ["g", "rect", "circle", "path", "text"]
+    - tag: "rect"
+      attributes: ["x", "y", "width", "height", "fill", "stroke"]
+    - tag: "circle"
+      attributes: ["cx", "cy", "r", "fill", "stroke"]
+  check_attributes: true
+  check_parent_child: true
+----
+
+.Generic namespace skipping
+[example]
+[source,yaml]
+----
+- id: "allowed_elements"
+  type: "AllowedElementsRequirement"
+  skip_foreign_namespaces: true
+  allowed_namespaces:
+    - "http://www.w3.org/2000/svg"
+    - ""
+  element_configs:
+    # ... element definitions
+----
+
+With `skip_foreign_namespaces: true`, elements in foreign namespaces (not in `allowed_namespaces`) are skipped during validation. This allows NamespaceRequirement to handle foreign namespace validation, preventing duplicate errors.
+
+Features:
+* Configurable whitelist of allowed elements and attributes
+* Parent-child relationship validation
+* Required attribute enforcement
+* **Generic namespace skipping**: Skip foreign namespace elements without hardcoding
+* **RDF metadata support**: Configurable via `allow_rdf_metadata` flag
+* **Structural invalidity tracking**: Invalid elements marked to skip descendant validation
+* **Zero hardcoding**: All element and namespace handling configuration-driven
+
+**Structural Invalidity Behavior**:
+
+When an element is marked as structurally invalid (not allowed, or invalid parent-child relationship):
+1. The element is marked as structurally invalid
+2. All descendants are recursively marked invalid
+3. All requirements skip invalid nodes and their descendants
+4. Matches svgcheck behavior: removes element WITH all children
+
+This prevents cascade errors where children of invalid elements are separately reported.
+
+**Target Remediations**: Content removal remediations (elements removed by validation logic)
+
+[[viewbox-required-requirement]]
+==== ViewboxRequiredRequirement
+
+Requires viewBox attribute on root SVG element.
+
+**Configuration Options**:
+
+`auto_generate`:: Boolean flag to enable automatic viewBox generation from width/height. Default: `false`.
+`preserve_aspect_ratio`:: Boolean flag to maintain aspect ratio during generation. Default: `true`.
+
+Configuration:
+[source,yaml]
+----
+- id: "viewbox_required"
+  type: "ViewboxRequiredRequirement"
+  description: "Require viewBox on root element"
+  config:
+    auto_generate: true
+    preserve_aspect_ratio: true
+----
+
+Features:
+* Validates presence of viewBox attribute
+* Validates viewBox format (four space-separated numbers)
+* Critical for scalable SVG rendering
+* Optional auto-generation from width/height attributes
+
+**Target Remediations**: link:remediation.adoc#viewbox-remediation[ViewboxRemediation]
+
+[[namespace-attributes-requirement]]
+==== NamespaceAttributesRequirement
+
+Validates attributes don't use disallowed namespaces.
+
+**Configuration Options**:
+
+`disallowed_namespaces`:: List of namespace URIs that are not permitted on attributes.
+`allowed_namespaces`:: List of namespace URIs that are explicitly allowed (whitelist mode).
+`mode`:: Validation mode: `"blacklist"` (default) or `"whitelist"`.
+
+Configuration:
+[source,yaml]
+----
+- id: "namespace_attrs"
+  type: "NamespaceAttributesRequirement"
+  description: "Control namespace attribute usage"
+  config:
+    mode: "blacklist"
+    disallowed_namespaces:
+      - "http://custom.namespace.com"
+      - "http://www.inkscape.org/namespaces/inkscape"
+      - "http://www.lucidchart.com/chart"
+----
+
+Features:
+* Removes attributes from disallowed namespaces
+* Supports both whitelist and blacklist modes
+* Preserves valid namespace attributes (xlink, xml)
+* Configurable namespace filtering
+
+**Target Remediations**: link:remediation.adoc#namespace-attribute-remediation[NamespaceAttributeRemediation]
+
+=== Content requirements
+
+These validate the content and semantics of SVG documents:
+
+[[color-restrictions-requirement]]
+==== ColorRestrictionsRequirement
+
+Enforces color usage restrictions with enhanced equivalence detection and threshold-based validation.
+
+**Configuration Options**:
+
+`mode`:: Color restriction mode. Currently supports `"black_white_only"`.
+`allowed_colors`:: List of exact color strings that are permitted.
+`black_and_white_threshold`:: Optional RGB sum threshold for strict validation. When specified, only exact string matches from `allowed_colors` are permitted.
+`case_sensitive`:: Boolean flag for case-sensitive color matching. Default: `false`.
+
+Configuration:
+[source,yaml]
+----
+- id: "colors"
+  type: "ColorRestrictionsRequirement"
+  description: "Restrict colors to black and white"
+  config:
+    mode: "black_white_only"
+    allowed_colors: ["black", "white", "#000000", "#ffffff", "none", "inherit", "currentColor"]
+    black_and_white_threshold: 764  # Optional: RGB sum threshold for strict validation
+    case_sensitive: false
+----
+
+Where,
+
+`mode`:: The color restriction mode. Currently supports `black_white_only`.
+`allowed_colors`:: List of exact color strings that are permitted.
+`black_and_white_threshold`:: Optional RGB sum threshold for strict validation. When specified, only exact string matches from `allowed_colors` are permitted, and threshold logic is applied during remediation.
+
+.Using strict black and white validation with RGB threshold
+[example]
+====
+[source,yaml]
+----
+- id: "strict_colors"
+  type: "ColorRestrictionsRequirement"
+  description: "Strict black and white validation for technical documents"
+  config:
+    mode: "black_white_only"
+    black_and_white_threshold: 764
+    allowed_colors: ["black", "white", "#000000", "#ffffff", "#FFFFFF", "none", "inherit", "currentColor"]
+----
+====
+
+This configuration enables strict validation where only exact color strings are accepted during validation, while threshold-based conversion (RGB sum ≤ 764 → black, RGB sum > 764 → white) is applied during remediation.
+
+Features:
+* **Enhanced color equivalence**: `#fff` ↔ `#ffffff` ↔ `white` (when threshold not specified)
+* **Strict format validation**: When `black_and_white_threshold` is specified, only exact strings from `allowed_colors` are permitted
+* **Percentage RGB support**: `rgb(100%,100%,100%)` and mixed formats handled
+* **Case-insensitive processing**: `BLACK` → `black` normalization
+* **RGB function support**: `rgb(255,255,255)` → `white` equivalence
+* **Short hex expansion**: `#000` → `#000000` normalization
+* Validates fill, stroke, and style attributes
+
+**Target Remediations**: link:remediation.adoc#color-remediation[ColorRemediation]
+
+[[font-family-requirement]]
+==== FontFamilyRequirement
+
+Controls font family usage and validates font specifications.
+
+**Configuration Options**:
+
+`allowed_families`:: List of permitted font family names (case-insensitive).
+`default_family`:: Default font family to suggest in error messages. Default: `"sans-serif"`.
+`strict_mode`:: Boolean flag to enable strict font validation. Default: `false`.
+`allow_generic`:: Boolean flag to allow CSS generic font families. Default: `true`.
+
+Configuration:
+[source,yaml]
+----
+- id: "fonts"
+  type: "FontFamilyRequirement"
+  description: "Restrict to generic font families"
+  config:
+    allowed_families: ["serif", "sans-serif", "monospace"]
+    default_family: "sans-serif"
+    strict_mode: true
+    allow_generic: true
+----
+
+Features:
+* Restricts to specific font families
+* Validates both font-family attributes and style properties
+* Handles comma-separated font family lists
+* Support for CSS generic font families
+* Case-insensitive font name matching
+
+**Target Remediations**: link:remediation.adoc#font-remediation[FontRemediation]
+
+[[forbidden-content-requirement]]
+==== ForbiddenContentRequirement
+
+Prevents inclusion of forbidden elements and attributes.
+
+**Configuration Options**:
+
+`forbidden_elements`:: List of element names that are not permitted.
+`forbidden_attributes`:: List of attribute names that are not permitted.
+`case_sensitive`:: Boolean flag for case-sensitive matching. Default: `false`.
+`remove_content`:: Boolean flag to remove forbidden content during validation. Default: `false`.
+
+Configuration:
+[source,yaml]
+----
+- id: "no_scripts"
+  type: "ForbiddenContentRequirement"
+  description: "Prevent scripting and multimedia"
+  config:
+    forbidden_elements: ["script", "audio", "video", "object", "embed"]
+    forbidden_attributes: ["onclick", "onload", "onmouseover", "onchange"]
+    case_sensitive: false
+    remove_content: true
+----
+
+Features:
+* Configurable lists of forbidden elements and attributes
+* Useful for security-focused profiles
+* Supports multimedia and scripting restrictions
+* Optional content removal during validation
+
+**Target Remediations**: Content removal occurs during validation when `remove_content` is enabled
+
+[[no-external-css-requirement]]
+==== NoExternalCssRequirement
+
+Prevents external CSS references to ensure self-contained documents.
+
+**Configuration Options**:
+
+`allowed_protocols`:: List of permitted URL protocols. Empty list blocks all external references.
+`allow_data_urls`:: Boolean flag to allow data: URLs. Default: `true`.
+`strict_mode`:: Boolean flag for strict URL validation. Default: `false`.
+
+Configuration:
+[source,yaml]
+----
+- id: "no_external_css"
+  type: "NoExternalCssRequirement"
+  description: "Block external CSS references"
+  config:
+    allowed_protocols: []  # No external protocols allowed
+    allow_data_urls: true
+    strict_mode: true
+----
+
+Features:
+* Blocks `@import` statements in `<style>` elements
+* Prevents external stylesheet `<link>` elements
+* Validates URL references in style attributes
+* Configurable protocol restrictions
+
+**Target Remediations**: link:remediation.adoc#no-external-css-remediation[NoExternalCssRemediation]
+
+=== Reference requirements
+
+These validate links and references within SVG documents:
+
+[[id-reference-requirement]]
+==== IdReferenceRequirement
+
+Validates that ID references point to existing elements.
+
+**Configuration Options**:
+
+`strict_validation`:: Boolean flag for strict ID reference checking. Default: `true`.
+`allow_external_refs`:: Boolean flag to allow references to external documents. Default: `false`.
+`case_sensitive`:: Boolean flag for case-sensitive ID matching. Default: `true`.
+
+Configuration:
+[source,yaml]
+----
+- id: "valid_ids"
+  type: "IdReferenceRequirement"
+  description: "Ensure ID references are valid"
+  config:
+    strict_validation: true
+    allow_external_refs: false
+    case_sensitive: true
+----
+
+Features:
+* Validates `<use>` element href references
+* Checks URL fragments in various attributes
+* Prevents broken internal links
+* Configurable strictness levels
+
+**Target Remediations**: link:remediation.adoc#invalid-id-references-remediation[InvalidIdReferencesRemediation]
+
+[[link-validation-requirement]]
+==== LinkValidationRequirement
+
+Validates that links use only ASCII characters (IETF requirement).
+
+**Configuration Options**:
+
+`ascii_only`:: Boolean flag to restrict links to ASCII characters. Default: `true`.
+`allow_unicode`:: Boolean flag to allow Unicode characters in links. Default: `false`.
+`encoding_check`:: Boolean flag to validate proper URL encoding. Default: `true`.
+
+Configuration:
+[source,yaml]
+----
+- id: "ascii_links"
+  type: "LinkValidationRequirement"
+  description: "Links must be ASCII-only"
+  config:
+    ascii_only: true
+    allow_unicode: false
+    encoding_check: true
+----
+
+Features:
+* Validates href attributes contain only ASCII
+* Required for RFC 7996 compliance
+* Prevents internationalization issues
+* Configurable character set restrictions
+
+**Target Remediations**: Manual link correction required (no automatic remediation available)
+
+=== Style requirements
+
+These validate CSS styling within SVG documents:
+
+[[style-requirement]]
+==== StyleRequirement
+
+Comprehensive CSS style validation including syntax, properties, and values.
+
+**Configuration Options**:
+
+`allowed_properties`:: List of permitted CSS property names.
+`property_values`:: Hash mapping CSS properties to allowed values.
+`strict_syntax`:: Boolean flag for strict CSS syntax validation. Default: `false`.
+`validate_values`:: Boolean flag to validate property values. Default: `true`.
+
+Configuration:
+[source,yaml]
+----
+- id: "valid_styles"
+  type: "StyleRequirement"
+  description: "Validate CSS style syntax and properties"
+  config:
+    strict_syntax: true
+    validate_values: true
+    allowed_properties: ["fill", "stroke", "font-family", "font-size"]
+    property_values:
+      "fill": ["black", "white", "none"]
+      "stroke": ["black", "white", "none"]
+      "font-family": ["serif", "sans-serif", "monospace"]
+----
+
+Features:
+* CSS syntax validation
+* Property whitelist enforcement
+* Property value validation with type checking
+* Supports complex property configurations
+* Flexible validation rules
+
+**Target Remediations**: Manual style correction required (validation-focused requirement)
+
+[[style-promotion-requirement]]
+==== StylePromotionRequirement
+
+Detects style properties that should be promoted to SVG attributes.
+
+**Configuration Options**:
+
+`promotable_properties`:: List of CSS properties that can become SVG attributes.
+`auto_promote`:: Boolean flag to automatically promote during validation. Default: `false`.
+`preserve_style`:: Boolean flag to preserve original style attribute. Default: `false`.
+
+Configuration:
+[source,yaml]
+----
+- id: "promote_styles"
+  type: "StylePromotionRequirement"
+  description: "Detect styles that should be attributes"
+  config:
+    auto_promote: false
+    preserve_style: false
+    promotable_properties: ["fill", "stroke", "font-family", "font-size", "opacity"]
+----
+
+Features:
+* Identifies style properties that can be SVG attributes
+* Helps with SVG optimization and compatibility
+* Configurable property promotion rules
+* Optional automatic promotion during validation
+
+**Target Remediations**: link:remediation.adoc#style-promotion-remediation[StylePromotionRemediation]
+
+== Configuration Best Practices
+
+=== Parameter Types
+
+Requirements support several parameter types:
+
+**String parameters**:
+[source,yaml]
+----
+config:
+  required_namespace: "http://www.w3.org/2000/svg"
+  default_family: "sans-serif"
+----
+
+**Boolean parameters**:
+[source,yaml]
+----
+config:
+  strict_mode: true
+  case_sensitive: false
+  auto_generate: true
+----
+
+**Array parameters**:
+[source,yaml]
+----
+config:
+  allowed_colors: ["black", "white", "#000000"]
+  forbidden_elements: ["script", "audio", "video"]
+----
+
+**Hash parameters**:
+[source,yaml]
+----
+config:
+  property_values:
+    "fill": ["black", "white", "none"]
+    "font-family": ["serif", "sans-serif"]
+----
+
+**Nested object parameters**:
+[source,yaml]
+----
+config:
+  element_configs:
+    - tag: "rect"
+      attributes: ["x", "y", "width", "height"]
+      required_attributes: ["width", "height"]
+----
+
+=== Validation Modes
+
+Many requirements support different validation modes:
+
+**Strict vs Permissive**:
+- `strict_mode: true` - Fails validation for any non-compliant content
+- `strict_mode: false` - Issues warnings but allows content
+
+**Whitelist vs Blacklist**:
+- `mode: "whitelist"` - Only explicitly allowed items pass validation
+- `mode: "blacklist"` - Only explicitly forbidden items fail validation
+
+**Case Sensitivity**:
+- `case_sensitive: true` - Exact case matching required
+- `case_sensitive: false` - Case-insensitive matching
+
+=== Performance Considerations
+
+**Efficient Configuration**:
+- Use specific allowed lists rather than broad restrictions
+- Avoid overly complex regular expressions in validation
+- Consider validation frequency vs. thoroughness tradeoffs
+
+**Memory Usage**:
+- Large allowed/forbidden lists consume more memory
+- Complex nested configurations increase processing time
+- Balance configuration detail with performance needs
+
+== Advanced Configuration
+
+=== Conditional Requirements
+
+Requirements can be configured to apply conditionally:
+
+[source,yaml]
+----
+- id: "conditional_colors"
+  type: "ColorRestrictionsRequirement"
+  description: "Apply color restrictions only to specific elements"
+  config:
+    mode: "black_white_only"
+    allowed_colors: ["black", "white"]
+    apply_to_elements: ["rect", "circle", "path"]  # Only validate these elements
+----
+
+=== Custom Validation Rules
+
+Requirements support custom validation logic through configuration:
+
+[source,yaml]
+----
+- id: "custom_element_validation"
+  type: "AllowedElementsRequirement"
+  description: "Custom element validation with business logic"
+  config:
+    element_configs:
+      - tag: "text"
+        attributes: ["x", "y", "font-family"]
+        custom_rules:
+          - rule: "max_length"
+            value: 100
+          - rule: "required_parent"
+            value: ["g", "svg"]
+----
+
+=== Profile-Specific Configuration
+
+Requirements can have different configurations per profile:
+
+[source,yaml]
+----
+# In profile A - strict colors
+- id: "colors"
+  type: "ColorRestrictionsRequirement"
+  config:
+    mode: "black_white_only"
+    black_and_white_threshold: 764
+
+# In profile B - relaxed colors
+- id: "colors"
+  type: "ColorRestrictionsRequirement"
+  config:
+    mode: "black_white_only"
+    allowed_colors: ["black", "white", "gray", "#808080"]
+----
+
+== Troubleshooting
+
+=== Common Configuration Issues
+
+**Invalid parameter names**:
+- Check requirement class documentation for correct parameter names
+- Use `config` hash for all requirement-specific parameters
+
+**Type mismatches**:
+- Ensure arrays are provided as YAML lists `[item1, item2]`
+- Ensure booleans are `true`/`false`, not `"true"`/`"false"`
+
+**Missing required parameters**:
+- Some requirements have mandatory configuration parameters
+- Check requirement documentation for required vs. optional parameters
+
+=== Validation Debugging
+
+**Enable verbose logging**:
+[source,yaml]
+----
+- id: "debug_requirement"
+  type: "ColorRestrictionsRequirement"
+  config:
+    verbose_logging: true  # Enable detailed validation messages
+    debug_mode: true       # Include debug information in results
+----
+
+**Test with minimal configuration**:
+- Start with simple configurations and add complexity gradually
+- Use built-in profiles as configuration examples
+- Validate configuration syntax before deployment

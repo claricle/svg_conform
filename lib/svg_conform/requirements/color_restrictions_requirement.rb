@@ -26,6 +26,9 @@ module SvgConform
       def check(node, context)
         return unless element?(node)
 
+        # Skip attribute validation for structurally invalid nodes (e.g., wrong parent-child)
+        return if context.node_structurally_invalid?(node)
+
         # Check color-related attributes
         color_attributes = %w[fill stroke color stop-color flood-color lighting-color]
 

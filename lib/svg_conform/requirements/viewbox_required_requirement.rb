@@ -27,11 +27,31 @@ module SvgConform
             message: 'SVG root element must have a viewBox attribute',
             data: { missing_attribute: 'viewBox' }
           )
+
+          # Add informational message about calculated viewBox if width/height are present
+          width = get_attribute(root, 'width')
+          height = get_attribute(root, 'height')
+
+          if width && height && valid_number?(width) && valid_number?(height)
+            calculated_viewbox = "0 0 #{width.to_f} #{height.to_f}"
+            context.add_error(
+              requirement: self,
+              node: root,
+              message: "Trying to put in the attribute with value '#{calculated_viewbox}'",
+              data: {
+                calculated_viewbox: calculated_viewbox,
+                source_width: width,
+                source_height: height
+              }
+            )
+          end
           return
         end
 
         # Validate viewBox format (should be "min-x min-y width height")
-        parts = viewbox.strip.split(/\s+/)
+        # Also accept comma-separated with parentheses like "(0, 0, 100, 100)" (svgcheck is lenient)
+        normalized_viewbox = viewbox.strip.gsub(/[(),]/, ' ').squeeze(' ')
+        parts = normalized_viewbox.strip.split(/\s+/)
         unless parts.length == 4 && parts.all? { |part| valid_number?(part) }
           context.add_error(
             requirement: self,
