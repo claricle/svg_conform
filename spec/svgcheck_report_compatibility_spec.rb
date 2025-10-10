@@ -11,6 +11,9 @@ RSpec.describe "SvgCheck Report Compatibility" do
     # Get all svgcheck output files
     Dir.glob(File.join(__dir__, "fixtures", "svgcheck", "check",
                        "*.out")).each do |out_file|
+      # Handle .svg.out files only (skip .xml.out for RFC XML documents)
+      next unless out_file.end_with?(".svg.out")
+
       basename = File.basename(out_file, ".svg.out")
 
       context basename.to_s do

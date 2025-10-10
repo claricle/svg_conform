@@ -50,11 +50,40 @@ RSpec.describe "SvgCheck Compatibility" do
         end
 
         it "produces compatible fixed output" do
-          repair_file = "#{File.join(__dir__, 'fixtures', 'svgcheck', 'repair')}/#{basename}.svg.file"
+          repair_file = "#{File.join(__dir__, 'fixtures', 'svgcheck',
+                                     'repair')}/#{basename}.svg.file"
           skip "No svgcheck repair output" unless File.exist?(repair_file)
+          skip "Input file not found" unless File.exist?(input_file)
 
-          # Repair mode comparison is pending full remediation runner integration
-          skip "Repair mode comparison pending - remediation system architecture being finalized"
+          svgcheck_repaired = File.read(repair_file)
+
+          # Apply our remediations
+          runner = SvgConform::RemediationRunner.new(profile: "svg_1_2_rfc")
+          result = runner.run_remediation_file(input_file)
+
+          # If svgcheck repair output is empty, it means no repair was needed/possible
+          if svgcheck_repaired.strip.empty?
+            # File should remain valid or have same error count as before
+            # (empty repair output doesn't necessarily mean file is valid, might mean repair failed)
+            expect(result.final_validation.errors.length).to be <= result.initial_validation.errors.length,
+                                                             "Our remediation should reduce or maintain error count"
+
+            # If original file was already valid (0 errors), verify we don't break it
+            if result.initial_validation.errors.empty?
+              expect(result.final_validation.errors).to be_empty,
+                                                        "File was already valid, should remain valid after remediation"
+            end
+          else
+            # Both should produce valid XML
+            expect { parse_xml(svgcheck_repaired) }.not_to raise_error,
+                                                           "Svgcheck repair output is not valid XML"
+            expect { parse_xml(result.remediated_content) }.not_to raise_error,
+                                                                   "Our repair output is not valid XML"
+
+            # Verify remediation improved or maintained the document
+            expect(result.final_validation.errors.length).to be <= result.initial_validation.errors.length,
+                                                             "Remediation should reduce or maintain error count (was #{result.initial_validation.errors.length}, now #{result.final_validation.errors.length})"
+          end
         end
 
         it "handles the same elements as svgcheck" do
