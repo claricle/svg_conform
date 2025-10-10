@@ -45,7 +45,8 @@ module SvgConform
         end
 
         begin
-          changes_made = perform(document, failed_requirements)
+          context = { failed_requirements: failed_requirements }
+          changes_made = apply(document, context)
 
           RemediationResult.new(
             remediation_id: @id,

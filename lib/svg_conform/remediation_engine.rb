@@ -33,7 +33,7 @@ module SvgConform
       end
 
       @profile.remediations.select do |remediation|
-        remediation.target_requirements.any? do |req_id|
+        remediation.targets.any? do |req_id|
           failed_requirement_ids.include?(req_id)
         end
       end
@@ -79,7 +79,7 @@ module SvgConform
       @profile.remediations.each do |remediation|
         # Find failed requirements that this remediation targets
         targeted_failures = failed_requirements.select do |failure|
-          remediation.target_requirements.include?(failure.requirement_id)
+          remediation.targets.include?(failure.requirement_id)
         end
 
         # Only include remediations that have applicable failures
