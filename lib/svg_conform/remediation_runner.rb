@@ -39,7 +39,7 @@ module SvgConform
       final_validation = @profile.validate(document)
 
       # Create result object
-      RemediationResult.new(
+      RemediationRunResult.new(
         filename: filename,
         original_content: svg_content,
         remediated_content: document.to_xml,
@@ -97,7 +97,7 @@ module SvgConform
     end
 
     def create_error_result(file_path, error)
-      RemediationResult.new(
+      RemediationRunResult.new(
         filename: File.basename(file_path),
         original_content: nil,
         remediated_content: nil,
@@ -110,8 +110,8 @@ module SvgConform
     end
   end
 
-  # Result object for remediation operations
-  class RemediationResult
+  # Result object for overall remediation run (not individual remediation result)
+  class RemediationRunResult
     attr_reader :filename, :original_content, :remediated_content,
                 :initial_validation, :final_validation, :remediation_results,
                 :remediation_engine, :error

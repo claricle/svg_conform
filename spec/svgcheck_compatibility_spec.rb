@@ -50,22 +50,11 @@ RSpec.describe "SvgCheck Compatibility" do
         end
 
         it "produces compatible fixed output" do
-          skip "Repair mode testing not yet implemented"
+          repair_file = "#{File.join(__dir__, 'fixtures', 'svgcheck', 'repair')}/#{basename}.svg.file"
+          skip "No svgcheck repair output" unless File.exist?(repair_file)
 
-          our_output = run_our_fixer(input_file)
-          expected_output = File.read(expected_out_file)
-
-          # Basic check that we produce valid XML
-          expect(our_output).not_to be_empty,
-                                    "Expected fixed output but got none"
-          expect do
-            parse_xml(our_output)
-          end.not_to raise_error, "Fixed output is not valid XML"
-
-          # Check that both outputs are valid XML
-          expect do
-            parse_xml(expected_output)
-          end.not_to raise_error, "Expected output is not valid XML"
+          # Repair mode comparison is pending full remediation runner integration
+          skip "Repair mode comparison pending - remediation system architecture being finalized"
         end
 
         it "handles the same elements as svgcheck" do
