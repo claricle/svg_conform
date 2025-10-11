@@ -8,27 +8,36 @@ module SvgConform
     class NamespaceRemediation < BaseRemediation
       attribute :type, :string, default: -> { "NamespaceRemediation" }
       attribute :default_namespace, :string, default: "http://www.w3.org/2000/svg"
+      attribute :allowed_namespaces, :string, collection: true, default: -> {
+        ["http://www.w3.org/2000/svg", "http://www.w3.org/1999/xlink",
+         "http://www.w3.org/XML/1998/namespace"]
+      }
+      attribute :remove_elements, :boolean, default: true
+      attribute :remove_attributes, :boolean, default: true
+      attribute :remove_declarations, :boolean, default: true
 
       yaml do
         map "default_namespace", to: :default_namespace
+        map "allowed_namespaces", to: :allowed_namespaces
+        map "remove_elements", to: :remove_elements
+        map "remove_attributes", to: :remove_attributes
+        map "remove_declarations", to: :remove_declarations
       end
       def apply(document, _context)
         changes = []
         default_namespace
-        allowed_namespaces = ["http://www.w3.org/2000/svg",
-                              "http://www.w3.org/1999/xlink", "http://www.w3.org/XML/1998/namespace"]
 
         # Skip xmlns handling - assume it's already correct in most cases
         # (This avoids duplicate xmlns attribute issues)
 
-        # Remove invalid namespace elements and attributes
+        # Remove invalid namespace elements and attributes based on configuration
         nodes_to_remove = []
 
         document.traverse do |node|
           next unless element?(node)
 
           # Check if element has invalid namespace using Moxml's namespace API
-          if node.respond_to?(:namespace) && node.namespace
+          if remove_elements && node.respond_to?(:namespace) && node.namespace
             namespace_uri = get_namespace_uri(node.namespace)
 
             if namespace_uri && !allowed_namespaces.include?(namespace_uri)
@@ -44,7 +53,7 @@ module SvgConform
           end
 
           # Remove invalid namespace attributes from all elements
-          if node.respond_to?(:attributes) && node.attributes
+          if remove_attributes && node.respond_to?(:attributes) && node.attributes
             invalid_attrs = []
 
             node.attributes.each do |attr_name, attr_value|
@@ -52,7 +61,7 @@ module SvgConform
               name_str = attr_name.respond_to?(:name) ? attr_name.name : attr_name.to_s
 
               # For root SVG element, remove xmlns declarations for disallowed namespaces
-              if node.name == "svg" && name_str.start_with?("xmlns:")
+              if remove_declarations && node.name == "svg" && name_str.start_with?("xmlns:")
                 name_str.sub("xmlns:", "")
                 value_str = attr_value.respond_to?(:value) ? attr_value.value : attr_value.to_s
 

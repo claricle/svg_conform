@@ -7,6 +7,8 @@ require_relative "requirements/font_family_requirement"
 require_relative "requirements/invalid_id_references_requirement"
 require_relative "requirements/namespace_requirement"
 require_relative "requirements/no_external_css_requirement"
+require_relative "requirements/no_external_fonts_requirement"
+require_relative "requirements/no_external_images_requirement"
 require_relative "requirements/viewbox_required_requirement"
 require_relative "requirements/namespace_attributes_requirement"
 require_relative "requirements/forbidden_content_requirement"
@@ -26,6 +28,8 @@ module SvgConform
         InvalidIdReferencesRequirement,
         NamespaceRequirement,
         NoExternalCssRequirement,
+        NoExternalFontsRequirement,
+        NoExternalImagesRequirement,
         ViewboxRequiredRequirement,
         NamespaceAttributesRequirement,
         ForbiddenContentRequirement,

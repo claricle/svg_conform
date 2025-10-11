@@ -257,6 +257,99 @@ See link:remediation.adoc#namespace-attribute-remediation[NamespaceAttributeReme
 * Preserves document structure and appearance
 * Maintains valid SVG markup
 
+[[metanorma-profile]]
+=== Metanorma profile (`:metanorma`)
+
+**Purpose**: Ensures SVG documents comply with Metanorma requirements for technical documents with embedded resources.
+
+**Target use case**: Technical diagrams, flowcharts, and illustrations for Metanorma-generated standards documents (ISO, IEC, IETF, etc.).
+
+**Key Characteristics**:
+* **Flexible colors**: Any colors allowed (unlike RFC 7996 black/white restriction)
+* **Flexible fonts**: Any font families allowed (unlike RFC 7996 generic-only restriction)
+* **Flexible styles**: Any CSS styles allowed
+* **Self-contained resources**: All CSS and fonts must be embedded
+* **Structural compliance**: Proper namespaces and viewBox required
+* **No external dependencies**: External CSS and fonts strictly prohibited
+
+**Requirements**:
+[source,yaml]
+----
+requirements:
+  - allowed_elements      # 16 SVG elements + specific attributes
+  - namespace_validation # SVG namespace required
+  - namespace_attributes # Only SVG/XLink/XML namespaces
+  - viewbox_required     # viewBox attribute mandatory
+  - forbidden_content    # No scripts, multimedia, animation
+  - id_references        # Valid ID references required
+  - link_validation      # ASCII-only links
+  - no_external_css      # External CSS prohibited
+  - no_external_fonts    # External fonts prohibited
+----
+
+See link:requirements.adoc#allowed-elements-requirement[AllowedElementsRequirement], link:requirements.adoc#namespace-requirement[NamespaceRequirement], link:requirements.adoc#namespace-attributes-requirement[NamespaceAttributesRequirement], link:requirements.adoc#viewbox-required-requirement[ViewboxRequiredRequirement], link:requirements.adoc#forbidden-content-requirement[ForbiddenContentRequirement], link:requirements.adoc#id-reference-requirement[IdReferenceRequirement], link:requirements.adoc#link-validation-requirement[LinkValidationRequirement], link:requirements.adoc#no-external-css-requirement[NoExternalCssRequirement], and link:requirements.adoc#no-external-fonts-requirement[NoExternalFontsRequirement] for detailed requirement information.
+
+**Remediations**:
+[source,yaml]
+----
+remediations:
+  - viewbox_generation          # Add missing viewBox
+  - namespace_attribute_cleanup # Remove disallowed namespace attributes
+  - font_embedding             # Detect external fonts (placeholder)
+----
+
+See link:remediation.adoc#viewbox-remediation[ViewboxRemediation], link:remediation.adoc#namespace-attribute-remediation[NamespaceAttributeRemediation], and link:remediation.adoc#font-embedding-remediation[FontEmbeddingRemediation] for detailed remediation information.
+
+**Differences from RFC 7996 Profile**:
+
+[cols="2,3,3", options="header"]
+|===
+|Aspect |svg_1_2_rfc (RFC 7996) |metanorma (Metanorma)
+
+|Colors
+|Black/white only (#000, #fff)
+|Any colors allowed
+
+|Fonts
+|Generic only (serif, sans-serif, monospace)
+|Any fonts allowed
+
+|CSS Styles
+|Restricted property set
+|Any styles allowed
+
+|External CSS
+|Implicitly prohibited
+|Explicitly prohibited with requirement
+
+|External Fonts
+|Not specifically checked
+|Explicitly prohibited with detection
+
+|Use Case
+|RFC publication diagrams
+|Metanorma standards documents
+
+|Target Audience
+|IETF RFC authors
+|ISO, IEC, NIST, ITU standards authors
+|===
+
+**External Resource Policy**:
+* ❌ **External CSS**: Rejected without remediation (cannot be automatically embedded)
+* ⚠️ **External Fonts**: Detected with placeholder remediation (requires manual embedding or future implementation)
+* ✅ **Embedded Fonts**: Supported via data: URIs
+* ✅ **Inline Styles**: Fully supported
+
+**When to Use**:
+* Processing SVG files for Metanorma documents
+* Need color/styled diagrams (unlike RFC 7996)
+* Require self-contained SVG (no external dependencies)
+* Converting design tool exports (Lucid, Draw.io, Inkscape)
+* Publishing standards documents (ISO, IEC, IETF, NIST, ITU, etc.)
+
+**Font Embedding Status**: Detection implemented, full embedding requires additional development. External fonts are flagged as errors, manual conversion to data: URIs is currently required.
+
 == Profile Inheritance and Customization
 
 Profiles support inheritance through the `import` directive:
