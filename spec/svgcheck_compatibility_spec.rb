@@ -9,7 +9,8 @@ RSpec.describe "SvgCheck Compatibility" do
 
   describe "IETF profile validation" do
     # Standard SVG files
-    Dir.glob(File.join(__dir__, "fixtures", "svgcheck", "inputs", "*.svg")).each do |input_file|
+    Dir.glob(File.join(__dir__, "fixtures", "svgcheck", "inputs",
+                       "*.svg")).each do |input_file|
       basename = File.basename(input_file, ".svg")
 
       context basename.to_s do
@@ -44,7 +45,7 @@ RSpec.describe "SvgCheck Compatibility" do
           skip "Comprehensive test file with known 3% discrepancy" if basename == "full-tiny"
 
           expect(our_report.errors.total_count).to eq(svgcheck_report.errors.total_count),
-            "Expected #{svgcheck_report.errors.total_count} errors but got #{our_report.errors.total_count}"
+                                                   "Expected #{svgcheck_report.errors.total_count} errors but got #{our_report.errors.total_count}"
         end
 
         it "produces compatible fixed output" do
@@ -195,14 +196,14 @@ RSpec.describe "SvgCheck Compatibility" do
           skip "Svgcheck failed to process file" if svgcheck_content.include?("ModuleNotFoundError") || svgcheck_content.include?("Traceback")
 
           # Extract SVG elements from XML
-          require 'moxml'
+          require "moxml"
           doc = Moxml.new.parse(File.read(input_file))
           svg_elements = doc.xpath("//svg:svg", "svg" => "http://www.w3.org/2000/svg")
           skip "No embedded SVG elements found" if svg_elements.empty?
 
           # Write first embedded SVG to temp file
-          require 'tempfile'
-          temp = Tempfile.new(['embedded_svg', '.svg'])
+          require "tempfile"
+          temp = Tempfile.new(["embedded_svg", ".svg"])
           temp.write(svg_elements.first.to_xml)
           temp.close
 
@@ -226,7 +227,7 @@ RSpec.describe "SvgCheck Compatibility" do
 
           # Compare error counts
           expect(our_report.errors.total_count).to eq(svgcheck_report.errors.total_count),
-            "Expected #{svgcheck_report.errors.total_count} errors but got #{our_report.errors.total_count}"
+                                                   "Expected #{svgcheck_report.errors.total_count} errors but got #{our_report.errors.total_count}"
         end
       end
     end
@@ -246,13 +247,14 @@ RSpec.describe "SvgCheck Compatibility" do
         next unless File.exist?(input_file)
 
         total_files += 1
-        is_real_world = basename != "full-tiny"  # full-tiny is a comprehensive test file
+        is_real_world = basename != "full-tiny" # full-tiny is a comprehensive test file
         real_world_files += 1 if is_real_world
 
         begin
           svgcheck_content = File.read(out_file)
           parser = SvgConform::ExternalCheckers::Svgcheck::Parser.new
-          svgcheck_report = parser.parse(svgcheck_content, nil, filename: "#{basename}.svg")
+          svgcheck_report = parser.parse(svgcheck_content, nil,
+                                         filename: "#{basename}.svg")
 
           validator = SvgConform::Validator.new(profile: "svg_1_2_rfc")
           result = validator.validate_file(input_file)
@@ -282,7 +284,7 @@ RSpec.describe "SvgCheck Compatibility" do
       if real_world_files > 0
         compatibility_pct = real_world_identical.to_f / real_world_files
         expect(compatibility_pct).to eq(1.0),
-          "Expected 100% compatibility on real-world files but got #{(compatibility_pct * 100).round(1)}%"
+                                     "Expected 100% compatibility on real-world files but got #{(compatibility_pct * 100).round(1)}%"
       else
         skip "No svgcheck output files found"
       end

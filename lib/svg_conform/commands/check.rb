@@ -100,8 +100,7 @@ module SvgConform
       end
 
       def output_json(report)
-        output = JSON.pretty_generate(report.to_h)
-        write_output(output)
+        write_output(report.to_json)
       end
 
       def write_output(content)

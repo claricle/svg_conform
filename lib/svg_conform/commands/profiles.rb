@@ -50,7 +50,7 @@ module SvgConform
       end
 
       def display_profile_list(profiles)
-        puts Paint["Available SVG Validation Profiles", :bold]
+        puts Paint["Available SVG Profiles", :bold]
         puts "=" * 40
         puts
 
