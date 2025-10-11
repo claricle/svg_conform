@@ -2,7 +2,9 @@
 
 require_relative "remediations/base_remediation"
 require_relative "remediations/color_remediation"
+require_relative "remediations/font_embedding_remediation"
 require_relative "remediations/font_remediation"
+require_relative "remediations/image_embedding_remediation"
 require_relative "remediations/invalid_id_references_remediation"
 require_relative "remediations/namespace_attribute_remediation"
 require_relative "remediations/namespace_remediation"
@@ -16,7 +18,9 @@ module SvgConform
     def self.all
       [
         ColorRemediation,
+        FontEmbeddingRemediation,
         FontRemediation,
+        ImageEmbeddingRemediation,
         InvalidIdReferencesRemediation,
         NamespaceAttributeRemediation,
         NamespaceRemediation,

@@ -211,6 +211,9 @@ module SvgConform
           # Skip namespaced attributes - they should be handled by NamespaceAttributesRequirement
           next if attr.namespace
 
+          # Check if matches data-* pattern (wildcard pattern)
+          next if attr_name.start_with?("data-")
+
           # Check if explicitly disallowed
           if disallowed_attrs.include?(attr_name)
             errors << {
