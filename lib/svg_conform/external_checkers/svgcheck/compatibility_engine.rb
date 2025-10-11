@@ -77,6 +77,7 @@ _filename)
           # Map svg_conform requirement IDs to svgcheck-compatible requirement IDs
           mapping = {
             "allowed_elements" => "allowed_elements",
+            # forbidden_content not mapped - it's redundant with allowed_elements checks
             "namespace_attributes" => "namespace_attributes",
             "namespace_validation" => "namespace_attributes", # Map to closest equivalent
             "font_family" => "style", # svgcheck reports font-family issues as style errors

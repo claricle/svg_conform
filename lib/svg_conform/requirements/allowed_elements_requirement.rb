@@ -80,9 +80,9 @@ module SvgConform
               severity: :error,
               data: { element: element_name, parent: parent_name },
             )
-            # Mark node as structurally invalid so other requirements skip it
+            # Mark node AND descendants as structurally invalid
+            # svgcheck does not validate attributes of forbidden children - just reports one error
             context.mark_node_structurally_invalid(node)
-            # Return early - don't check attributes or element allowance for invalid structure
             return
           end
         end
