@@ -75,21 +75,18 @@ module SvgConform
             # Remove invalid attributes
             invalid_attrs.each do |attr_name|
               remove_attribute(node, attr_name)
-              if attr_name.start_with?("xmlns:")
-                changes << {
-                  type: :attribute_removed,
-                  description: "Removed invalid namespace declaration: #{attr_name}",
-                  node_name: node.name,
-                  attribute_name: attr_name,
-                }
-              else
-                changes << {
-                  type: :attribute_removed,
-                  description: "Removed invalid namespace attribute: #{attr_name}",
-                  node_name: node.name,
-                  attribute_name: attr_name,
-                }
-              end
+              description = if attr_name.start_with?("xmlns:")
+                              "Removed invalid namespace declaration: #{attr_name}"
+                            else
+                              "Removed invalid namespace attribute: #{attr_name}"
+                            end
+
+              changes << {
+                type: :attribute_removed,
+                description: description,
+                node_name: node.name,
+                attribute_name: attr_name,
+              }
             end
           end
         end
