@@ -33,6 +33,8 @@ module SvgConform
   autoload :RemediationEngine, "svg_conform/remediation_engine"
   autoload :ConformanceReport,
            File.expand_path("svg_conform/conformance_report", __dir__)
+  autoload :BatchReport,
+           File.expand_path("svg_conform/batch_report", __dir__)
   autoload :ReportComparator,
            File.expand_path("svg_conform/report_comparator", __dir__)
   autoload :NamespaceRemediation, "svg_conform/namespace_remediation"
