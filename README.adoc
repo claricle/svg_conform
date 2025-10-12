@@ -11,7 +11,8 @@ SvgConform is an SVG conformance processor that validates SVG documents against
 defined SVG profiles, and supports automatic remediation of profile requirement
 violations when possible.
 
-SvgConform is designed to ensure SVG files meet specific requirements for different use cases, such as those required in:
+SvgConform is designed to ensure SVG files meet specific requirements for
+different use cases, such as those required in:
 
 * Metanorma documents
 * PDF and PDF/A compliance
@@ -20,9 +21,7 @@ SvgConform is designed to ensure SVG files meet specific requirements for differ
 SvgConform is distributed as a Ruby gem.
 
 
-== Overview
-
-=== Features
+== Features
 
 * **Profile-based validation**: Validate SVG files against predefined or custom profiles
 * **Remediation**: Automatically fix common SVG conformance issues
@@ -35,30 +34,88 @@ SvgConform is distributed as a Ruby gem.
 * **Generic namespace handling**: Configuration-driven foreign namespace validation
 
 
-=== Concepts
+== Concepts
 
-SvgConform is built upon the following concepts:
+=== General
 
-SVG profile:: An SVG profile is a defined set of rules and requirements that an
-SVG document must meet. These requirements represent concerns that go beyond the
-SVG standards, such as accessibility or stylistic concerns.
-
-requirement:: A specific condition or set of conditions that an SVG document must meet.
-
-remediatory action:: An automatic fix or adjustment applied to an SVG document to address conformance issues. It may imply a lossless or lossy change.
-
-conformance:: The degree to which an SVG document meets the requirements of a specific profile.
+SvgConform is built upon a set of core concepts that define its architecture and
+functionality.
 
 
-=== Predefined libraries
+=== SVG document
 
-SvgConform provides predefined libraries of:
+An SVG document is a file that contains Scalable Vector Graphics (SVG) content.
 
-* SVG profiles
-* Requirement checkers that are configurable
-* Remediation actions that are configurable
+In SvgConform, an SVG document is represented by the `SvgConform::Document` class,
+which wraps the Moxml XML document and provides SVG-specific functionality.
 
-In combination, it allows for the flexible definition and authoring of new
+
+=== SVG profile
+
+An SVG profile is a defined set of requirements that an SVG document must meet.
+
+These requirements represent concerns that go beyond the SVG standards, such as
+accessibility or stylistic concerns.
+
+In SvgConform, a `Profile` object is a collection of requirements and
+remediations that define a specific SVG conformance standard.
+
+Each `Profile` object consists of:
+
+* `Requirement` objects: Validation checks that determine if an SVG document
+conforms to the profile
+
+* `Remediation` objects: Automatic fixes that can be applied when requirements
+fail
+
+* `Configuration` objects: Profile-specific settings and parameters
+
+
+Conformance to an SVG profile is a measure of the degree to which an SVG
+document meets the requirements of a specific profile.
+
+In SvgConform, SVG conformance is determined by whether an SVG document passes
+all the requirements defined in the profile.
+
+
+=== SVG requirement
+
+An SVG requirement is a specific condition or set of conditions that an SVG
+document must meet.
+
+In SvgConform, a `Requirement` object encapsulates the logic to check for a
+specific requirement.
+
+Each `Requirement` object is designed to be modular and focuses on a single
+concern, such as color usage, font family restrictions, or structural validity.
+
+
+=== SVG remediation action
+
+An SVG remediation action is an automatic fix or adjustment applied to an SVG
+document to resolve one or more SVG requirement failures.
+
+A remediation action may imply a lossless or lossy change.
+
+In SvgConform, a `Remediation` object encapsulates the logic to perform a
+specific remediation action.
+
+Each `Remediation` object targets one or more specific requirements through a
+mapping system.
+
+
+=== Defining profiles with configuration
+
+Requirements and remediations can be configured with specific parameters to
+customize their behavior.
+
+In SvgConform, `Requirement` and `Remediation` objects are customizable
+executable components that can be tailored to specific use cases.
+
+These parameters can be set in the profile YAML configuration to influence how
+requirements and remediations operate.
+
+In combination, it allows for flexible definition and authoring of new
 deterministic SVG profiles, with the ability to enforce specific requirements
 and remediation strategies.
 
@@ -76,7 +133,18 @@ SvgConform provides detailed reporting on SVG conformance issues.
 * Error messages: Descriptions of specific conformance issues
 
 
-== Installation
+=== Compatibility with other tools
+
+SvgConform aims to deliver accurate results for compatibility with existing SVG
+profile conformance tools.
+
+See <<external_compliance>> for details.
+
+
+
+== Usage
+
+=== Installation
 
 Add this line to your application's Gemfile:
 
@@ -100,10 +168,10 @@ $ gem install svg_conform
 ----
 
 
-
-== Quick start
-
 === Command line usage
+
+Details and examples of command line usage can be found in
+<<command_line_interface>>.
 
 List available profiles:
 
@@ -127,7 +195,10 @@ $ svg_conform fix {svg-filename} --in-place --profile={profile-name}
 ----
 
 
-=== Ruby API Usage
+=== Ruby API usage
+
+Details and examples of Ruby API usage can be found in
+<<ruby_api_reference>>.
 
 [source,ruby]
 ----
@@ -154,116 +225,14 @@ end
 ----
 
 
-== Core Concepts
 
-=== Profiles
+== Core components
 
-A **Profile** is a collection of requirements and remediations that define a specific SVG conformance standard. Profiles target specific use cases such as IETF RFC documents, web publishing, or custom organizational standards.
-
-Each profile consists of:
-
-* **Requirements**: Validation checks that determine if an SVG document conforms to the profile
-* **Remediations**: Automatic fixes that can be applied when requirements fail
-* **Configuration**: Profile-specific settings and parameters
-
-=== Requirements
-
-**Requirements** are the core validation logic that check SVG documents for conformance issues. There are two types of requirements:
-
-==== Structural Requirements
-
-Structural requirements validate the basic structure and syntax of SVG documents:
-
-* **NamespaceRequirement**: Ensures proper SVG namespace declarations
-* **AllowedElementsRequirement**: Restricts which SVG elements are permitted
-* **ViewboxRequiredRequirement**: Requires viewBox attributes on root elements
-
-==== Logical Requirements
-
-Logical requirements validate the content and semantics of SVG documents:
-
-* **ColorRestrictionsRequirement**: Enforces color usage restrictions (e.g., grayscale only)
-* **FontFamilyRequirement**: Controls font family usage
-* **NoExternalCssRequirement**: Prevents external CSS references
-* **InvalidIdReferencesRequirement**: Validates that ID references point to existing elements
-
-=== Remediations
-
-**Remediations** are automatic fixing actions that can resolve requirement failures. Each remediation targets one or more specific requirements through a mapping system:
-
-* **ColorRemediationAction**: Converts invalid colors to compliant alternatives (targets: `color_restrictions`)
-* **FontRemediationAction**: Fixes font family specifications (targets: `font_family`)
-* **NamespaceRemediationAction**: Adds missing SVG namespace declarations (targets: `namespace`)
-* **ViewboxRemediationAction**: Adds missing viewBox attributes (targets: `viewbox_required`)
-
-==== Remediation Mapping
-
-Remediations are mapped to requirements using the `targets` configuration in profile YAML files:
-
-[source,yaml]
-----
-remediations:
-  - id: "fix_invalid_colors"
-    type: "ColorRemediationAction"
-    description: "Convert invalid colors to black or white"
-    targets: ["color_restrictions"]  # Maps to ColorRestrictionsRequirement
-----
-
-This mapping system allows:
-
-* **Targeted fixes**: Remediations only run when their target requirements fail
-* **Flexible configuration**: Multiple remediations can target the same requirement
-* **Conditional application**: Remediations can be enabled/disabled per profile
-
-== Available profiles
-
-SvgConform includes 5 built-in profiles, each designed for different use cases and compliance standards.
-
-[cols="2,3,3,2", options="header"]
-|===
-|Profile |Use Case |Key Features |Documentation
-
-|`:svg_1_2_rfc`
-|IETF RFC documents (strict)
-|Black/white only, limited elements, generic fonts, RFC 7996/6949 compliance, 100% svgcheck compatible
-|link:docs/profiles.adoc#svg-1-2-rfc-profile[Details]
-
-|`:svg_1_2_rfc_with_rdf`
-|IETF RFC + RDF metadata
-|Same as svg_1_2_rfc but allows RDF/Dublin Core metadata from design tools
-|link:docs/profiles.adoc#svg-1-2-rfc-with-rdf-profile[Details]
-
-|`:base`
-|Foundation profile
-|Basic validation, namespace checks, starting point for custom profiles
-|link:docs/profiles.adoc#base-profile[Details]
-
-|`:no_external_css`
-|Self-contained SVG
-|No external references, security-focused, offline usage
-|link:docs/profiles.adoc#no-external-css-profile[Details]
-
-|`:lucid_fix`
-|Lucid cleanup
-|Remove Lucid-specific metadata, clean standard SVG output
-|link:docs/profiles.adoc#lucid-fix-profile[Details]
-|===
-
-For complete profile documentation, including inheritance, customization, RDF metadata support, and selection guides, see link:docs/profiles.adoc[SVG Profiles Documentation].
-
-For detailed information about configuring RDF metadata support in profiles, see link:docs/rdf_metadata_support.adoc[RDF Metadata Support Documentation].
-
-
-== Architecture
+=== Architecture
 
 The SvgConform architecture is built around a modular design that separates
 concerns and allows for easy extension.
 
-SvgConform is a flexible Ruby-based SVG validation system that supports multiple
-profiles, including compatibility with the Python svgcheck tool for SVG 1.2 RFC
-validation.
-
-=== High-Level Architecture
 
 [source]
 ----
@@ -324,107 +293,217 @@ validation.
 ╰────────────────────────────────────────────────────────────────╯
 ----
 
-=== Core Components
 
-==== Document (`SvgConform::Document`)
+=== Profiles
 
-Wraps the Moxml XML document and provides SVG-specific functionality:
+SvgConform includes predefined profiles that can be used out-of-the-box.
+Each profile is designed for different use cases and compliance standards.
 
-* Parses SVG content using Moxml
-* Provides element traversal methods
-* Handles namespace resolution
-* Manages document modifications
+.Predefined SVG profiles included in SvgConform
+[cols="2,3,3,2", options="header"]
+|===
+|Profile |Use Case |Key Features |Documentation
 
-==== Validator (`SvgConform::Validator`)
+|`base`
+|Foundation profile
+|Basic validation, namespace checks, starting point for custom profiles.
+|link:docs/profiles.adoc#base-profile[Details]
 
-The main validation engine:
+|`metanorma`
+|Metanorma SVG profile
+|Standard SVG for Metanorma documents. Valid HREFs and ID linking. No external
+fonts, images and CSS. No non-SVG elements or attributes.
+|link:docs/profiles.adoc#no-external-css-profile[Details]
 
-* Loads and applies profiles
-* Coordinates rule execution
-* Collects validation results
-* Manages fixing workflow
+|`svg_1_2_rfc`
+|IETF RFC SVG 1.2 profile
+|RFC 7996/6949 compliant. Black/white color only, limited elements, generic
+fonts. Fully compatible with `svgcheck` outcomes.
+|link:docs/profiles.adoc#svg-1-2-rfc-profile[Details]
 
-==== Profile (`SvgConform::Profile`)
+|`svg_1_2_rfc_with_rdf`
+|IETF RFC SVG 1.2 profile with RDF metadata
+|Same as `svg_1_2_rfc`, but allows RDF/Dublin Core metadata from design tools.
+Supported by `svgcheck`.
+|link:docs/profiles.adoc#svg-1-2-rfc-with-rdf-profile[Details]
 
-Defines a set of validation rules:
+|`no_external_css`
+|Self-contained SVG
+|No external references, security-focused, offline usage.
+|link:docs/profiles.adoc#no-external-css-profile[Details]
 
-* Contains multiple rules
-* Provides metadata (name, description)
-* Can be loaded from YAML configuration
-* Supports rule inheritance
+|`lucid_fix`
+|Lucid cleanup
+|Remove Lucid-specific metadata, clean standard SVG output
+|link:docs/profiles.adoc#lucid-fix-profile[Details]
+|===
 
-==== Requirements and Remediations System
+For complete profile documentation, including inheritance, customization, RDF
+metadata support, and selection guides, see
+link:docs/profiles.adoc[SVG Profiles Documentation].
 
-The validation system is built around requirements and remediations:
+For detailed information about configuring RDF metadata support in profiles, see
+link:docs/rdf_metadata_support.adoc[RDF Metadata Support Documentation].
 
-[source]
+
+
+=== Requirements
+
+SvgConform includes different requirement checkers that validate various aspects
+of SVG documents.
+
+There are two main categories of requirements:
+
+* structural requirements: requirements set towards the XML structure and syntax of SVG documents
+* logical requirements: requirements set towards content and stylistic aspects of SVG documents
+
+.SvgConform supported requirement classes
+[cols="2,2,3", options="header"]
+|===
+|Type |Requirement |Description
+
+|Structural
+|`NamespaceRequirement`
+|Ensures proper SVG namespace declarations
+
+|Structural
+|`NamespaceAttributesRequirement`
+|Validates namespace attributes are from allowed namespaces
+
+|Structural
+|`AllowedElementsRequirement`
+|Restricts which SVG elements are permitted
+
+|Structural
+|`ViewboxRequiredRequirement`
+|Requires viewBox attributes on root elements
+
+|Logical
+|`ColorRestrictionsRequirement`
+|Enforces color usage restrictions (e.g., grayscale only)
+
+|Logical
+|`FontFamilyRequirement`
+|Controls font family usage and validates font specifications
+
+|Logical
+|`NoExternalCssRequirement`
+|Prevents external CSS references to ensure self-contained documents
+
+|Logical
+|`ForbiddenContentRequirement`
+|Prevents inclusion of forbidden elements and attributes
+
+|Logical
+|`IdReferenceRequirement`
+|Validates that ID references point to existing elements
+
+|Logical
+|`InvalidIdReferencesRequirement`
+|Detects and validates broken ID references in SVG documents
+
+|Logical
+|`LinkValidationRequirement`
+|Validates that links use only ASCII characters (IETF requirement)
+
+|Logical
+|`StyleRequirement`
+|Comprehensive CSS style validation including syntax and properties
+
+|Logical
+|`StylePromotionRequirement`
+|Detects style properties that should be promoted to SVG attributes
+|===
+
+
+
+=== Remediations
+
+Remediations are automatic fixing actions that can resolve requirement failures.
+Each remediation targets one or more specific requirements.
+
+SvgConform includes different remediation actions that can automatically fix
+SVG documents to resolve requirement violations.
+
+.SvgConform supported remediation classes
+[cols="2,2,3,2", options="header"]
+|===
+|Type |Remediation |Description |Targets
+
+|Content Conversion
+|`ColorRemediation`
+|Converts invalid colors to allowed alternatives using threshold-based conversion
+|<<color-restrictions-requirement,`ColorRestrictionsRequirement`>>
+
+|Content Conversion
+|`FontRemediation`
+|Maps font families to generic alternatives (serif, sans-serif, monospace)
+|<<font-family-requirement,`FontFamilyRequirement`>>
+
+|Element/Attribute Removal
+|`NamespaceRemediation`
+|Removes invalid namespace elements and cleans up namespace declarations
+|<<namespace-requirement,`NamespaceRequirement`>>
+
+|Element/Attribute Removal
+|`NamespaceAttributeRemediation`
+|Removes attributes from disallowed namespaces
+|<<namespace-attributes-requirement,`NamespaceAttributesRequirement`>>
+
+|Element/Attribute Removal
+|`NoExternalCssRemediation`
+|Removes external CSS references including @import and external stylesheets
+|<<no-external-css-requirement,`NoExternalCssRequirement`>>
+
+|Addition
+|`ViewboxRemediation`
+|Adds missing viewBox attributes to root SVG elements
+|<<viewbox-required-requirement,`ViewboxRequiredRequirement`>>
+
+|Style Processing
+|`StylePromotionRemediation`
+|Promotes CSS style properties to equivalent SVG attributes
+|<<style-promotion-requirement,`StylePromotionRequirement`>>
+
+|Reference Fixing
+|`InvalidIdReferencesRemediation`
+|Fixes or removes broken ID references and invalid href attributes
+|<<id-reference-requirement,`IdReferenceRequirement`>>, <<invalid-id-references-requirement,`InvalidIdReferencesRequirement`>>
+|===
+
+
+=== Requirement and remediation mapping
+
+Remediations are mapped to requirements using the `targets` configuration in
+profile YAML files.
+
+[source,yaml]
 ----
-┌─────────────────────────────────────────────────────────────────┐
-│                 Requirements & Remediations System              │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────┐    ┌─────────────────────────┐     │
-│  │     Requirements        │    │     Remediations        │     │
-│  │   (Validation Logic)    │    │   (Fixing Actions)      │     │
-│  │                         │    │                         │     │
-│  │ ┌─────────────────────┐ │    │ ┌─────────────────────┐ │     │
-│  │ │ BaseRequirement     │ │    │ │ BaseRemediation     │ │     │
-│  │ │                     │ │    │ │                     │ │     │
-│  │ │ • check(node)       │ │    │ │ • perform(doc)      │ │     │
-│  │ │ • validate_document │ │    │ │ • targets[]         │ │     │
-│  │ └─────────────────────┘ │    │ └─────────────────────┘ │     │
-│  └─────────┬───────────────┘    └─────────┬───────────────┘     │
-│            │                              │                     │
-│            ▼                              ▼                     │
-│  ┌─────────────────────────┐    ┌─────────────────────────┐     │
-│  │   Structural            │    │   Targeted              │     │
-│  │   Requirements          │    │   Remediations          │     │
-│  │                         │    │                         │     │
-│  │ • NamespaceRequirement  │    │ • ColorRemediation      │     │
-│  │ • AllowedElements       │    │ • FontRemediation       │     │
-│  │ • ViewboxRequired       │    │ • NamespaceRemediation  │     │
-│  └─────────────────────────┘    │ • ViewboxRemediation    │     │
-│                                 └─────────────────────────┘     │
-│  ┌─────────────────────────┐              │                     │
-│  │   Logical               │              │                     │
-│  │   Requirements          │              │                     │
-│  │                         │              │                     │
-│  │ • ColorRestrictions     │              │                     │
-│  │ • FontFamily            │◀─────────────┘                     │
-│  │ • NoExternalCSS         │    Targets mapping                 │
-│  │ • InvalidIdReferences   │    (via profile config)            │
-│  └─────────────────────────┘                                    │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+remediations:
+  - id: "fix_invalid_colors"
+    type: "ColorRemediationAction"
+    description: "Convert invalid colors to black or white"
+    targets: ["color_restrictions"]  # Maps to ColorRestrictionsRequirement
 ----
 
-===== Requirements (`SvgConform::Requirements::BaseRequirement`)
+This mapping system allows:
 
-The core validation logic is implemented as requirements:
+* **Targeted fixes**: Remediations only run when their target requirements fail
+* **Flexible configuration**: Multiple remediations can target the same requirement
+* **Conditional application**: Remediations can be enabled/disabled per profile
 
-* Focused on single validation concerns (colors, fonts, structure, etc.)
-* Reusable across multiple profiles
-* Return detailed violation information with context
-* Can be configured with specific parameters
 
-===== Remediations (`SvgConform::Remediations::BaseRemediation`)
 
-Automatic fixing actions that target specific requirement failures:
+=== Validation and remediation flow
 
-* Apply specific fixes to documents based on validation failures
-* Target one or more requirement types
-* Preserve document structure and validity when possible
-* Can be chained together for comprehensive fixes
+The following steps illustrates the data flow through the core components of
+SvgConform.
 
-===== Profile System
-
-Profiles combine requirements and remediations into cohesive validation strategies:
-
-* YAML-based configuration for easy customization
-* Support for profile inheritance through imports
-* Dynamic instantiation of requirement and remediation classes
-* Flexible targeting of remediations to specific requirement failures
-
-=== Data Flow
+. An SVG file is read and parsed into a Document object.
+. The Document is validated against a Profile using the Validator.
+. The Validator applies Requirements and collects results in a ConformanceReport object.
+. If fixing is enabled, the Validator uses the RemediationEngine to apply Remediations.
+. The fixed Document is returned along with the validation results in the ConformanceReport.
 
 [source]
 ----
@@ -455,517 +534,111 @@ Profiles combine requirements and remediations into cohesive validation strategi
                  └────────────────┘
 ----
 
+=== Classes
 
-== Violation Types and Remediability
+==== Document (`SvgConform::Document`)
 
-SvgConform categorizes violations into two main types:
+Represents an SVG document. The SVG document in XML is parsed using the `Moxml`
+library, and provides SVG-specific functionality through the Document class.
 
-=== Remediable Violations
+==== Validator (`SvgConform::Validator`)
 
-These can be automatically fixed through remediation processing:
+The validator is the main entry point for SVG validation. It orchestrates the
+validation process with loading profiles, applying rules, and collecting results.
 
-**ColorViolation** (`color_restrictions`):
+==== Profile (`SvgConform::Profile`)
 
-* **Remediation**: Convert using CssColor equivalence system
-* **Examples**: `red` → `black`, `#f00` → `#000000`
-* **Confidence**: Automatic
+A profile is a collection of requirements and remediations that define a specific
+SVG conformance standard. Profiles are defined in YAML configuration files and are
+loaded dynamically at runtime.
 
-**FontViolation** (`font_family`):
+Notice that there are requirement violations that cannot be automatically
+remediated. For example, if an SVG uses a forbidden element, the remediation may
+simply remove it, which could lead to loss of important content.
 
-* **Remediation**: Map to generic font families
-* **Examples**: `Arial` → `sans-serif`, `Times New Roman` → `serif`
-* **Confidence**: Automatic
 
-**ContentViolation** (`forbidden_content`):
+==== Requirements
 
-* **Remediation**: Remove forbidden elements/attributes
-* **Examples**: Remove `<script>`, `onclick` attributes
-* **Confidence**: Safe removal
+An SvgConform requirement is a specific validation check that determines if an SVG
+document meets certain criteria. Requirements are implemented as classes that inherit
+from `SvgConform::Requirements::BaseRequirement`.
 
-**ReferenceViolation** (`id_reference`, `link_validation`):
+Each requirement class focuses on a single concern implemented using
+XML tree traversal and validation logic.
 
-* **Remediation**: Remove broken references or elements
-* **Examples**: Remove `<use>` with invalid href, broken links
-* **Confidence**: Safe removal
+Every requirement check can be configured with specific parameters to fine-tune
+its behavior.
 
-**NamespaceViolation** (`namespace`, `namespace_attributes`):
+Profiles can include multiple requirements to cover various aspects of SVG
+conformance.
 
-* **Remediation**: Remove invalid namespace elements/attributes
-* **Examples**: Remove `<inkscape:layer>`, `custom:attr`
-* **Confidence**: Safe removal
+==== Remediations
 
-**ViewboxViolation** (`viewbox_required`):
+An SvgConform remediation is an automatic fixing action that can be applied to
+an SVG document to resolve one or more requirement failures. Remediations are
+implemented as classes that inherit from `SvgConform::Remediations::BaseRemediation`.
 
-* **Remediation**: Add missing viewBox attributes
-* **Examples**: Generate from width/height dimensions
-* **Confidence**: Safe structural
+Each remediation class focuses on a specific fixing action implemented using
+XML tree manipulation and editing.
 
-**StyleViolation** (`style`, `style_promotion`):
+Every remediation can be configured with specific parameters to customize its
+behavior. A remediation can target one or more specific requirements through
+configuration options.
 
-* **Remediation**: Promote or convert style properties
-* **Examples**: Move `style="fill:black"` to `fill="black"`
-* **Confidence**: Automatic
 
-=== Non-Remediable Violations
 
-These require manual intervention:
+[[command_line_interface]]
+== Command line interface
 
-**StructuralViolation**:
+=== General
 
-* **Examples**: Malformed XML, root element not `<svg>`, invalid document hierarchy
-* **Reason**: Automatic fixing could break document integrity or change meaning
-* **Solution**: Manual document restructuring required
+The `svg_conform` command provides a comprehensive CLI for validation and fixing.
 
-=== Enhanced Color System
 
-SvgConform uses the `CssColor` class for advanced color equivalence recognition:
+=== `svg_conform profiles`
 
-==== Color Equivalence Examples
+The `profiles` command lists all available SVG profiles included in SvgConform.
 
-[source]
+Syntax:
+
+[source,bash]
 ----
-# These are all equivalent and recognized as "white":
-white
-#ffffff
-#FFFFFF
-#fff
-#FFF
-rgb(255,255,255)
-rgba(255,255,255,1.0)
+svg_conform profiles [OPTIONS]
 
-# These are all equivalent and recognized as "black":
-black
-#000000
-#000
-rgb(0,0,0)
+Options:
+  -v, --verbose           Show detailed profile information
 ----
 
-==== Color Conversion Features
-
-* **Normalization**: All color formats converted to canonical hex
-* **Named Color Support**: Full CSS named color palette
-* **Case Insensitive**: Hex colors match regardless of case
-* **Short Hex Expansion**: `#fff` automatically expands to `#ffffff`
-* **RGB Function Parsing**: `rgb(255,0,0)` converts to `#ff0000`
-* **Equivalence Checking**: Smart matching across all formats
-
-[source,yaml]
-----
-- id: "strict_colors"
-  type: "ColorRestrictionsRequirement"
-  description: "Strict black and white validation for technical documents"
-  mode: "black_white_only"
-  black_and_white_threshold: 764
-  allowed_colors: ["black", "white", "#000000", "#ffffff", "#FFFFFF", "none", "inherit", "currentColor"]
-----
-
-This configuration enables strict validation where only exact color strings are accepted during validation, while threshold-based conversion (RGB sum ≤ 764 → black, RGB sum > 764 → white) is applied during remediation.
-
-Features:
-
-* **Enhanced color equivalence**: `#fff` ↔ `#ffffff` ↔ `white` (when threshold not specified)
-* **Strict format validation**: When `black_and_white_threshold` is specified, only exact strings from `allowed_colors` are permitted
-* **Percentage RGB support**: `rgb(100%,100%,100%)` and mixed formats handled
-* **Case-insensitive processing**: `BLACK` → `black` normalization
-* **RGB function support**: `rgb(255,255,255)` → `white` equivalence
-* **Short hex expansion**: `#000` → `#000000` normalization
-* Validates fill, stroke, and style attributes
-
-[[font-family-requirement]]
-==== FontFamilyRequirement
-
-Controls font family usage and validates font specifications.
-
-Configuration:
-[source,yaml]
-----
-- id: "fonts"
-  type: "FontFamilyRequirement"
-  description: "Restrict to generic font families"
-  allowed_families: ["serif", "sans-serif", "monospace"]
-  default_family: "sans-serif"
-----
-
-Features:
-
-* Restricts to specific font families
-* Validates both font-family attributes and style properties
-* Handles comma-separated font family lists
-
-[[forbidden-content-requirement]]
-==== ForbiddenContentRequirement
-
-Prevents inclusion of forbidden elements and attributes.
-
-Configuration:
-[source,yaml]
-----
-- id: "no_scripts"
-  type: "ForbiddenContentRequirement"
-  description: "Prevent scripting and multimedia"
-  forbidden_elements: ["script", "audio", "video"]
-  forbidden_attributes: ["onclick", "onload", "onmouseover"]
-----
-
-Features:
-
-* Configurable lists of forbidden elements and attributes
-* Useful for security-focused profiles
-* Supports multimedia and scripting restrictions
-
-[[no-external-css-requirement]]
-==== NoExternalCssRequirement
-
-Prevents external CSS references to ensure self-contained documents.
-
-Configuration:
-[source,yaml]
-----
-- id: "no_external_css"
-  type: "NoExternalCssRequirement"
-  description: "Block external CSS references"
-  allowed_protocols: [] # No external protocols allowed
-----
-
-Features:
-
-* Blocks `@import` statements in `<style>` elements
-* Prevents external stylesheet `<link>` elements
-* Validates URL references in style attributes
-
-=== Reference requirements
-
-These validate links and references within SVG documents:
-
-[[id-reference-requirement]]
-==== IdReferenceRequirement
-
-Validates that ID references point to existing elements.
-
-Configuration:
-[source,yaml]
-----
-- id: "valid_ids"
-  type: "IdReferenceRequirement"
-  description: "Ensure ID references are valid"
-----
-
-Features:
-
-* Validates `<use>` element href references
-* Checks URL fragments in various attributes
-* Prevents broken internal links
-
-[[link-validation-requirement]]
-==== LinkValidationRequirement
-
-Validates that links use only ASCII characters (IETF requirement).
-
-Configuration:
-[source,yaml]
-----
-- id: "ascii_links"
-  type: "LinkValidationRequirement"
-  description: "Links must be ASCII-only"
-----
-
-Features:
-
-* Validates href attributes contain only ASCII
-* Required for RFC 7996 compliance
-* Prevents internationalization issues
-
-=== Style requirements
-
-These validate CSS styling within SVG documents:
-
-[[style-requirement]]
-==== StyleRequirement
-
-Comprehensive CSS style validation including syntax, properties, and values.
-
-Configuration:
-[source,yaml]
-----
-- id: "valid_styles"
-  type: "StyleRequirement"
-  description: "Validate CSS style syntax and properties"
-  allowed_properties: ["fill", "stroke", "font-family"]
-  property_values:
-    "fill": ["black", "white", "none"]
-    "font-family": ["serif", "sans-serif", "monospace"]
-----
-
-Features:
-
-* CSS syntax validation
-* Property whitelist enforcement
-* Property value validation with type checking
-* Supports complex property configurations
-
-[[style-promotion-requirement]]
-==== StylePromotionRequirement
-
-Detects style properties that should be promoted to SVG attributes.
-
-Configuration:
-[source,yaml]
-----
-- id: "promote_styles"
-  type: "StylePromotionRequirement"
-  description: "Detect styles that should be attributes"
-----
-
-Features:
-
-* Identifies style properties that can be SVG attributes
-* Helps with SVG optimization and compatibility
-* Works with StylePromotionRemediation for automatic fixing
-
-== Available remediations
-
-SvgConform provides 9 different remediation types that automatically fix validation violations.
-
-=== Content conversion remediations
-
-[[color-remediation]]
-==== ColorRemediation
-
-Converts invalid colors to allowed alternatives using the enhanced CssColor system with threshold-based conversion.
-
-Configuration:
-[source,yaml]
-----
-- id: "fix_colors"
-  type: "ColorRemediation"
-  description: "Convert colors to allowed equivalents"
-  targets: ["color_restrictions"]
-----
-
-Where,
-
-`targets`:: List of requirement IDs that this remediation addresses.
-
-.Using ColorRemediation with threshold-based conversion
 [example]
 ====
-[source,yaml]
+[source,bash]
 ----
-remediations:
-  - id: "color_conversion"
-    type: "ColorRemediation"
-    description: "Convert colors to black and white using RGB threshold"
-    targets: ["color_restrictions"]
+# List all profiles
+$ svg_conform profiles
+
+Available SVG Profiles
+========================================
+
+╭──────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Profile              │ Description                                                                                                       │
+├──────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ base                 │ Base SVG validation profile with common requirements                                                              │
+│ lucid_fix            │ Lucid SVG Fix Profile - Removes invalid use element references and namespace attributes from Lucid-generated SVGs │
+│ metanorma            │ Metanorma SVG Profile - SVG requirements for Metanorma technical documents with embedded resources                │
+│ no_external_css      │ Security-focused profile that disallows external CSS references                                                   │
+│ svg_1_2_rfc          │ SVG 1.2 RFC Profile (RFC 7996) - Black and white diagrams for technical documents                                 │
+│ svg_1_2_rfc_with_rdf │ SVG 1.2 RFC Profile with RDF metadata support - Allows RDF/Dublin Core metadata in SVG files                      │
+╰──────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+Use --verbose for detailed information about each profile
 ----
 ====
 
-When the target ColorRestrictionsRequirement has a `black_and_white_threshold` configured, the remediation applies threshold-based conversion:
-- RGB sum ≤ threshold → converted to `black`
-- RGB sum > threshold → converted to `white`
+=== `svg_conform validate`
 
-**Targets**: ColorRestrictionsRequirement violations
-**Remediation Type**: Convert
-**Confidence**: Automatic
+The `validate` command allows you to validate SVG files against a specified profile.
 
-Features:
-
-* **Smart color conversion** using CssColor equivalence and threshold logic
-* **Threshold-based conversion**: When `black_and_white_threshold` is configured, applies RGB sum logic
-* **Preserves color intent** when possible (dark → black, light → white)
-* **Handles all color formats**: named, hex, RGB, percentage RGB, short hex, mixed formats
-* **Case-insensitive processing**: Handles uppercase color names and hex values
-* Updates both attributes and style properties
-
-[[font-remediation]]
-==== FontRemediation
-
-Maps font families to generic alternatives.
-
-Configuration:
-[source,yaml]
-----
-- id: "fix_fonts"
-  type: "FontRemediation"
-  description: "Convert to generic font families"
-  targets: ["font_family"]
-  default_family: "sans-serif"
-  font_mapping:
-    "Arial": "sans-serif"
-    "Times": "serif"
-    "Courier": "monospace"
-----
-
-**Targets**: FontFamilyRequirement violations
-**Remediation Type**: Convert
-**Confidence**: Automatic
-
-Features:
-
-* Configurable font family mappings
-* Handles comma-separated font lists
-* Updates both font-family attributes and style properties
-
-=== Element and attribute removal remediations
-
-[[namespace-remediation]]
-==== NamespaceRemediation
-
-Removes invalid namespace elements and attributes.
-
-Configuration:
-[source,yaml]
-----
-- id: "fix_namespaces"
-  type: "NamespaceRemediation"
-  description: "Remove invalid namespace content"
-  targets: ["namespace_validation"]
-  default_namespace: "http://www.w3.org/2000/svg"
-----
-
-**Targets**: NamespaceRequirement violations
-**Remediation Type**: Remove
-**Confidence**: Safe Removal
-
-Features:
-
-* **Removes invalid namespace elements** (e.g., `<custom:element>`)
-* **Removes invalid namespace attributes** (e.g., `custom:attr`)
-* **Preserves valid namespaces** (SVG, XLink, XML)
-* **Cleans up namespace declarations**
-
-[[namespace-attribute-remediation]]
-==== NamespaceAttributeRemediation
-
-Removes attributes from disallowed namespaces.
-
-Configuration:
-[source,yaml]
-----
-- id: "fix_namespace_attrs"
-  type: "NamespaceAttributeRemediation"
-  description: "Remove disallowed namespace attributes"
-  targets: ["namespace_attributes"]
-----
-
-**Targets**: NamespaceAttributesRequirement violations
-**Remediation Type**: Remove
-**Confidence**: Safe Removal
-
-[[no-external-css-remediation]]
-==== NoExternalCssRemediation
-
-Removes external CSS references.
-
-Configuration:
-[source,yaml]
-----
-- id: "remove_external_css"
-  type: "NoExternalCssRemediation"
-  description: "Remove external CSS references"
-  targets: ["no_external_css"]
-  strategy: "remove_external_references"
-----
-
-**Targets**: NoExternalCssRequirement violations
-**Remediation Type**: Remove
-**Confidence**: Safe Removal
-
-Features:
-
-* Removes external `<link>` elements
-* Strips `@import` statements from `<style>` elements
-* Removes external URLs from style attributes
-
-=== Addition remediations
-
-[[viewbox-remediation]]
-==== ViewboxRemediation
-
-Adds missing viewBox attributes to root SVG elements.
-
-Configuration:
-[source,yaml]
-----
-- id: "add_viewbox"
-  type: "ViewboxRemediation"
-  description: "Add missing viewBox attributes"
-  targets: ["viewbox_required"]
-----
-
-**Targets**: ViewboxRequiredRequirement violations
-**Remediation Type**: Add
-**Confidence**: Safe Structural
-
-Features:
-
-* Auto-generates viewBox from width/height attributes
-* Handles malformed viewBox values
-* Preserves existing valid viewBox attributes
-
-=== Style processing remediations
-
-[[style-promotion-remediation]]
-==== StylePromotionRemediation
-
-Promotes CSS style properties to SVG attributes.
-
-Configuration:
-[source,yaml]
-----
-- id: "promote_styles"
-  type: "StylePromotionRemediation"
-  description: "Promote style properties to attributes"
-  targets: ["style_promotion"]
-----
-
-**Targets**: StylePromotionRequirement violations
-**Remediation Type**: Promote
-**Confidence**: Automatic
-
-Features:
-
-* Converts style properties to equivalent SVG attributes
-* Improves SVG compatibility and optimization
-* Preserves visual appearance while changing structure
-
-=== Reference fixing remediations
-
-[[invalid-id-references-remediation]]
-==== InvalidIdReferencesRemediation
-
-Fixes or removes broken ID references.
-
-Configuration:
-[source,yaml]
-----
-- id: "fix_broken_refs"
-  type: "InvalidIdReferencesRemediation"
-  description: "Fix broken ID references"
-  targets: ["id_references", "invalid_id_references"]
-  strategy: "remove_broken_elements"
-----
-
-**Targets**: IdReferenceRequirement, InvalidIdReferencesRequirement violations
-**Remediation Type**: Remove
-**Confidence**: Safe Removal
-
-Features:
-
-* Removes `<use>` elements with broken href references
-* Removes or fixes other broken ID references
-* Can replace with placeholder content or remove entirely
-
-
-
-== Command Line Interface
-
-The `svg_conform` command provides a comprehensive CLI for validation and fixing:
-
-=== Commands
-
-==== `validate`
-
-Validate SVG files against a profile:
+Syntax:
 
 [source,bash]
 ----
@@ -978,8 +651,8 @@ Options:
   -v, --verbose            Verbose output
 ----
 
-Examples:
-
+[example]
+====
 [source,bash]
 ----
 # Validate single file
@@ -991,10 +664,18 @@ svg_conform validate -p no_external_css *.svg
 # Output JSON results
 svg_conform validate -f json -o results.json diagram.svg
 ----
+====
 
-==== `fix`
 
-Fix SVG files to conform to a profile:
+=== `svg_conform fix`
+
+The `fix` command allows you to automatically fix SVG files to conform to a
+specified profile, with options for in-place modification or custom output.
+
+Whether a file can be fixed depends on the specific issues present and the
+remediations available in the selected profile.
+
+Syntax:
 
 [source,bash]
 ----
@@ -1008,8 +689,8 @@ Options:
   -v, --verbose           Verbose output
 ----
 
-Examples:
-
+[example]
+====
 [source,bash]
 ----
 # Fix file in place
@@ -1021,142 +702,13 @@ svg_conform fix --dry-run diagram.svg
 # Fix with custom output
 svg_conform fix -o fixed_diagram.svg diagram.svg
 ----
+====
 
-==== `compatibility`
 
-Compare SvgConform validation results with svgcheck tool output:
-
-[source,bash]
-----
-svg_conform compatibility [OPTIONS] [FILE]
-
-Options:
-  -p, --profile PROFILE    Profile to use (default: svg_1_2_rfc)
-  -f, --file FILE          Analyze specific file instead of all test files
-  -o, --output FILE        Output clean report to file (no color codes)
-  -v, --verbose            Verbose output
-----
-
-Examples:
-
-[source,bash]
-----
-# Run comprehensive compatibility analysis
-svg_conform compatibility
-
-# Analyze specific file
-svg_conform compatibility --file example.svg
-
-# Generate clean report for documentation
-svg_conform compatibility --output compatibility-report.md
-
-# Analyze specific file and save to file
-svg_conform compatibility --file example.svg --output analysis.md
-----
-
-==== `generate-svgcheck`
-
-Generate svgcheck outputs for test files by running the Python svgcheck tool:
-
-[source,bash]
-----
-svg_conform generate-svgcheck [OPTIONS]
-
-Options:
-  -m, --mode MODE          Generation mode: check, repair, or both (default: both)
-  --svgcheck-exec PATH     Path to svgcheck executable (default: svgcheck from PATH)
-  --fixtures-path PATH     Output directory (default: spec/fixtures/svgcheck)
-  -f, --single-file FILE   Process single file only
-  --force                  Overwrite existing outputs
-  -v, --verbose            Verbose output
-----
-
-This command provides a bridge between SvgConform and the Python svgcheck tool, enabling comprehensive compatibility testing and analysis. By default, it generates both check and repair outputs in separate subdirectories.
-
-===== Output Structure
-
-The command creates a structured output directory with separate subdirectories for different svgcheck modes:
-
-[source]
-----
-spec/fixtures/svgcheck/
-├── check/          # Check-only outputs (validation without remediation)
-│   ├── file1.svg.out   # Validation messages from svgcheck
-│   ├── file1.svg.err   # Error messages from svgcheck
-│   └── file1.svg.code  # Exit status from svgcheck
-└── repair/         # Repair outputs (validation + remediation)
-    ├── file1.svg.out   # Validation messages from svgcheck
-    ├── file1.svg.err   # Error messages from svgcheck
-    ├── file1.svg.code  # Exit status from svgcheck
-    └── file1.svg.file  # Remediated SVG content
-----
-
-===== Generation Modes
-
-**Check Mode** (`--mode check`):
-- Runs svgcheck without the `--repair` flag
-- Only validates SVG files and reports errors
-- Generates `.out`, `.err`, and `.code` files
-- No remediated content is produced
-
-**Repair Mode** (`--mode repair`):
-- Runs svgcheck with the `--repair` flag
-- Validates SVG files and generates remediated content
-- Generates `.out`, `.err`, `.code`, and `.file` files
-- The `.file` contains the remediated SVG content
-
-**Both Mode** (`--mode both`, default):
-- Runs both check and repair modes for each file
-- Generates complete output sets in both subdirectories
-- Provides comprehensive data for compatibility analysis
-
-===== Examples
-
-[source,bash]
-----
-# Generate both check and repair outputs for all test files
-svg_conform generate-svgcheck
-
-# Generate only check outputs
-svg_conform generate-svgcheck --mode check
-
-# Generate only repair outputs
-svg_conform generate-svgcheck --mode repair
-
-# Process a single file with verbose output
-svg_conform generate-svgcheck --single-file example.svg --verbose
-
-# Force regeneration of existing outputs
-svg_conform generate-svgcheck --force
-
-# Use custom output directory
-svg_conform generate-svgcheck --fixtures-path /path/to/custom/output
-----
-
-===== Integration with Compatibility Analysis
-
-The generated outputs are used by the `compatibility` command to perform detailed comparisons between SvgConform and svgcheck validation results. The structured directory layout enables:
-
-- **Targeted analysis**: Compare check-only vs repair mode behaviors
-- **Comprehensive testing**: Validate against both validation and remediation workflows
-- **Regression testing**: Track changes in svgcheck behavior over time
-- **Profile development**: Use svgcheck outputs as reference for profile refinement
-
-==== `profiles`
-
-List available profiles:
-
-[source,bash]
-----
-svg_conform profiles [OPTIONS]
-
-Options:
-  -v, --verbose           Show detailed profile information
-----
-
+[[ruby_api_reference]]
 == Ruby API
 
-=== Basic Usage
+=== Basic usage
 
 [source,ruby]
 ----
@@ -1178,7 +730,7 @@ result.errors.each do |error|
 end
 ----
 
-=== Advanced Usage
+=== Advanced usage
 
 [source,ruby]
 ----
@@ -1205,7 +757,7 @@ puts "Description: #{profile_info[:description]}"
 puts "Rules: #{profile_info[:rules].map { |r| r[:id] }.join(', ')}"
 ----
 
-=== Working with Documents
+=== Working with loaded SVG content
 
 [source,ruby]
 ----
@@ -1230,9 +782,10 @@ fixer.set_attribute(element, 'fill', 'black')
 modified_svg = fixer.to_xml
 ----
 
+
 == Configuration
 
-=== Profile Configuration
+=== Profile configuration
 
 Profiles can be configured using YAML files in the `config/profiles/` directory:
 
@@ -1270,137 +823,18 @@ rules:
         - "gray"
 ----
 
-=== Rule Configuration
+=== Requirement configuration
 
-Individual rules can be configured with specific parameters:
+TODO.
 
-[source,yaml]
-----
-rules:
-  - id: "font_family"
-    type: "font_family_rule"
-    config:
-      allowed_families:
-        - "serif"
-        - "sans-serif"
-        - "monospace"
-      default_family: "sans-serif"
+=== Remediation configuration
 
-  - id: "viewbox_required"
-    type: "viewbox_required_rule"
-    config:
-      auto_generate: true
-      preserve_aspect_ratio: true
-----
+TODO.
+
 
 == Extending SvgConform
 
-=== Creating Custom Requirements
-
-To create a custom requirement, inherit from `SvgConform::Requirements::BaseRequirement`:
-
-[source,ruby]
-----
-module SvgConform
-  module Requirements
-    class CustomRequirement < BaseRequirement
-      def initialize(id:, description:, config: {})
-        super(id: id, description: description, config: config)
-        @custom_option = config['custom_option'] || 'default'
-      end
-
-      def check(node, context)
-        return unless element?(node)
-
-        # Perform validation logic for individual nodes
-        if node.name == 'custom-element'
-          unless valid_custom_element?(node)
-            context.add_error(
-              requirement_id: @id,
-              message: "Invalid custom element: missing required attribute",
-              node: node,
-              severity: @severity
-            )
-          end
-        end
-      end
-
-      def validate_document(document, context)
-        # Perform document-level validation
-        super(document, context)
-
-        # Additional document-level checks
-        custom_elements = []
-        document.traverse do |node|
-          custom_elements << node if element?(node) && node.name == 'custom-element'
-        end
-
-        if custom_elements.length > 5
-          context.add_warning(
-            requirement_id: @id,
-            message: "Too many custom elements (#{custom_elements.length}), consider consolidating",
-            node: document.root,
-            severity: :warning
-          )
-        end
-      end
-
-      private
-
-      def valid_custom_element?(element)
-        # Custom validation logic
-        has_attribute?(element, 'required-attr')
-      end
-    end
-  end
-end
-----
-
-=== Creating Custom Remediations
-
-To create a custom remediation, inherit from `SvgConform::Remediations::BaseRemediation`:
-
-[source,ruby]
-----
-module SvgConform
-  module Remediations
-    class CustomRemediationAction < BaseRemediation
-      def perform(document, failed_requirements)
-        changes = []
-
-        # Only run if our target requirement failed
-        return changes unless targets_failed?(failed_requirements)
-
-        document.traverse do |node|
-          next unless element?(node) && node.name == 'custom-element'
-
-          # Fix missing required attribute
-          unless has_attribute?(node, 'required-attr')
-            set_attribute(node, 'required-attr', 'default-value')
-            changes << log_change(
-              :attribute_added,
-              "Added missing required-attr with default value",
-              node
-            )
-          end
-        end
-
-        changes
-      end
-
-      private
-
-      def targets_failed?(failed_requirements)
-        # Check if any of our target requirements failed
-        target_ids = ['custom_requirement'] # IDs of requirements this remediation targets
-        failed_requirements.any? { |req| target_ids.include?(req.id.to_s) }
-      end
-    end
-  end
-end
-----
-
-=== Creating Custom Profiles
+=== Custom profiles
 
 Create a new profile by defining a YAML configuration:
 
@@ -1457,22 +891,102 @@ if !result.valid? && profile.has_remediations?
 end
 ----
 
-
+[[external_compliance]]
 == External compliance
-
-SvgConform supports external compliance validation through compatibility testing and comparison with external SVG validation tools.
 
 === General
 
-SvgConform provides validation report comparison capabilities that enable assessment of compatibility with external SVG validation tools. This supports migration workflows and quality assurance processes.
+SvgConform supports external compliance validation through compatibility testing
+and comparison with external SVG validation tools.
+
+SvgConform provides validation report comparison capabilities that enable
+assessment of compatibility with external SVG validation tools. This supports
+migration workflows and quality assurance processes.
 
 === svgcheck
 
-SvgConform supports validation compatibility testing against the Python svgcheck tool for SVG 1.2 RFC validation.
+IETF provides the `svgcheck` tool, a Python-based SVG validator and fixer
+that checks SVG files against the SVG 1.2 RFC profile defined in RFC 7996.
 
-==== Testing workflow
+SvgConform supports validation compatibility testing against the IETF Python
+svgcheck tool for SVG 1.2 RFC validation.
 
-The external compliance testing workflow involves generating reference outputs from external tools and comparing validation results:
+SvgConform includes a compatibility analysis feature that compares its
+validation results with those of `svgcheck`, helping users identify any
+discrepancies or issues.
+
+IMPORTANT: As of version 2025-10-12, SvgConform's SVG 1.2 RFC profile provides a
+100% match in check and repair modes of svgcheck for all test files, except for
+the `full-tiny.svg` file, which svgcheck marks as invalid and fails to repair.
+
+
+=== svgcheck compatibility architecture
+
+SvgConform provides compatibility with the IETF Python svgcheck tool through a
+sophisticated mapping and comparison system that enables validation against the
+SVG 1.2 RFC profile.
+
+.Architecture of svgcheck compatibility checks
+[source]
+----
+╭────────────────────────────────────────────────────────────────╮
+│                svgcheck Compatibility System                   │
+│           (SvgConform ↔ svgcheck Python tool)                  │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  ╭─────────────╮    ╭─────────────────────────────────────╮    │
+│  │ svgcheck    │    │        YAML Mapping                 │    │
+│  │ Raw Errors  │───▶│    config/svgcheck_mapping.yml      │    │
+│  │ (Python)    │    │                                     │    │
+│  ╰─────────────╯    │ • Pattern matching with regex       │    │
+│                     │ • Requirement categorization        │    │
+│                     │ • Semantic meaning extraction       │    │
+│                     │ • Unmapped error detection          │    │
+│                     ╰─────────────┬───────────────────────╯    │
+│                                   │                            │
+│  ╭────────────────────────────────▼────────────────────────╮   │
+│  │              SvgcheckParser                             │   │
+│  │                                                         │   │
+│  │ • Applies YAML mapping during parsing                   │   │
+│  │ • Categorizes errors by requirement                     │   │
+│  │ • Marks unmapped errors for RED display                 │   │
+│  │ • Creates properly structured ConformanceReport         │   │
+│  ╰─────────────────────────┬───────────────────────────────╯   │
+│                            │                                   │
+│                            ▼                                   │
+│  ╭─────────────────────────────────────────────────────────╮   │
+│  │              Parallel Processing                        │   │
+│  │                                                         │   │
+│  │ ╭─────────────────────╮   ╭─────────────────────────╮   │   │
+│  │ │   SvgConform        │   │     svgcheck            │   │   │
+│  │ │   Validation        │   │   ConformanceReport     │   │   │
+│  │ │                     │   │   (mapped)              │   │   │
+│  │ │ • Native Ruby       │   │ • Parsed from YAML      │   │   │
+│  │ │ • Direct profile    │   │ • Requirement-mapped    │   │   │
+│  │ │ • ConformanceReport │   │ • Compatible structure  │   │   │
+│  │ ╰─────────────────────╯   ╰─────────────────────────╯   │   │
+│  ╰─────────────┬───────────────────────┬───────────────────╯   │
+│                │                       │                       │
+│                └───────────┬───────────┘                       │
+│                            │                                   │
+│  ╭─────────────────────────▼─────────────────────────╮         │
+│  │              ReportComparator                     │         │
+│  │                                                   │         │
+│  │ • Direct ConformanceReport comparison             │         │
+│  │ • Unified requirement-based display               │         │
+│  │ • Side-by-side error mapping                      │         │
+│  │ • 🚨 RED highlighting for unmapped errors         │         │
+│  │ • Compatibility metrics and analysis              │         │
+│  ╰───────────────────────────────────────────────────╯         │
+│                                                                │
+╰────────────────────────────────────────────────────────────────╯
+----
+
+
+=== Testing workflow
+
+The external compliance testing workflow involves generating reference outputs
+from external tools and comparing validation results:
 
 [source,bash]
 ----
@@ -1486,9 +1000,89 @@ bundle exec ruby verify_svgcheck_compatibility.rb
 svg_conform compatibility --output compatibility-report.md
 ----
 
-==== Commands
 
-**Generate test artifacts**:
+=== svgcheck compatibility commands
+
+==== General
+
+In order to run the compatibility commands, you need to have the `svgcheck` tool
+installed and accessible in your PATH.
+
+NOTE: The `svgcheck` tool can be installed via `pip install svgcheck`.
+
+The commands in this section provide functionality to generate svgcheck outputs
+for test files and perform compatibility analysis between SvgConform and svgcheck
+results.
+
+The test files from svgcheck are included in the SvgConform repository under
+`spec/fixtures/svgcheck` to ensure consistent testing.
+
+The mapping configuration file `config/svgcheck_mapping.yml` defines how
+svgcheck error messages are interpreted and mapped to SvgConform requirements.
+
+The data flow steps for compatibility analysis is as follows:
+
+. svgcheck outputs are generated for test files using the `generate-svgcheck` command.
+
+. For each test file, svgcheck outputs are generated in both check-only and
+repair modes through the `generate-svgcheck` command, and are then parsed by the
+`Svgcheck::Parser` class into the `ReportGenerator` class.
+
+. SvgConform validates the same test files using the SVG 1.2 RFC profile, which provides
+a `ConformanceReport` object.
+
+. The `ReportComparator` class compares the `ConformanceReport` from SvgConform
+with the svgcheck `ReportGenerator` results. The `ReportComparator` handles
+both check-only and repair mode outputs, and maps svgcheck messages to SvgConform
+requirements and remediations outcomes.
+
+. A detailed comparison report is generated, highlighting matches and discrepancies.
+
+
+==== `svg_conform compatibility`
+
+The `compatibility` command performs a comprehensive compatibility analysis
+between SvgConform validation results and the IETF `svgcheck` tool output.
+
+
+[source,bash]
+----
+svg_conform compatibility [OPTIONS] [FILE]
+
+Options:
+  -p, --profile PROFILE    Profile to use (default: svg_1_2_rfc)
+  -f, --file FILE          Analyze specific file instead of all test files
+  -o, --output FILE        Output clean report to file (no color codes)
+  -v, --verbose            Verbose output
+----
+
+[example]
+====
+[source,bash]
+----
+# Run comprehensive compatibility analysis
+svg_conform compatibility
+
+# Analyze specific file
+svg_conform compatibility --file example.svg
+
+# Generate clean report for documentation
+svg_conform compatibility --output compatibility-report.md
+
+# Analyze specific file and save to file
+svg_conform compatibility --file example.svg --output analysis.md
+----
+====
+
+
+==== `svg_conform generate-svgcheck`
+
+The `generate-svgcheck` command generates svgcheck outputs for test files to
+facilitate compatibility analysis.
+
+These files are generated in a structured output directory, with separate subdirectories
+for check-only and repair modes.
+
 
 [source,bash]
 ----
@@ -1496,22 +1090,90 @@ svg_conform generate-svgcheck [OPTIONS]
 
 Options:
   -m, --mode MODE          Generation mode: check, repair, or both (default: both)
+  --svgcheck-exec PATH     Path to svgcheck executable (default: svgcheck from PATH)
   --fixtures-path PATH     Output directory (default: spec/fixtures/svgcheck)
   -f, --single-file FILE   Process single file only
   --force                  Overwrite existing outputs
-----
-
-**Run compatibility analysis**:
-
-[source,bash]
-----
-svg_conform compatibility [OPTIONS] [FILE]
-
-Options:
-  -f, --file FILE          Analyze specific file instead of all test files
-  -o, --output FILE        Output clean report to file (no color codes)
   -v, --verbose            Verbose output
 ----
+
+This command provides a bridge between SvgConform and the Python svgcheck tool,
+enabling comprehensive compatibility testing and analysis. By default, it
+generates both check and repair outputs in separate subdirectories.
+
+
+The command creates a structured output directory with separate subdirectories
+for different svgcheck modes:
+
+[source]
+----
+spec/fixtures/svgcheck/
+├── check/          # Check-only outputs (validation without remediation)
+│   ├── file1.svg.out   # Validation messages from svgcheck
+│   ├── file1.svg.err   # Error messages from svgcheck
+│   └── file1.svg.code  # Exit status from svgcheck
+└── repair/         # Repair outputs (validation + remediation)
+    ├── file1.svg.out   # Validation messages from svgcheck
+    ├── file1.svg.err   # Error messages from svgcheck
+    ├── file1.svg.code  # Exit status from svgcheck
+    └── file1.svg.file  # Remediated SVG content
+----
+
+The generated outputs are used by the `compatibility` command to perform
+detailed comparisons between SvgConform and svgcheck validation results. The
+structured directory layout enables:
+
+- **Targeted analysis**: Compare check-only vs repair mode behaviors
+- **Comprehensive testing**: Validate against both validation and remediation workflows
+- **Regression testing**: Track changes in svgcheck behavior over time
+- **Profile development**: Use svgcheck outputs as reference for profile refinement
+
+
+There are three modes of operation for generating svgcheck outputs:
+
+**Check Mode** (`--mode check`):
+
+- Runs svgcheck without the `--repair` flag
+- Only validates SVG files and reports errors
+- Generates `.out`, `.err`, and `.code` files
+- No remediated content is produced
+
+**Repair Mode** (`--mode repair`):
+
+- Runs svgcheck with the `--repair` flag
+- Validates SVG files and generates remediated content
+- Generates `.out`, `.err`, `.code`, and `.file` files
+- The `.file` contains the remediated SVG content
+
+**Both Mode** (`--mode both`, default):
+
+- Runs both check and repair modes for each file
+- Generates complete output sets in both subdirectories
+- Provides comprehensive data for compatibility analysis
+
+[example]
+====
+[source,bash]
+----
+# Generate both check and repair outputs for all test files
+svg_conform generate-svgcheck
+
+# Generate only check outputs
+svg_conform generate-svgcheck --mode check
+
+# Generate only repair outputs
+svg_conform generate-svgcheck --mode repair
+
+# Process a single file with verbose output
+svg_conform generate-svgcheck --single-file example.svg --verbose
+
+# Force regeneration of existing outputs
+svg_conform generate-svgcheck --force
+
+# Use custom output directory
+svg_conform generate-svgcheck --fixtures-path /path/to/custom/output
+----
+====
 
 
 
@@ -1538,35 +1200,6 @@ bundle exec rspec spec/integration/
 bundle exec rspec spec/svgcheck_compatibility_spec.rb
 ----
 
-== Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Add tests for your changes
-4. Ensure all tests pass (`bundle exec rspec`)
-5. Commit your changes (`git commit -am 'Add some feature'`)
-6. Push to the branch (`git push origin my-new-feature`)
-7. Create a new Pull Request
-
-=== Development Setup
-
-[source,bash]
-----
-git clone https://github.com/metanorma/svg_conform.git
-cd svg_conform
-bundle install
-bundle exec rake
-----
-
-=== Code Style
-
-This project uses RuboCop for code style enforcement:
-
-[source,bash]
-----
-bundle exec rubocop
-bundle exec rubocop -a  # Auto-fix issues
-----
 
 == Changelog
 
