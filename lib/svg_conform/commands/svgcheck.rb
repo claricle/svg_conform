@@ -56,17 +56,19 @@ module SvgConform
         SvgConform::Commands::SvgcheckCompatibility.new(options).execute
       end
 
-      desc "generate", "Generate svgcheck outputs"
+      desc "generate SVGCHECK_REPO_PATH", "Generate svgcheck outputs"
       long_desc <<~DESC
         Generate svgcheck outputs for test files by running svgcheck on them.
 
-        By default, processes all test files in svgcheck/svgcheck/Tests/
+        SVGCHECK_REPO_PATH: Path to the svgcheck repository (e.g., svgcheck-reference)
+
+        By default, processes all test files in SVGCHECK_REPO_PATH/svgcheck/Tests/
         and generates BOTH check and repair outputs in separate subdirectories.
 
         Examples:
-          svg_conform svgcheck generate
-          svg_conform svgcheck generate --mode check
-          svg_conform svgcheck generate --single-file example.svg
+          svg_conform svgcheck generate svgcheck-reference
+          svg_conform svgcheck generate svgcheck-reference --mode check
+          svg_conform svgcheck generate svgcheck-reference --single-file example.svg
       DESC
       option :mode, aliases: "-m", default: "both", enum: %w[check repair both],
                     desc: "Generation mode: check, repair, or both"
@@ -79,8 +81,9 @@ module SvgConform
                      desc: "Overwrite existing outputs"
       option :verbose, aliases: "-v", type: :boolean, default: false,
                        desc: "Verbose output"
-      def generate
-        SvgConform::Commands::SvgcheckGenerate.new(options).execute
+      def generate(svgcheck_repo_path)
+        SvgConform::Commands::SvgcheckGenerate.new(svgcheck_repo_path,
+                                                   options).execute
       end
     end
   end

@@ -9,15 +9,23 @@ module SvgConform
   module Commands
     # Generate svgcheck outputs using Open3 for proper process management
     class SvgcheckGenerate
-      def initialize(options)
+      def initialize(svgcheck_repo_path, options)
+        @svgcheck_repo_path = svgcheck_repo_path
         @options = options
         @svgcheck_exec = @options[:svgcheck_exec] || "svgcheck"
         @fixtures_path = @options[:fixtures_path] || "spec/fixtures/svgcheck"
-        @test_dir = "svgcheck/svgcheck/Tests"
+        @test_dir = File.join(@svgcheck_repo_path, "svgcheck", "Tests")
+        @svgcheck_dir = File.join(@svgcheck_repo_path, "svgcheck")
         @single_file = @options[:single_file]
         @force = @options[:force] || false
         @verbose = @options[:verbose] || false
         @mode = @options[:mode] || "both" # 'check', 'repair', or 'both'
+
+        # File renaming map: svgcheck filename => our fixture filename
+        @file_rename_map = {
+          "full-tiny.xml" => "full-tiny.svg",
+          "rfc-svg.xml" => "rfc-svg.svg",
+        }
       end
 
       def execute
@@ -80,8 +88,11 @@ module SvgConform
 
       def generate_mode_output(filename, mode)
         test_file_path = File.join(@test_dir, filename)
-        base_name = File.basename(filename, ".*")
-        extension = File.extname(filename)
+
+        # Apply file renaming if applicable
+        output_filename = @file_rename_map[filename] || filename
+        base_name = File.basename(output_filename, ".*")
+        extension = File.extname(output_filename)
 
         # Create mode-specific output directory and base path
         mode_dir = File.join(@fixtures_path, mode)
@@ -185,16 +196,15 @@ module SvgConform
         end
 
         # Check if svgcheck module is available
-        svgcheck_dir = "svgcheck/svgcheck"
-        unless Dir.exist?(svgcheck_dir)
-          puts Paint["❌ svgcheck directory not found: #{svgcheck_dir}", :red]
+        unless Dir.exist?(@svgcheck_dir)
+          puts Paint["❌ svgcheck directory not found: #{@svgcheck_dir}", :red]
           return false
         end
 
         begin
           # Change to svgcheck directory to run the module
           original_dir = Dir.pwd
-          Dir.chdir(svgcheck_dir)
+          Dir.chdir(@svgcheck_dir)
 
           # Build command based on mode
           relative_input = File.join("Tests", File.basename(input_file))
