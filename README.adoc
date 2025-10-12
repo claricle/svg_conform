@@ -636,111 +636,10 @@ Available SVG Profiles
 │ svg_1_2_rfc          │ SVG 1.2 RFC Profile (RFC 7996) - Black and white diagrams for technical documents                                 │
 │ svg_1_2_rfc_with_rdf │ SVG 1.2 RFC Profile with RDF metadata support - Allows RDF/Dublin Core metadata in SVG files                      │
 ╰──────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
-
-[source,bash]
 ----
-# Validate single file
-svg_conform validate diagram.svg
-
-# Validate multiple files with custom profile
-svg_conform validate -p no_external_css *.svg
-
-# Output JSON results
-svg_conform validate -f json -o results.json diagram.svg
-----
-
-
-=== `svg_conform fix`
-
-The `fix` command allows you to automatically fix SVG files to conform to a
-specified profile, with options for in-place modification or custom output.
-
-Whether a file can be fixed depends on the specific issues present and the
-remediations available in the selected profile.
-
-Syntax:
-
-[source,bash]
-----
-svg_conform fix [OPTIONS] FILES...
-
-Options:
-  -p, --profile PROFILE    Profile to use (default: svg_1_2_rfc)
-  --in-place              Fix files in place
-  --dry-run               Show what would be fixed without applying
-  -o, --output FILE       Output file for fixed content
-  -v, --verbose           Verbose output
-----
-
-[example]
-[source,bash]
-----
-# Fix file in place
-svg_conform fix --in-place diagram.svg
-
-# Dry run to see what would be fixed
-svg_conform fix --dry-run diagram.svg
-
-# Fix with custom output
-svg_conform fix -o fixed_diagram.svg diagram.svg
-----
-
-=== `svg_conform check`
-Use --verbose for detailed information about each profile
-----
-
-
-=== `svg_conform check`
 ====
 
-[source,bash]
-----
-# Validate single file
-svg_conform validate diagram.svg
 
-# Validate multiple files with custom profile
-svg_conform validate -p no_external_css *.svg
-
-# Output JSON results
-svg_conform validate -f json -o results.json diagram.svg
-----
-
-
-=== `svg_conform fix`
-
-The `fix` command allows you to automatically fix SVG files to conform to a
-specified profile, with options for in-place modification or custom output.
-
-Whether a file can be fixed depends on the specific issues present and the
-remediations available in the selected profile.
-
-Syntax:
-
-[source,bash]
-----
-svg_conform fix [OPTIONS] FILES...
-
-Options:
-  -p, --profile PROFILE    Profile to use (default: svg_1_2_rfc)
-  --in-place              Fix files in place
-  --dry-run               Show what would be fixed without applying
-  -o, --output FILE       Output file for fixed content
-  -v, --verbose           Verbose output
-----
-
-[example]
-[source,bash]
-----
-# Fix file in place
-svg_conform fix --in-place diagram.svg
-
-# Dry run to see what would be fixed
-svg_conform fix --dry-run diagram.svg
-
-# Fix with custom output
-svg_conform fix -o fixed_diagram.svg diagram.svg
-----
 
 === `svg_conform check`
 
@@ -887,51 +786,25 @@ YAML format using lutaml-model serialization:
   "manifest": {
     "/path/to/images/diagram.svg": "/path/to/fixed/diagram.svg"
   }
-[source,bash]
-----
-# Validate single file
-svg_conform validate diagram.svg
-
-# Validate multiple files with custom profile
-svg_conform validate -p no_external_css *.svg
-
-# Output JSON results
-svg_conform validate -f json -o results.json diagram.svg
-----
-
-
-=== `svg_conform fix`
 }
 ----
 
+**Manifest File:**
 
-=== `svg_conform compare`
+When using `--fix`, a manifest file is automatically created (or can be
+explicitly specified with `--manifest`). The manifest maps original file paths
+to their remediated counterparts:
 
-The `compare` command compares SvgConform validation results with existing
-svgcheck reports to assess compatibility.
-
-This command is useful for verifying that SvgConform produces equivalent results
-to the IETF svgcheck tool.
-
-Syntax:
-
-[source,bash]
+[source,json]
 ----
-svg_conform compare FILE [OPTIONS]
-
-Options:
-  -p, --profile PROFILE        Profile to use (default: svg_1_2_rfc)
-      --svgcheck-report FILE   Path to svgcheck report (default: auto-detect)
-----
-
-[example]
-[source,bash]
-----
-# Compare with auto-detected svgcheck report
-$ svg_conform compare diagram.svg -p svg_1_2_rfc
-
-# Specify svgcheck report explicitly
-$ svg_conform compare diagram.svg --svgcheck-report diagram.svg.svgcheck.yaml
+{
+  "timestamp": "2025-10-12T15:00:00+08:00",
+  "profile": "metanorma",
+  "mappings": {
+    "/original/path/file1.svg": "/fixed/path/file1.svg",
+    "/original/path/file2.svg": "/fixed/path/file2.svg"
+  }
+}
 ----
 
 
@@ -953,77 +826,6 @@ $ svg_conform version
 SvgConform 0.1.0
 ----
 
-
-=== `svg_conform fix`
-**Manifest File:**
-
-When using `--fix`, a manifest file is automatically created (or can be
-explicitly specified with `--manifest`). The manifest maps original file paths
-to their remediated counterparts:
-
-[source,json]
-----
-{
-  "timestamp": "2025-10-12T15:00:00+08:00",
-  "profile": "metanorma",
-  "mappings": {
-    "/original/path/file1.svg": "/fixed/path/file1.svg",
-    "/original/path/file2.svg": "/fixed/path/file2.svg"
-  }
-}
-----
-
-====
-[source,bash]
-----
-# Validate single file
-svg_conform validate diagram.svg
-
-# Validate multiple files with custom profile
-svg_conform validate -p no_external_css *.svg
-
-# Output JSON results
-svg_conform validate -f json -o results.json diagram.svg
-----
-====
-
-
-=== `svg_conform fix`
-
-The `fix` command allows you to automatically fix SVG files to conform to a
-specified profile, with options for in-place modification or custom output.
-
-Whether a file can be fixed depends on the specific issues present and the
-remediations available in the selected profile.
-
-Syntax:
-
-[source,bash]
-----
-svg_conform fix [OPTIONS] FILES...
-
-Options:
-  -p, --profile PROFILE    Profile to use (default: svg_1_2_rfc)
-  --in-place              Fix files in place
-  --dry-run               Show what would be fixed without applying
-  -o, --output FILE       Output file for fixed content
-  -v, --verbose           Verbose output
-----
-
-[example]
-====
-[source,bash]
-----
-# Fix file in place
-svg_conform fix --in-place diagram.svg
-
-# Dry run to see what would be fixed
-svg_conform fix --dry-run diagram.svg
-
-# Fix with custom output
-svg_conform fix -o fixed_diagram.svg diagram.svg
-----
-====
 
 
 [[ruby_api_reference]]
@@ -1241,6 +1043,21 @@ IMPORTANT: As of version 2025-10-12, SvgConform's SVG 1.2 RFC profile provides a
 the `full-tiny.svg` file, which svgcheck marks as invalid and fails to repair.
 
 
+=== svgcheck testing workflow
+
+The external compliance testing workflow involves generating reference outputs
+from external tools and comparing validation results:
+
+[source,bash]
+----
+# 1. Generate external tool outputs for reference
+svg_conform svgcheck generate --mode both
+
+# 2. Generate comparison reports
+svg_conform svgcheck compatibility --output comparison_report.json
+----
+
+
 === svgcheck compatibility architecture
 
 SvgConform provides compatibility with the IETF Python svgcheck tool through a
@@ -1304,24 +1121,6 @@ SVG 1.2 RFC profile.
 ----
 
 
-=== Testing workflow
-
-The external compliance testing workflow involves generating reference outputs
-from external tools and comparing validation results:
-
-[source,bash]
-----
-# 1. Generate external tool outputs for reference
-svg_conform generate-svgcheck --mode both
-
-# 2. Run compatibility verification
-bundle exec ruby verify_svgcheck_compatibility.rb
-
-# 3. Generate comparison reports
-svg_conform compatibility --output compatibility-report.md
-----
-
-
 === svgcheck compatibility commands
 
 ==== General
@@ -1343,10 +1142,10 @@ svgcheck error messages are interpreted and mapped to SvgConform requirements.
 
 The data flow steps for compatibility analysis is as follows:
 
-. svgcheck outputs are generated for test files using the `generate-svgcheck` command.
+. svgcheck outputs are generated for test files using the `svgcheck generate` command.
 
 . For each test file, svgcheck outputs are generated in both check-only and
-repair modes through the `generate-svgcheck` command, and are then parsed by the
+repair modes through the `svgcheck generate` command, and are then parsed by the
 `Svgcheck::Parser` class into the `ReportGenerator` class.
 
 . SvgConform validates the same test files using the SVG 1.2 RFC profile, which provides
@@ -1360,15 +1159,15 @@ requirements and remediations outcomes.
 . A detailed comparison report is generated, highlighting matches and discrepancies.
 
 
-==== `svg_conform compatibility`
 
-The `compatibility` command performs a comprehensive compatibility analysis
+==== `svg_conform svgcheck compatibility`
+
+The `svgcheck compatibility` command performs a comprehensive compatibility analysis
 between SvgConform validation results and the IETF `svgcheck` tool output.
-
 
 [source,bash]
 ----
-svg_conform compatibility [OPTIONS] [FILE]
+svg_conform svgcheck compatibility [OPTIONS] [FILE]
 
 Options:
   -p, --profile PROFILE    Profile to use (default: svg_1_2_rfc)
@@ -1382,23 +1181,23 @@ Options:
 [source,bash]
 ----
 # Run comprehensive compatibility analysis
-svg_conform compatibility
+svg_conform svgcheck compatibility
 
 # Analyze specific file
-svg_conform compatibility --file example.svg
+svg_conform svgcheck compatibility --file example.svg
 
 # Generate clean report for documentation
-svg_conform compatibility --output compatibility-report.md
+svg_conform svgcheck compatibility --output compatibility-report.md
 
 # Analyze specific file and save to file
-svg_conform compatibility --file example.svg --output analysis.md
+svg_conform svgcheck compatibility --file example.svg --output analysis.md
 ----
 ====
 
 
-==== `svg_conform generate-svgcheck`
+==== `svg_conform svgcheck generate`
 
-The `generate-svgcheck` command generates svgcheck outputs for test files to
+The `svgcheck generate` command generates svgcheck outputs for test files to
 facilitate compatibility analysis.
 
 These files are generated in a structured output directory, with separate subdirectories
@@ -1407,7 +1206,7 @@ for check-only and repair modes.
 
 [source,bash]
 ----
-svg_conform generate-svgcheck [OPTIONS]
+svg_conform svgcheck generate [OPTIONS]
 
 Options:
   -m, --mode MODE          Generation mode: check, repair, or both (default: both)
@@ -1472,30 +1271,59 @@ There are three modes of operation for generating svgcheck outputs:
 - Generates complete output sets in both subdirectories
 - Provides comprehensive data for compatibility analysis
 
+[source,bash]
+----
+# Generate both check and repair outputs for all test files
+svg_conform svgcheck generate
+
+# Generate only check outputs
+svg_conform svgcheck generate --mode check
+
+# Generate only repair outputs
+svg_conform svgcheck generate --mode repair
+
+# Process a single file with verbose output
+svg_conform svgcheck generate --single-file example.svg --verbose
+
+# Force regeneration of existing outputs
+svg_conform svgcheck generate --force
+
+# Use custom output directory
+svg_conform svgcheck generate --fixtures-path /path/to/custom/output
+----
+
+
+
+==== `svg_conform svgcheck compare`
+
+The `svgcheck compare` command compares SvgConform validation results with existing
+svgcheck reports to assess compatibility.
+
+This command is useful for verifying that SvgConform produces equivalent results
+to the IETF svgcheck tool.
+
+Syntax:
+
+[source,bash]
+----
+svg_conform svgcheck compare FILE [OPTIONS]
+
+Options:
+  -p, --profile PROFILE        Profile to use (default: svg_1_2_rfc)
+      --svgcheck-report FILE   Path to svgcheck report (default: auto-detect)
+----
+
 [example]
 ====
 [source,bash]
 ----
-# Generate both check and repair outputs for all test files
-svg_conform generate-svgcheck
+# Compare with auto-detected svgcheck report
+$ svg_conform svgcheck compare diagram.svg -p svg_1_2_rfc
 
-# Generate only check outputs
-svg_conform generate-svgcheck --mode check
-
-# Generate only repair outputs
-svg_conform generate-svgcheck --mode repair
-
-# Process a single file with verbose output
-svg_conform generate-svgcheck --single-file example.svg --verbose
-
-# Force regeneration of existing outputs
-svg_conform generate-svgcheck --force
-
-# Use custom output directory
-svg_conform generate-svgcheck --fixtures-path /path/to/custom/output
+# Specify svgcheck report explicitly
+$ svg_conform svgcheck compare diagram.svg --svgcheck-report diagram.svg.svgcheck.yaml
 ----
 ====
-
 
 
 == Testing

@@ -5,7 +5,7 @@ require_relative "../compatibility/compatibility_analyzer"
 module SvgConform
   module Commands
     # Command for comparing SvgConform with svgcheck compatibility
-    class Compatibility
+    class SvgcheckCompatibility
       def initialize(options = {})
         @options = options
       end
