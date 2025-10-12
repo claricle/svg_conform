@@ -634,24 +634,218 @@ Use --verbose for detailed information about each profile
 ----
 ====
 
-=== `svg_conform validate`
+[source,bash]
+----
+# Validate single file
+svg_conform validate diagram.svg
 
-The `validate` command allows you to validate SVG files against a specified profile.
+# Validate multiple files with custom profile
+svg_conform validate -p no_external_css *.svg
+
+# Output JSON results
+svg_conform validate -f json -o results.json diagram.svg
+----
+
+
+=== `svg_conform fix`
+
+The `fix` command allows you to automatically fix SVG files to conform to a
+specified profile, with options for in-place modification or custom output.
+
+Whether a file can be fixed depends on the specific issues present and the
+remediations available in the selected profile.
 
 Syntax:
 
 [source,bash]
 ----
-svg_conform validate [OPTIONS] FILES...
+svg_conform fix [OPTIONS] FILES...
 
 Options:
   -p, --profile PROFILE    Profile to use (default: svg_1_2_rfc)
-  -f, --format FORMAT      Output format: text, json (default: text)
-  -o, --output FILE        Output file for results
-  -v, --verbose            Verbose output
+  --in-place              Fix files in place
+  --dry-run               Show what would be fixed without applying
+  -o, --output FILE       Output file for fixed content
+  -v, --verbose           Verbose output
 ----
 
 [example]
+[source,bash]
+----
+# Fix file in place
+svg_conform fix --in-place diagram.svg
+
+# Dry run to see what would be fixed
+svg_conform fix --dry-run diagram.svg
+
+# Fix with custom output
+svg_conform fix -o fixed_diagram.svg diagram.svg
+----
+=== `svg_conform check`
+
+The `check` command validates SVG files against a specified profile and optionally
+applies automatic remediations. It supports single files, multiple files via shell
+glob expansion, and directory scanning.
+
+Syntax:
+
+[source,bash]
+----
+svg_conform check [*FILES] [OPTIONS]
+svg_conform check --directory PATH [OPTIONS]
+
+Required Options:
+  -p, --profile PROFILE         Profile to validate against
+
+Input Options:
+  -d, --directory PATH          Directory to scan recursively for SVG files
+
+Remediation Options:
+  -f, --fix                     Enable automatic remediation
+      --output-dir DIR          Output directory for remediated files (required for multi-file)
+      --in-place                Replace original files (requires --force)
+      --force                   Confirm destructive operations
+      --fix-output FILE         Output file for single file mode (default: FILE.fixed.svg)
+
+Reporting Options:
+      --format FORMAT           Output format for single file: table, yaml, json (default: table)
+  -o, --output FILE             Output file for single file mode
+      --report-format FORMAT    Batch report format: json, yaml
+      --report-output FILE      Save detailed batch report to file
+      --manifest FILE           Manifest file path (default: manifest.json with --fix)
+  -q, --quiet                   Suppress per-file output, show summary only
+  -v, --verbose                 Show detailed progress
+----
+
+The check command supports three operational modes:
+
+**Single File Mode:**
+
+Validates a single SVG file and outputs a detailed validation report.
+
+[source,bash]
+----
+# Basic validation
+svg_conform check file.svg -p metanorma
+
+# With remediation
+svg_conform check file.svg -p metanorma -f --fix-output fixed.svg
+
+# Output YAML report
+svg_conform check file.svg -p metanorma --format yaml -o report.yaml
+----
+
+**Multiple Files Mode (Shell Glob):**
+
+Validates multiple files specified via shell glob patterns. The shell expands
+patterns like `*.svg` before passing to the command.
+
+[source,bash]
+----
+# Validate all SVG files in current directory
+svg_conform check *.svg -p metanorma
+
+# Validate with pattern matching
+svg_conform check images/*/*.svg -p metanorma
+
+# Fix multiple files
+svg_conform check *.svg -p metanorma -f --output-dir fixed/
+
+# With JSON batch report
+svg_conform check *.svg -p metanorma --report-format json --report-output report.json
+----
+
+**Directory Mode:**
+
+Recursively scans a directory for all SVG files using the `--directory` or `-d` flag.
+
+[source,bash]
+----
+# Scan directory and validate
+svg_conform check -d images/ -p metanorma
+
+# Scan and remediate to new directory
+svg_conform check -d images/ -p metanorma -f --output-dir fixed/
+
+# Replace files in place (requires confirmation)
+svg_conform check -d images/ -p metanorma -f --in-place --force
+
+# Quiet mode with detailed JSON report
+svg_conform check -d images/ -p metanorma -f --output-dir fixed/ --quiet \
+  --report-format json --report-output report.json
+
+# With custom manifest file
+svg_conform check -d images/ -p metanorma -f --output-dir fixed/ --manifest mappings.json
+----
+
+**Batch Report Format:**
+
+When processing multiple files or directories, a batch summary is displayed:
+
+[source]
+----
+BATCH VALIDATION SUMMARY
+Directory: /path/to/images
+Profile: metanorma
+Files processed: 56
+Valid before: 0
+Remediated: 56
+Valid after: 56
+Failed: 0
+Success rate: 100.0%
+Manifest written to manifest.json
+----
+
+If `--report-format` is specified, a detailed report is generated in JSON or
+YAML format using lutaml-model serialization:
+
+[source,json]
+----
+{
+  "directory": "/path/to/images",
+  "profile": "metanorma",
+  "timestamp": "2025-10-12T15:36:25+08:00",
+  "total_files": 56,
+  "valid_before": 0,
+  "valid_after": 56,
+  "remediated": 56,
+  "failed": 0,
+  "success_rate": 100.0,
+  "files": [
+    {
+      "filename": "diagram.svg",
+      "original_path": "/path/to/images/diagram.svg",
+      "valid_before": false,
+      "valid_after": true,
+      "errors_before": 3,
+      "errors_after": 0,
+      "remediated_path": "/path/to/fixed/diagram.svg",
+      "status": "remediated"
+    }
+  ],
+  "manifest": {
+    "/path/to/images/diagram.svg": "/path/to/fixed/diagram.svg"
+  }
+}
+----
+
+**Manifest File:**
+
+When using `--fix`, a manifest file is automatically created (or can be
+explicitly specified with `--manifest`). The manifest maps original file paths
+to their remediated counterparts:
+
+[source,json]
+----
+{
+  "timestamp": "2025-10-12T15:00:00+08:00",
+  "profile": "metanorma",
+  "mappings": {
+    "/original/path/file1.svg": "/fixed/path/file1.svg",
+    "/original/path/file2.svg": "/fixed/path/file2.svg"
+  }
+}
+----
 ====
 [source,bash]
 ----
