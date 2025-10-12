@@ -370,55 +370,63 @@ There are two main categories of requirements:
 |Type |Requirement |Description
 
 |Structural
-|`NamespaceRequirement`
+|link:docs/requirements.adoc#namespace-requirement[`NamespaceRequirement`]
 |Ensures proper SVG namespace declarations
 
 |Structural
-|`NamespaceAttributesRequirement`
+|link:docs/requirements.adoc#namespace-attributes-requirement[`NamespaceAttributesRequirement`]
 |Validates namespace attributes are from allowed namespaces
 
 |Structural
-|`AllowedElementsRequirement`
+|link:docs/requirements.adoc#allowed-elements-requirement[`AllowedElementsRequirement`]
 |Restricts which SVG elements are permitted
 
 |Structural
-|`ViewboxRequiredRequirement`
+|link:docs/requirements.adoc#viewbox-required-requirement[`ViewboxRequiredRequirement`]
 |Requires viewBox attributes on root elements
 
 |Logical
-|`ColorRestrictionsRequirement`
+|link:docs/requirements.adoc#color-restrictions-requirement[`ColorRestrictionsRequirement`]
 |Enforces color usage restrictions (e.g., grayscale only)
 
 |Logical
-|`FontFamilyRequirement`
+|link:docs/requirements.adoc#font-family-requirement[`FontFamilyRequirement`]
 |Controls font family usage and validates font specifications
 
 |Logical
-|`NoExternalCssRequirement`
+|link:docs/requirements.adoc#no-external-css-requirement[`NoExternalCssRequirement`]
 |Prevents external CSS references to ensure self-contained documents
 
 |Logical
-|`ForbiddenContentRequirement`
+|link:docs/requirements.adoc#no-external-fonts-requirement[`NoExternalFontsRequirement`]
+|Validates that no external font references are present
+
+|Logical
+|link:docs/requirements.adoc#no-external-images-requirement[`NoExternalImagesRequirement`]
+|Validates that no external image references are present
+
+|Logical
+|link:docs/requirements.adoc#forbidden-content-requirement[`ForbiddenContentRequirement`]
 |Prevents inclusion of forbidden elements and attributes
 
 |Logical
-|`IdReferenceRequirement`
+|link:docs/requirements.adoc#id-reference-requirement[`IdReferenceRequirement`]
 |Validates that ID references point to existing elements
 
 |Logical
-|`InvalidIdReferencesRequirement`
+|link:docs/requirements.adoc#invalid-id-references-requirement[`InvalidIdReferencesRequirement`]
 |Detects and validates broken ID references in SVG documents
 
 |Logical
-|`LinkValidationRequirement`
+|link:docs/requirements.adoc#link-validation-requirement[`LinkValidationRequirement`]
 |Validates that links use only ASCII characters (IETF requirement)
 
 |Logical
-|`StyleRequirement`
+|link:docs/requirements.adoc#style-requirement[`StyleRequirement`]
 |Comprehensive CSS style validation including syntax and properties
 
 |Logical
-|`StylePromotionRequirement`
+|link:docs/requirements.adoc#style-promotion-requirement[`StylePromotionRequirement`]
 |Detects style properties that should be promoted to SVG attributes
 |===
 
@@ -438,44 +446,54 @@ SVG documents to resolve requirement violations.
 |Type |Remediation |Description |Targets
 
 |Content Conversion
-|`ColorRemediation`
+|link:docs/remediation.adoc#color-remediation[`ColorRemediation`]
 |Converts invalid colors to allowed alternatives using threshold-based conversion
-|<<color-restrictions-requirement,`ColorRestrictionsRequirement`>>
+|link:docs/requirements.adoc#color-restrictions-requirement[`ColorRestrictionsRequirement`]
 
 |Content Conversion
-|`FontRemediation`
+|link:docs/remediation.adoc#font-remediation[`FontRemediation`]
 |Maps font families to generic alternatives (serif, sans-serif, monospace)
-|<<font-family-requirement,`FontFamilyRequirement`>>
+|link:docs/requirements.adoc#font-family-requirement[`FontFamilyRequirement`]
+
+|Content Conversion
+|link:docs/remediation.adoc#font-embedding-remediation[`FontEmbeddingRemediation`]
+|Converts external font references to embedded data URIs
+|link:docs/requirements.adoc#no-external-fonts-requirement[`NoExternalFontsRequirement`]
+
+|Content Conversion
+|link:docs/remediation.adoc#image-embedding-remediation[`ImageEmbeddingRemediation`]
+|Converts external image references to embedded data URIs
+|link:docs/requirements.adoc#no-external-images-requirement[`NoExternalImagesRequirement`]
 
 |Element/Attribute Removal
-|`NamespaceRemediation`
+|link:docs/remediation.adoc#namespace-remediation[`NamespaceRemediation`]
 |Removes invalid namespace elements and cleans up namespace declarations
-|<<namespace-requirement,`NamespaceRequirement`>>
+|link:docs/requirements.adoc#namespace-requirement[`NamespaceRequirement`]
 
 |Element/Attribute Removal
-|`NamespaceAttributeRemediation`
+|link:docs/remediation.adoc#namespace-attribute-remediation[`NamespaceAttributeRemediation`]
 |Removes attributes from disallowed namespaces
-|<<namespace-attributes-requirement,`NamespaceAttributesRequirement`>>
+|link:docs/requirements.adoc#namespace-attributes-requirement[`NamespaceAttributesRequirement`]
 
 |Element/Attribute Removal
-|`NoExternalCssRemediation`
+|link:docs/remediation.adoc#no-external-css-remediation[`NoExternalCssRemediation`]
 |Removes external CSS references including @import and external stylesheets
-|<<no-external-css-requirement,`NoExternalCssRequirement`>>
+|link:docs/requirements.adoc#no-external-css-requirement[`NoExternalCssRequirement`]
 
 |Addition
-|`ViewboxRemediation`
+|link:docs/remediation.adoc#viewbox-remediation[`ViewboxRemediation`]
 |Adds missing viewBox attributes to root SVG elements
-|<<viewbox-required-requirement,`ViewboxRequiredRequirement`>>
+|link:docs/requirements.adoc#viewbox-required-requirement[`ViewboxRequiredRequirement`]
 
 |Style Processing
-|`StylePromotionRemediation`
+|link:docs/remediation.adoc#style-promotion-remediation[`StylePromotionRemediation`]
 |Promotes CSS style properties to equivalent SVG attributes
-|<<style-promotion-requirement,`StylePromotionRequirement`>>
+|link:docs/requirements.adoc#style-promotion-requirement[`StylePromotionRequirement`]
 
 |Reference Fixing
-|`InvalidIdReferencesRemediation`
+|link:docs/remediation.adoc#invalid-id-references-remediation[`InvalidIdReferencesRemediation`]
 |Fixes or removes broken ID references and invalid href attributes
-|<<id-reference-requirement,`IdReferenceRequirement`>>, <<invalid-id-references-requirement,`InvalidIdReferencesRequirement`>>
+|link:docs/requirements.adoc#id-reference-requirement[`IdReferenceRequirement`], `InvalidIdReferencesRequirement`
 |===
 
 

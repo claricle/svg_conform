@@ -1,732 +1,731 @@
-= SVG Remediations
+= SvgConform remediations
 :toc: left
 :toclevels: 3
 :sectlinks:
 :sectanchors:
 :source-highlighter: rouge
 
-== Overview
+== Purpose
 
-**Remediations** are automatic fixing actions that can resolve requirement failures. Each remediation targets one or more specific requirements through a mapping system.
+Remediations are automatic fixing actions that resolve requirement failures.
 
-Remediations are configured with specific parameters to customize their behavior and can be mapped to requirements using the `targets` configuration in profile YAML files.
-
-== Remediation System
-
-=== Targeting System
-
-Remediations are mapped to requirements using the `targets` configuration:
-
-[source,yaml]
-----
-remediations:
-  - id: "fix_invalid_colors"
-    type: "ColorRemediation"
-    description: "Convert invalid colors to black or white"
-    targets: ["color_restrictions"]  # Maps to ColorRestrictionsRequirement
-----
-
-This mapping system allows:
-* **Targeted fixes**: Remediations only run when their target requirements fail
-* **Flexible configuration**: Multiple remediations can target the same requirement
-* **Conditional application**: Remediations can be enabled/disabled per profile
-
-=== Remediation Types
-
-Remediations are categorized by the type of fix they apply:
-
-**Convert**: Transform invalid content to valid alternatives
-**Remove**: Delete non-compliant elements or attributes
-**Add**: Insert missing required content
-**Promote**: Change content structure while preserving meaning
+Each remediation targets one or more specific requirements through a mapping
+system configured in profile YAML files.
 
 == Available remediations
 
-SvgConform provides 9 different remediation types that automatically fix validation violations.
-
-=== Content conversion remediations
-
 [[color-remediation]]
-==== ColorRemediation
+=== Color remediation
 
-Converts invalid colors to allowed alternatives using the enhanced CssColor system with threshold-based conversion.
+==== General
 
-**Configuration Options**:
+Converts invalid colors to allowed alternatives using the enhanced CssColor
+system with threshold-based conversion.
 
-`conversion_strategy`:: Strategy for color conversion: `"threshold"`, `"nearest"`, or `"strict"`. Default: `"threshold"`.
-`fallback_color`:: Default color when conversion is not possible. Default: `"black"`.
-`preserve_transparency`:: Boolean flag to preserve alpha channel information. Default: `false`.
+Implemented as `ColorRemediation`.
 
-Configuration:
+==== Configuration options
+
+`conversion_strategy`:: Strategy for color conversion: `"threshold"`,
+`"nearest"`, or `"strict"`. Default: `"threshold"`.
+
+`fallback_color`:: Default color when conversion is not possible. Default:
+`"black"`.
+
+`preserve_transparency`:: Boolean flag to preserve alpha channel information.
+Default: `false`.
+
+==== Configuration
+
+.Example configuration of ColorRemediation
+[example]
+====
 [source,yaml]
 ----
 - id: "fix_colors"
   type: "ColorRemediation"
   description: "Convert colors to allowed equivalents"
   targets: ["color_restrictions"]
-  config:
-    conversion_strategy: "threshold"
-    fallback_color: "black"
-    preserve_transparency: false
+  conversion_strategy: "threshold"
+  fallback_color: "black"
+  preserve_transparency: false
 ----
+====
 
-Where,
+==== Example from svg_1_2_rfc profile
 
-`targets`:: List of requirement IDs that this remediation addresses.
-
-.Using ColorRemediation with threshold-based conversion
 [example]
 ====
 [source,yaml]
 ----
-remediations:
-  - id: "color_conversion"
-    type: "ColorRemediation"
-    description: "Convert colors to black and white using RGB threshold"
-    targets: ["color_restrictions"]
-    config:
-      conversion_strategy: "threshold"
-      fallback_color: "black"
+- id: "color_conversion"
+  type: "ColorRemediation"
+  description: "Convert colors to black and white only per RFC 7996"
+  targets: ["color_restrictions"]
 ----
+
+When the target ColorRestrictionsRequirement has a `black_and_white_threshold`
+configured, the remediation applies threshold-based conversion: RGB sum ≤
+threshold → black, RGB sum > threshold → white.
 ====
 
-When the target ColorRestrictionsRequirement has a `black_and_white_threshold` configured, the remediation applies threshold-based conversion:
-- RGB sum ≤ threshold → converted to `black`
-- RGB sum > threshold → converted to `white`
+==== Threshold-based conversion
 
-**Targets**: link:requirements.adoc#color-restrictions-requirement[ColorRestrictionsRequirement] violations
-**Remediation Type**: Convert
-**Confidence**: Automatic
+When `black_and_white_threshold` is configured in the target requirement:
 
-Features:
-* **Smart color conversion** using CssColor equivalence and threshold logic
-* **Threshold-based conversion**: When `black_and_white_threshold` is configured, applies RGB sum logic
-* **Preserves color intent** when possible (dark → black, light → white)
-* **Handles all color formats**: named, hex, RGB, percentage RGB, short hex, mixed formats
-* **Case-insensitive processing**: Handles uppercase color names and hex values
+* Colors with RGB sum ≤ 764 convert to `black`
+* Colors with RGB sum > 764 convert to `white`
+* Preserves color intent (dark → black, light → white)
+
+==== Features
+
+* Smart color conversion using CssColor equivalence and threshold logic
+* Handles all color formats: named, hex, RGB, percentage RGB, short hex
+* Case-insensitive processing
 * Updates both attributes and style properties
 
+==== Related requirement
+
+* link:requirements.adoc#color-restrictions-requirement[ColorRestrictionsRequirement]
+
+
 [[font-remediation]]
-==== FontRemediation
+=== Font remediation
+
+==== General
 
 Maps font families to generic alternatives.
 
-**Configuration Options**:
+Implemented as `FontRemediation`.
+
+==== Configuration options
 
 `font_mapping`:: Hash mapping specific font names to generic alternatives.
-`default_family`:: Default font family for unmapped fonts. Default: `"sans-serif"`.
-`preserve_fallbacks`:: Boolean flag to preserve existing font fallback lists. Default: `true`.
-`case_sensitive`:: Boolean flag for case-sensitive font name matching. Default: `false`.
 
-Configuration:
+`default_family`:: Default font family for unmapped fonts. Default:
+`"sans-serif"`.
+
+`preserve_fallbacks`:: Boolean flag to preserve existing font fallback lists.
+Default: `true`.
+
+`case_sensitive`:: Boolean flag for case-sensitive font name matching.
+Default: `false`.
+
+==== Configuration
+
+.Example configuration of FontRemediation
+[example]
+====
 [source,yaml]
 ----
 - id: "fix_fonts"
   type: "FontRemediation"
   description: "Convert to generic font families"
   targets: ["font_family"]
-  config:
-    default_family: "sans-serif"
-    preserve_fallbacks: true
-    case_sensitive: false
-    font_mapping:
-      "Arial": "sans-serif"
-      "Helvetica": "sans-serif"
-      "Times": "serif"
-      "Times New Roman": "serif"
-      "Courier": "monospace"
-      "Courier New": "monospace"
+  default_family: "sans-serif"
+  preserve_fallbacks: true
+  case_sensitive: false
+  font_mapping:
+    "Arial": "sans-serif"
+    "Helvetica": "sans-serif"
+    "Times": "serif"
+----
+====
+
+==== Example from svg_1_2_rfc profile
+
+[example]
+====
+[source,yaml]
+----
+- id: "font_family_conversion"
+  type: "FontRemediation"
+  description: "Convert font families to generic families per RFC 7996"
+  targets: ["font_family"]
+  default_family: "sans-serif"
+  allowed_families: ["serif", "sans-serif", "monospace", "inherit"]
 ----
 
-**Targets**: link:requirements.adoc#font-family-requirement[FontFamilyRequirement] violations
-**Remediation Type**: Convert
-**Confidence**: Automatic
+RFC 7996 Section 17 requires generic font families. The remediation converts
+specific fonts like Arial to sans-serif.
+====
 
-Features:
+==== Features
+
 * Configurable font family mappings
 * Handles comma-separated font lists
 * Updates both font-family attributes and style properties
 * Preserves font fallback chains when configured
 * Case-insensitive font matching
 
-=== Element and attribute removal remediations
+==== Related requirement
+
+* link:requirements.adoc#font-family-requirement[FontFamilyRequirement]
+
+
+[[font-embedding-remediation]]
+=== Font embedding remediation
+
+==== General
+
+Converts external font references to embedded data URIs.
+
+Implemented as `FontEmbeddingRemediation`.
+
+==== Configuration options
+
+This remediation does not require additional configuration options. It
+automatically processes external font references and embeds them as data URIs.
+
+==== Configuration
+
+.Example configuration of FontEmbeddingRemediation
+[example]
+====
+[source,yaml]
+----
+- id: "font_embedding"
+  type: "FontEmbeddingRemediation"
+  description: "Convert external font references to embedded fonts"
+  targets: ["no_external_fonts"]
+----
+====
+
+==== Example from metanorma profile
+
+[example]
+====
+[source,yaml]
+----
+- id: "font_embedding"
+  type: "FontEmbeddingRemediation"
+  description: "Convert external font references to embedded fonts"
+  targets: ["no_external_fonts"]
+----
+
+Fetches external font files and embeds them as data URIs for self-contained
+SVG documents.
+====
+
+==== Font format support
+
+Supported font formats:
+
+* WOFF2 (`font/woff2`)
+* WOFF (`font/woff`)
+* TTF (`font/ttf`)
+* OTF (`font/otf`)
+* EOT (`application/vnd.ms-fontobject`)
+
+==== Features
+
+* Fetches external font files via HTTP/HTTPS
+* Encodes fonts as base64 data URIs
+* Processes CSS `@font-face` rules in `<style>` elements
+* Processes SVG `<font-face-uri>` elements in font definitions
+* Automatic MIME type detection based on file extension
+* Preserves visual appearance while making document self-contained
+* Network-dependent: Requires access to external font URLs
+
+==== Important notes
+
+* Requires network access to fetch external fonts
+* Font embedding significantly increases SVG file size
+* Failed font fetches are logged but do not halt processing
+* Suitable for creating portable, self-contained documents
+
+==== Related requirement
+
+* link:requirements.adoc#no-external-fonts-requirement[NoExternalFontsRequirement]
+
+
+[[image-embedding-remediation]]
+=== Image embedding remediation
+
+==== General
+
+Converts external image references to embedded data URIs.
+
+Implemented as `ImageEmbeddingRemediation`.
+
+==== Configuration options
+
+This remediation does not require additional configuration options. It
+automatically processes external image references and embeds them as data URIs.
+
+==== Configuration
+
+.Example configuration of ImageEmbeddingRemediation
+[example]
+====
+[source,yaml]
+----
+- id: "image_embedding"
+  type: "ImageEmbeddingRemediation"
+  description: "Convert external image references to embedded images"
+  targets: ["no_external_images"]
+----
+====
+
+==== Example from metanorma profile
+
+[example]
+====
+[source,yaml]
+----
+- id: "image_embedding"
+  type: "ImageEmbeddingRemediation"
+  description: "Convert external image references to embedded images"
+  targets: ["no_external_images"]
+----
+
+Fetches external image files and embeds them as data URIs for PDF/A compliance
+and offline portability.
+====
+
+==== Image format support
+
+Supported image formats:
+
+* PNG (`image/png`)
+* JPEG (`image/jpeg`)
+* GIF (`image/gif`)
+* SVG (`image/svg+xml`)
+* WebP (`image/webp`)
+* BMP (`image/bmp`)
+* ICO (`image/x-icon`)
+
+==== Features
+
+* Fetches external image files via HTTP/HTTPS
+* Encodes images as base64 data URIs
+* Processes `<image>` elements with `href` and `xlink:href` attributes
+* Processes style attributes with `url()` references
+* Automatic MIME type detection based on file extension
+* Preserves visual appearance while making document self-contained
+* Network-dependent: Requires access to external image URLs
+
+==== Important notes
+
+* Requires network access to fetch external images
+* Image embedding significantly increases SVG file size
+* Failed image fetches are logged but do not halt processing
+* Suitable for PDF/A compliance and offline document portability
+* Essential for creating archived documents with embedded graphics
+
+==== Related requirement
+
+* link:requirements.adoc#no-external-images-requirement[NoExternalImagesRequirement]
+
 
 [[namespace-remediation]]
-==== NamespaceRemediation
+=== Namespace remediation
+
+==== General
 
 Removes invalid namespace elements and attributes.
 
-**Configuration Options**:
+Implemented as `NamespaceRemediation`.
 
-`default_namespace`:: Default namespace to apply to elements. Default: `"http://www.w3.org/2000/svg"`.
-`preserve_content`:: Boolean flag to preserve element content when removing namespace elements. Default: `false`.
-`cleanup_declarations`:: Boolean flag to remove unused namespace declarations. Default: `true`.
+==== Configuration options
 
-Configuration:
+`default_namespace`:: Default namespace to apply to elements. Default:
+`"http://www.w3.org/2000/svg"`.
+
+`preserve_content`:: Boolean flag to preserve element content when removing
+namespace elements. Default: `false`.
+
+`cleanup_declarations`:: Boolean flag to remove unused namespace declarations.
+Default: `true`.
+
+`allowed_namespaces`:: List of namespace URIs that are valid.
+
+`remove_elements`:: Boolean flag to remove elements with invalid namespaces.
+Default: `true`.
+
+`remove_attributes`:: Boolean flag to remove attributes with invalid
+namespaces. Default: `true`.
+
+`remove_declarations`:: Boolean flag to remove namespace declarations. Default:
+`true`.
+
+==== Configuration
+
+.Example configuration of NamespaceRemediation
+[example]
+====
 [source,yaml]
 ----
 - id: "fix_namespaces"
   type: "NamespaceRemediation"
   description: "Remove invalid namespace content"
   targets: ["namespace_validation"]
-  config:
-    default_namespace: "http://www.w3.org/2000/svg"
-    preserve_content: false
-    cleanup_declarations: true
+  default_namespace: "http://www.w3.org/2000/svg"
+  preserve_content: false
+  cleanup_declarations: true
+----
+====
+
+==== Example from metanorma profile
+
+[example]
+====
+[source,yaml]
+----
+- id: "namespace_cleanup"
+  type: "NamespaceRemediation"
+  description: "Remove foreign namespace elements and declarations"
+  targets: ["namespace_validation", "namespace_attributes"]
+  allowed_namespaces:
+    - "http://www.w3.org/2000/svg"
+    - "http://www.w3.org/1999/xlink"
+    - "http://www.w3.org/XML/1998/namespace"
+  remove_elements: true
+  remove_attributes: true
+  remove_declarations: true
 ----
 
-**Targets**: link:requirements.adoc#namespace-requirement[NamespaceRequirement] violations
-**Remediation Type**: Remove
-**Confidence**: Safe Removal
+Removes Inkscape, Sodipodi, and other tool-specific namespace content to
+create clean, portable SVG.
+====
 
-Features:
-* **Removes invalid namespace elements** (e.g., `<custom:element>`)
-* **Removes invalid namespace attributes** (e.g., `custom:attr`)
-* **Preserves valid namespaces** (SVG, XLink, XML)
-* **Cleans up namespace declarations**
+==== Features
+
+* Removes invalid namespace elements (e.g., `<inkscape:layer>`)
+* Removes invalid namespace attributes (e.g., `inkscape:groupmode`)
+* Preserves valid namespaces (SVG, XLink, XML)
+* Cleans up namespace declarations
 * Optional content preservation during element removal
 
+==== Related requirement
+
+* link:requirements.adoc#namespace-requirement[NamespaceRequirement]
+
+
 [[namespace-attribute-remediation]]
-==== NamespaceAttributeRemediation
+=== Namespace attribute remediation
+
+==== General
 
 Removes attributes from disallowed namespaces.
 
-**Configuration Options**:
+Implemented as `NamespaceAttributeRemediation`.
 
-`removal_strategy`:: Strategy for attribute removal: `"remove_all"` or `"selective"`. Default: `"selective"`.
-`preserve_data`:: Boolean flag to preserve data contained in removed attributes. Default: `false`.
+==== Configuration options
 
-Configuration:
+`removal_strategy`:: Strategy for attribute removal: `"remove_all"` or
+`"selective"`. Default: `"selective"`.
+
+`preserve_data`:: Boolean flag to preserve data contained in removed
+attributes. Default: `false`.
+
+`disallowed_namespaces`:: List of namespace URIs to remove attributes from.
+
+==== Configuration
+
+.Example configuration of NamespaceAttributeRemediation
+[example]
+====
 [source,yaml]
 ----
 - id: "fix_namespace_attrs"
   type: "NamespaceAttributeRemediation"
   description: "Remove disallowed namespace attributes"
   targets: ["namespace_attributes"]
-  config:
-    removal_strategy: "selective"
-    preserve_data: false
+  removal_strategy: "selective"
+  preserve_data: false
+----
+====
+
+==== Example from lucid_fix profile
+
+[example]
+====
+[source,yaml]
+----
+- id: "lucid_namespace_fix"
+  type: "NamespaceAttributeRemediation"
+  description: "Remove lucid namespace attributes and declarations"
+  targets: ["namespace_attributes_requirement"]
+  disallowed_namespaces:
+    - "lucid"
 ----
 
-**Targets**: link:requirements.adoc#namespace-attributes-requirement[NamespaceAttributesRequirement] violations
-**Remediation Type**: Remove
-**Confidence**: Safe Removal
+Removes Lucid-specific namespace attributes (e.g., `lucid:*`) from
+Lucid-generated SVG exports.
+====
 
-Features:
+==== Features
+
 * Removes attributes from disallowed namespaces
 * Selective removal based on namespace blacklist/whitelist
 * Optional data preservation for removed attributes
 * Maintains document structure integrity
 
+==== Related requirement
+
+* link:requirements.adoc#namespace-attributes-requirement[NamespaceAttributesRequirement]
+
+
 [[no-external-css-remediation]]
-==== NoExternalCssRemediation
+=== No external CSS remediation
+
+==== General
 
 Removes external CSS references.
 
-**Configuration Options**:
+Implemented as `NoExternalCssRemediation`.
 
-`strategy`:: Removal strategy: `"remove_external_references"`, `"inline_external"`, or `"convert_to_internal"`. Default: `"remove_external_references"`.
-`preserve_internal_styles`:: Boolean flag to preserve internal `<style>` elements. Default: `true`.
+==== Configuration options
 
-Configuration:
+`strategy`:: Removal strategy: `"remove_external_references"`,
+`"inline_external"`, or `"convert_to_internal"`. Default:
+`"remove_external_references"`.
+
+`preserve_internal_styles`:: Boolean flag to preserve internal `<style>`
+elements. Default: `true`.
+
+==== Configuration
+
+.Example configuration of NoExternalCssRemediation
+[example]
+====
 [source,yaml]
 ----
 - id: "remove_external_css"
   type: "NoExternalCssRemediation"
   description: "Remove external CSS references"
   targets: ["no_external_css"]
-  config:
-    strategy: "remove_external_references"
-    preserve_internal_styles: true
+  strategy: "remove_external_references"
+  preserve_internal_styles: true
 ----
+====
 
-**Targets**: link:requirements.adoc#no-external-css-requirement[NoExternalCssRequirement] violations
-**Remediation Type**: Remove
-**Confidence**: Safe Removal
+==== Example from metanorma profile
 
-Features:
+Currently not used in metanorma profile (external CSS is blocked without
+automatic remediation).
+
+==== Features
+
 * Removes external `<link>` elements
 * Strips `@import` statements from `<style>` elements
 * Removes external URLs from style attributes
 * Optional preservation of internal styles
 * Configurable removal strategies
 
-=== Addition remediations
+==== Related requirement
+
+* link:requirements.adoc#no-external-css-requirement[NoExternalCssRequirement]
+
 
 [[viewbox-remediation]]
-==== ViewboxRemediation
+=== ViewBox remediation
+
+==== General
 
 Adds missing viewBox attributes to root SVG elements.
 
-**Configuration Options**:
+Implemented as `ViewboxRemediation`.
 
-`generation_strategy`:: Strategy for viewBox generation: `"from_dimensions"`, `"from_content"`, or `"default"`. Default: `"from_dimensions"`.
-`default_viewbox`:: Default viewBox value when automatic generation fails. Default: `"0 0 100 100"`.
-`preserve_existing`:: Boolean flag to preserve existing viewBox attributes. Default: `true`.
-`auto_calculate_bounds`:: Boolean flag to calculate bounds from SVG content. Default: `false`.
+==== Configuration options
 
-Configuration:
+`generation_strategy`:: Strategy for viewBox generation: `"from_dimensions"`,
+`"from_content"`, or `"default"`. Default: `"from_dimensions"`.
+
+`default_viewbox`:: Default viewBox value when automatic generation fails.
+Default: `"0 0 100 100"`.
+
+`preserve_existing`:: Boolean flag to preserve existing viewBox attributes.
+Default: `true`.
+
+`auto_calculate_bounds`:: Boolean flag to calculate bounds from SVG content.
+Default: `false`.
+
+==== Configuration
+
+.Example configuration of ViewboxRemediation
+[example]
+====
 [source,yaml]
 ----
 - id: "add_viewbox"
   type: "ViewboxRemediation"
   description: "Add missing viewBox attributes"
   targets: ["viewbox_required"]
-  config:
-    generation_strategy: "from_dimensions"
-    default_viewbox: "0 0 100 100"
-    preserve_existing: true
-    auto_calculate_bounds: false
+  generation_strategy: "from_dimensions"
+  default_viewbox: "0 0 100 100"
+  preserve_existing: true
+----
+====
+
+==== Example from svg_1_2_rfc profile
+
+[example]
+====
+[source,yaml]
+----
+- id: "viewbox_generation"
+  type: "ViewboxRemediation"
+  description: "Auto-generate viewBox from width/height per RFC 7996"
+  targets: ["viewbox_required"]
 ----
 
-**Targets**: link:requirements.adoc#viewbox-required-requirement[ViewboxRequiredRequirement] violations
-**Remediation Type**: Add
-**Confidence**: Safe Structural
+Automatically generates viewBox attribute from width and height attributes
+when missing.
+====
 
-Features:
+==== Features
+
 * Auto-generates viewBox from width/height attributes
 * Handles malformed viewBox values
 * Preserves existing valid viewBox attributes
 * Optional content-based bounds calculation
 * Configurable fallback values
 
-=== Style processing remediations
+==== Related requirement
+
+* link:requirements.adoc#viewbox-required-requirement[ViewboxRequiredRequirement]
+
 
 [[style-promotion-remediation]]
-==== StylePromotionRemediation
+=== Style promotion remediation
+
+==== General
 
 Promotes CSS style properties to SVG attributes.
 
-**Configuration Options**:
+Implemented as `StylePromotionRemediation`.
 
-`promotable_properties`:: List of CSS properties that can be promoted to SVG attributes.
-`preserve_style_attribute`:: Boolean flag to preserve original style attribute after promotion. Default: `false`.
-`selective_promotion`:: Boolean flag to promote only when beneficial. Default: `true`.
+==== Configuration options
 
-Configuration:
+`promotable_properties`:: List of CSS properties that can be promoted to SVG
+attributes.
+
+`preserve_style_attribute`:: Boolean flag to preserve original style attribute
+after promotion. Default: `false`.
+
+`selective_promotion`:: Boolean flag to promote only when beneficial. Default:
+`true`.
+
+==== Configuration
+
+.Example configuration of StylePromotionRemediation
+[example]
+====
 [source,yaml]
 ----
 - id: "promote_styles"
   type: "StylePromotionRemediation"
   description: "Promote style properties to attributes"
   targets: ["style_promotion"]
-  config:
-    preserve_style_attribute: false
-    selective_promotion: true
-    promotable_properties:
-      - "fill"
-      - "stroke"
-      - "font-family"
-      - "font-size"
-      - "opacity"
+  preserve_style_attribute: false
+  selective_promotion: true
+  promotable_properties: ["fill", "stroke", "font-family", "font-size"]
+----
+====
+
+==== Example from svg_1_2_rfc profile
+
+[example]
+====
+[source,yaml]
+----
+- id: "style_promotion"
+  type: "StylePromotionRemediation"
+  description: "Promote valid style properties to attributes per RFC 7996"
+  targets: ["style_promotion"]
 ----
 
-**Targets**: link:requirements.adoc#style-promotion-requirement[StylePromotionRequirement] violations
-**Remediation Type**: Promote
-**Confidence**: Automatic
+Converts style properties to equivalent SVG attributes for better
+compatibility.
+====
 
-Features:
+==== Features
+
 * Converts style properties to equivalent SVG attributes
 * Improves SVG compatibility and optimization
 * Preserves visual appearance while changing structure
 * Configurable property selection
 * Optional selective promotion based on benefit analysis
 
-=== Reference fixing remediations
+==== Related requirement
+
+* link:requirements.adoc#style-promotion-requirement[StylePromotionRequirement]
+
 
 [[invalid-id-references-remediation]]
-==== InvalidIdReferencesRemediation
+=== Invalid ID references remediation
+
+==== General
 
 Fixes or removes broken ID references.
 
-**Configuration Options**:
+Implemented as `InvalidIdReferencesRemediation`.
 
-`strategy`:: Fixing strategy: `"remove_broken_elements"`, `"remove_references"`, or `"create_placeholders"`. Default: `"remove_broken_elements"`.
-`preserve_structure`:: Boolean flag to maintain document structure when removing elements. Default: `true`.
-`placeholder_content`:: Content to use for placeholder elements when using `"create_placeholders"` strategy.
+==== Configuration options
 
-Configuration:
+`strategy`:: Fixing strategy: `"remove_broken_elements"`,
+`"remove_references"`, or `"create_placeholders"`. Default:
+`"remove_broken_elements"`.
+
+`preserve_structure`:: Boolean flag to maintain document structure when
+removing elements. Default: `true`.
+
+`placeholder_content`:: Content to use for placeholder elements when using
+`"create_placeholders"` strategy.
+
+`log_removed_elements`:: Boolean flag to log removed elements. Default:
+`false`.
+
+`create_placeholder_comment`:: Boolean flag to create placeholder comments.
+Default: `false`.
+
+==== Configuration
+
+.Example configuration of InvalidIdReferencesRemediation
+[example]
+====
 [source,yaml]
 ----
 - id: "fix_broken_refs"
   type: "InvalidIdReferencesRemediation"
   description: "Fix broken ID references"
-  targets: ["id_references", "invalid_id_references"]
-  config:
-    strategy: "remove_broken_elements"
-    preserve_structure: true
-    placeholder_content: "<!-- Missing reference -->"
+  targets: ["id_references"]
+  strategy: "remove_broken_elements"
+  preserve_structure: true
+  placeholder_content: "<!-- Missing reference -->"
+----
+====
+
+==== Example from lucid_fix profile
+
+[example]
+====
+[source,yaml]
+----
+- id: "remove_invalid_use_elements"
+  type: "InvalidIdReferencesRemediation"
+  description: "Remove use elements with invalid ID references (Lucid fix)"
+  targets: ["invalid_id_references"]
+  strategy: "remove_invalid_use"
+  log_removed_elements: true
+  create_placeholder_comment: false
 ----
 
-**Targets**: link:requirements.adoc#id-reference-requirement[IdReferenceRequirement], InvalidIdReferencesRequirement violations
-**Remediation Type**: Remove
-**Confidence**: Safe Removal
+Removes broken `<use>` elements from Lucid-generated SVGs without creating
+placeholder comments.
+====
 
-Features:
+==== Features
+
 * Removes `<use>` elements with broken href references
 * Removes or fixes other broken ID references
 * Can replace with placeholder content or remove entirely
 * Configurable fixing strategies
 * Maintains document structural integrity
 
-== Structural Invalidity and Descendant Skipping
+==== Related requirement
 
-SvgConform implements **structural invalidity tracking** to match svgcheck's behavior of removing invalid elements with all their children.
-
-=== How It Works
-
-When an element is determined to be structurally invalid (e.g., not an allowed element, or has an invalid parent-child relationship):
-
-1. **Element marked invalid**: The element is marked as structurally invalid in the validation context
-2. **Descendants recursively marked**: All child elements are recursively marked as invalid
-3. **Validation skipping**: All requirements skip validation of structurally invalid nodes
-4. **Single error reported**: Only the parent element error is reported, not separate errors for each child
-
-=== Benefits
-
-**Prevents Cascade Errors**:
-- Invalid `<font>` element → 48 `<glyph>` children automatically skipped
-- Invalid `<clipPath>` parent → all children skipped
-- Matches svgcheck: removes element WITH all children
-
-**Example**:
-
-Without structural invalidity tracking:
-```
-ERROR: Element 'font' is not allowed as a child of 'defs'
-ERROR: Element 'font-face' is not allowed in this profile
-ERROR: Element 'missing-glyph' is not allowed in this profile
-ERROR: Element 'glyph' is not allowed in this profile  (x48 times)
-Total: 51 errors
-```
-
-With structural invalidity tracking:
-```
-ERROR: Element 'font' is not allowed as a child of 'defs'
-Total: 1 error
-```
-
-=== Implementation
-
-**Marking Invalid Nodes** (in AllowedElementsRequirement):
-```ruby
-unless allowed_elements.include?(element_name)
-  context.add_error(...)
-  context.mark_node_structurally_invalid(node)  # Marks node and all descendants
-  return
-end
-```
-
-**Skipping Invalid Nodes** (in BaseRequirement):
-```ruby
-def should_check_node?(node, context = nil)
-  return false unless node.respond_to?(:name) && node.respond_to?(:attributes)
-  return false if context && context.node_structurally_invalid?(node)
-  true
-end
-```
-
-**Recursive Descendant Marking** (in ValidationContext):
-```ruby
-def mark_node_structurally_invalid(node)
-  @structurally_invalid_node_ids.add(generate_node_id(node))
-  mark_descendants_invalid(node)  # Recursively mark all descendants
-end
-```
-
-=== Impact on Remediations
-
-Remediations automatically benefit from structural invalidity tracking:
-
-* **Fewer errors to process**: Only parent errors, not descendant errors
-* **Cleaner error reports**: More focused, actionable error messages
-* **Better performance**: Less validation work on invalid subtrees
-* **Matches svgcheck**: 100% compatibility with svgcheck behavior
-
-== Violation Types and Remediability
-
-SvgConform categorizes violations into two main types:
-
-=== Remediable Violations
-
-These can be automatically fixed through remediation processing:
-
-**ColorViolation** (`color_restrictions`):
-* **Remediation**: Convert using CssColor equivalence system
-* **Examples**: `red` → `black`, `#f00` → `#000000`
-* **Confidence**: Automatic
-
-**FontViolation** (`font_family`):
-* **Remediation**: Map to generic font families
-* **Examples**: `Arial` → `sans-serif`, `Times New Roman` → `serif`
-* **Confidence**: Automatic
-
-**ContentViolation** (`forbidden_content`):
-* **Remediation**: Remove forbidden elements/attributes
-* **Examples**: Remove `<script>`, `onclick` attributes
-* **Confidence**: Safe removal
-
-**ReferenceViolation** (`id_reference`, `link_validation`):
-* **Remediation**: Remove broken references or elements
-* **Examples**: Remove `<use>` with invalid href, broken links
-* **Confidence**: Safe removal
-
-**NamespaceViolation** (`namespace`, `namespace_attributes`):
-* **Remediation**: Remove invalid namespace elements/attributes
-* **Examples**: Remove `<inkscape:layer>`, `custom:attr`
-* **Confidence**: Safe removal
-
-**ViewboxViolation** (`viewbox_required`):
-* **Remediation**: Add missing viewBox attributes
-* **Examples**: Generate from width/height dimensions
-* **Confidence**: Safe structural
-
-**StyleViolation** (`style`, `style_promotion`):
-* **Remediation**: Promote or convert style properties
-* **Examples**: Move `style="fill:black"` to `fill="black"`
-* **Confidence**: Automatic
-
-=== Non-Remediable Violations
-
-These require manual intervention:
-
-**StructuralViolation**:
-* **Examples**: Malformed XML, root element not `<svg>`, invalid document hierarchy
-* **Reason**: Automatic fixing could break document integrity or change meaning
-* **Solution**: Manual document restructuring required
-
-== Configuration Best Practices
-
-=== Remediation Configuration
-
-**Target Mapping**:
-[source,yaml]
-----
-remediations:
-  - id: "comprehensive_color_fix"
-    type: "ColorRemediation"
-    description: "Handle all color violations"
-    targets: ["color_restrictions", "style_colors"]  # Multiple targets
-----
-
-**Strategy Selection**:
-[source,yaml]
-----
-- id: "safe_id_fix"
-  type: "InvalidIdReferencesRemediation"
-  targets: ["id_references"]
-  config:
-    strategy: "remove_references"     # Conservative approach
-    preserve_structure: true
-
-- id: "aggressive_id_fix"
-  type: "InvalidIdReferencesRemediation"
-  targets: ["id_references"]
-  config:
-    strategy: "remove_broken_elements"  # More thorough cleanup
-    preserve_structure: false
-----
-
-=== Performance Optimization
-
-**Efficient Remediation Order**:
-1. **Namespace cleanups** (removes invalid content early)
-2. **Content removal** (reduces document size for subsequent processing)
-3. **Content conversion** (processes remaining valid content)
-4. **Structure additions** (adds missing required elements)
-5. **Style promotion** (final optimization step)
-
-**Remediation Grouping**:
-[source,yaml]
-----
-# Group related remediations for efficiency
-remediations:
-  - id: "namespace_cleanup"
-    type: "NamespaceRemediation"
-    targets: ["namespace_validation"]
-  - id: "namespace_attrs_cleanup"
-    type: "NamespaceAttributeRemediation"
-    targets: ["namespace_attributes"]
-  - id: "color_conversion"
-    type: "ColorRemediation"
-    targets: ["color_restrictions"]
-----
-
-=== Safety Configuration
-
-**Conservative Settings**:
-[source,yaml]
-----
-- id: "safe_remediation"
-  type: "NamespaceRemediation"
-  config:
-    preserve_content: true          # Don't lose content
-    cleanup_declarations: false     # Minimal cleanup
-----
-
-**Aggressive Settings**:
-[source,yaml]
-----
-- id: "thorough_cleanup"
-  type: "NamespaceRemediation"
-  config:
-    preserve_content: false         # Remove invalid content
-    cleanup_declarations: true      # Full cleanup
-----
-
-== Advanced Configuration
-
-=== Conditional Remediations
-
-Remediations can be configured to apply conditionally based on document characteristics:
-
-[source,yaml]
-----
-- id: "conditional_color_fix"
-  type: "ColorRemediation"
-  description: "Apply color conversion only to specific elements"
-  targets: ["color_restrictions"]
-  config:
-    apply_to_elements: ["rect", "circle"]  # Only fix colors on these elements
-    conversion_strategy: "threshold"
-----
-
-=== Custom Remediation Strategies
-
-Define custom strategies for complex remediation scenarios:
-
-[source,yaml]
-----
-- id: "smart_font_mapping"
-  type: "FontRemediation"
-  targets: ["font_family"]
-  config:
-    font_mapping:
-      # Map common fonts to generic equivalents
-      "Arial": "sans-serif"
-      "Helvetica": "sans-serif"
-      "Georgia": "serif"
-      "Verdana": "sans-serif"
-    fallback_strategy: "closest_generic"  # Find closest generic match
-    preserve_fallbacks: true
-----
-
-=== Remediation Chaining
-
-Configure remediations to work together in sequence:
-
-[source,yaml]
-----
-remediations:
-  # Step 1: Clean up namespaces
-  - id: "namespace_cleanup"
-    type: "NamespaceRemediation"
-    targets: ["namespace_validation"]
-
-  # Step 2: Remove invalid attributes (depends on step 1)
-  - id: "attribute_cleanup"
-    type: "NamespaceAttributeRemediation"
-    targets: ["namespace_attributes"]
-    depends_on: ["namespace_cleanup"]
-
-  # Step 3: Fix remaining content (depends on steps 1-2)
-  - id: "content_fixes"
-    type: "ColorRemediation"
-    targets: ["color_restrictions"]
-    depends_on: ["namespace_cleanup", "attribute_cleanup"]
-----
-
-== Enhanced Color System
-
-SvgConform uses the `CssColor` class for advanced color equivalence recognition:
-
-=== Color Equivalence Examples
-
-[source]
-----
-# These are all equivalent and recognized as "white":
-white
-#ffffff
-#FFFFFF
-#fff
-#FFF
-rgb(255,255,255)
-rgba(255,255,255,1.0)
-
-# These are all equivalent and recognized as "black":
-black
-#000000
-#000
-rgb(0,0,0)
-----
-
-=== Color Conversion Features
-
-* **Normalization**: All color formats converted to canonical hex
-* **Named Color Support**: Full CSS named color palette
-* **Case Insensitive**: Hex colors match regardless of case
-* **Short Hex Expansion**: `#fff` automatically expands to `#ffffff`
-* **RGB Function Parsing**: `rgb(255,0,0)` converts to `#ff0000`
-* **Equivalence Checking**: Smart matching across all formats
-
-Usage in color remediation:
-[source,ruby]
-----
-# These will all be recognized as equivalent to "white":
-CssColor.equivalent?("#fff", "white")      # => true
-CssColor.equivalent?("#FFFFFF", "#fff")    # => true
-CssColor.normalize("rgb(255,255,255)")     # => "#ffffff"
-CssColor.to_canonical("#fff")              # => "white"
-----
-
-== Troubleshooting
-
-=== Common Remediation Issues
-
-**Target Mismatch**:
-- Ensure remediation `targets` match requirement IDs exactly
-- Check that target requirements are included in the same profile
-- Verify requirement IDs are spelled correctly
-
-**Configuration Errors**:
-- Validate YAML syntax for remediation configuration
-- Ensure all referenced configuration parameters exist
-- Check parameter types match expected values
-
-**Remediation Conflicts**:
-- Avoid multiple remediations targeting the same content
-- Order remediations to prevent conflicts
-- Use conditional application when needed
-
-=== Debugging Remediations
-
-**Enable detailed logging**:
-[source,yaml]
-----
-- id: "debug_remediation"
-  type: "ColorRemediation"
-  targets: ["color_restrictions"]
-  config:
-    debug_logging: true     # Enable detailed remediation logs
-    trace_changes: true     # Track all changes made
-----
-
-**Test remediation results**:
-- Always validate remediated documents
-- Check that visual appearance is preserved
-- Verify no new validation errors are introduced
-- Test with representative SVG files
-
-=== Performance Troubleshooting
-
-**Slow remediations**:
-- Profile remediation performance with timing
-- Check for expensive operations in configuration
-- Consider breaking complex remediations into simpler ones
-- Optimize target requirement selection
-
-**Memory usage**:
-- Monitor memory consumption during large document processing
-- Use streaming processing for very large SVG files
-- Consider processing documents in batches
-- Optimize configuration data structures
+* link:requirements.adoc#id-reference-requirement[IdReferenceRequirement]
+* link:requirements.adoc#invalid-id-references-requirement[InvalidIdReferencesRequirement]
