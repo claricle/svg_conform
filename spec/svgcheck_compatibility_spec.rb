@@ -226,8 +226,10 @@ RSpec.describe "SvgCheck Compatibility" do
           )
 
           # Compare error counts
-          expect(our_report.errors.total_count).to eq(svgcheck_report.errors.total_count),
-                                                   "Expected #{svgcheck_report.errors.total_count} errors but got #{our_report.errors.total_count}"
+          expect(our_report.errors.total_count).to eq(
+            svgcheck_report.errors.total_count,
+          ), "Expected #{svgcheck_report.errors.total_count} errors but " \
+           "got #{our_report.errors.total_count}"
         end
       end
     end
@@ -247,7 +249,8 @@ RSpec.describe "SvgCheck Compatibility" do
         next unless File.exist?(input_file)
 
         total_files += 1
-        is_real_world = basename != "full-tiny" # full-tiny is a comprehensive test file
+        # full-tiny is a comprehensive test file
+        is_real_world = basename != "full-tiny"
         real_world_files += 1 if is_real_world
 
         begin
@@ -259,7 +262,8 @@ RSpec.describe "SvgCheck Compatibility" do
           validator = SvgConform::Validator.new(profile: "svg_1_2_rfc")
           result = validator.validate_file(input_file)
           our_report = SvgConform::ConformanceReport.from_svg_conform_result(
-            "#{basename}.svg", result, profile: "svg_1_2_rfc", use_svgcheck_mapping: true
+            "#{basename}.svg", result, profile: "svg_1_2_rfc",
+                                       use_svgcheck_mapping: true
           )
 
           if our_report.errors.total_count == svgcheck_report.errors.total_count
@@ -276,15 +280,24 @@ RSpec.describe "SvgCheck Compatibility" do
       puts "=" * 60
       puts "Total files processed: #{total_files}"
       puts "Identical error counts: #{identical_files}/#{total_files}"
-      puts "Compatibility: #{(identical_files.to_f / total_files * 100).round(1)}%" if total_files > 0
-      puts "\nReal-world files: #{real_world_identical}/#{real_world_files} (100.0%)" if real_world_files > 0
+      if total_files > 0
+        compat_pct = (identical_files.to_f / total_files * 100).round(1)
+        puts "Compatibility: #{compat_pct}%"
+      end
+      if real_world_files > 0
+        puts "\nReal-world files: #{real_world_identical}/#{real_world_files}" \
+             " (100.0%)"
+      end
       puts "=" * 60
 
-      # Require 100% compatibility on real-world files (excluding comprehensive test files)
+      # Require 100% compatibility on real-world files
+      # (excluding comprehensive test files)
       if real_world_files > 0
         compatibility_pct = real_world_identical.to_f / real_world_files
+        compat_display = (compatibility_pct * 100).round(1)
         expect(compatibility_pct).to eq(1.0),
-                                     "Expected 100% compatibility on real-world files but got #{(compatibility_pct * 100).round(1)}%"
+                                     "Expected 100% compatibility on " \
+                                     "real-world files but got #{compat_display}%"
       else
         skip "No svgcheck output files found"
       end
