@@ -1,0 +1,25 @@
+{
+  "repo": [
+    "glossarist/glossarist-ruby",
+    "glossarist/iev",
+    "glossarist/termium",
+    "lutaml/genericode",
+    "lutaml/lutaml-xsd",
+    "lutaml/metaschema",
+    "lutaml/ogc-gml",
+    "lutaml/xmi",
+    "metanorma/atmospheric",
+    "metanorma/metanorma-cli",
+    "metanorma/modspec-ruby",
+    "metanorma/niso-jats",
+    "metanorma/revix",
+    "metanorma/rfcxml",
+    "metanorma/sts-ruby",
+    "plurimath/mml",
+    "plurimath/plurimath",
+    "relaton/ieee-idams",
+    "relaton/loc_mods",
+    "relaton/w3c_api",
+    "unitsml/unitsml-ruby"
+  ]
+}

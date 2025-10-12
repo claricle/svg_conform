@@ -1,0 +1,219 @@
+= Canon: Canonicalization for serialization formats
+
+A Ruby library for canonicalizing and pretty-printing XML, YAML, and JSON with
+RSpec matchers for equivalence testing.
+
+
+== Purpose
+
+This gem provides `Canon` which is a library for canonicalizing and
+pretty-printing various serialization formats (XML, YAML, JSON). It provides a
+standardized form suitable for comparison and testing.
+
+
+== Features
+
+XML canonicalization::
+Format XML documents according to the https://www.w3.org/TR/xml-c14n11/[W3C
+Canonicalized XML] format, with consistent indentation and ordering.
+
+YAML canonicalization::
+Format YAML documents with keys sorted alphabetically in a recursive manner at
+all levels of the YAML structure, with consistent indentation.
+
+JSON canonicalization::
+Format JSON documents with keys sorted alphabetically in a recursive manner at
+all levels of the JSON structure, with consistent indentation.
+
+RSpec matchers::
+Provides matchers for testing equivalence between serialized formats.
+
+Unified interface::
+Single API for working with all three formats.
+
+
+== Installation
+
+Add this line to your application's Gemfile:
+
+[source,ruby]
+----
+gem 'canon'
+----
+
+And then execute:
+
+[source,bash]
+----
+$ bundle install
+----
+
+Or install it yourself as:
+
+[source,bash]
+----
+$ gem install canon
+----
+
+
+== Usage
+
+=== Formatting and canonicalization
+
+Canon provides a unified interface for formatting and canonicalizing XML,
+YAML, and JSON.
+
+The `format` method is used to pretty-print and canonicalize the input data,
+with the arguments of the method taking the content and the format type as
+arguments.
+
+Syntax:
+
+[source,ruby]
+----
+# Generic method
+Canon.format({content}, {format})
+
+# Format-specific method
+Canon.format_{format}({content})
+----
+
+Where,
+
+`{content}`:: is the input string
+`{format}`:: is the format type, which can be `:xml`, `:yaml`, or `:json`.
+
+
+.Demonstration of formatting methods
+[example]
+====
+[source,ruby]
+----
+require 'canon'
+
+# XML formatting
+xml_input = '<root><b>2</b><a>1</a></root>'
+formatted_xml = Canon.format(xml_input, :xml)
+# => Pretty-printed XML with consistent formatting
+# or
+formatted_xml = Canon.format_xml(xml_input)
+
+# YAML formatting
+yaml_input = "---\nz: 3\na: 1\nb: 2\n"
+formatted_yaml = Canon.format(yaml_input, :yaml)
+# => YAML with keys sorted alphabetically
+# or
+formatted_yaml = Canon.format_yaml(yaml_input)
+
+# JSON formatting
+json_input = '{"z":3,"a":1,"b":2}'
+formatted_json = Canon.format(json_input, :json)
+# => Pretty-printed JSON with keys sorted alphabetically
+# or
+formatted_json = Canon.format_json(json_input)
+----
+====
+
+
+=== Parsing
+
+Canon can also parse XML, YAML, and JSON strings into Ruby objects. The `parse`
+method takes the content and the format type as arguments, returning a Ruby
+object (Hash, Array, etc.) for YAML and JSON, or a Nokogiri XML document for XML.
+
+Syntax:
+
+[source,ruby]
+----
+# Generic method
+Canon.parse({content}, {format})
+
+# Format-specific method
+Canon.parse_{format}({content})
+----
+
+Where,
+
+`{content}`:: is the input string
+`{format}`:: is the format type, which can be `:xml`, `:yaml`, or `:json`.
+
+.Demonstration of parsing methods
+[example]
+====
+[source,ruby]
+----
+# Parse XML
+xml_doc = Canon.parse(xml_input, :xml)
+xml_doc = Canon.parse_xml(xml_input)
+# => Nokogiri::XML::Document
+
+# Parse YAML
+yaml_obj = Canon.parse(yaml_input, :yaml)
+yaml_obj = Canon.parse_yaml(yaml_input)
+# => Ruby object (Hash, Array, etc.)
+
+# Parse JSON
+json_obj = Canon.parse(json_input, :json)
+json_obj = Canon.parse_json(json_input)
+# => Ruby object (Hash, Array, etc.)
+----
+====
+
+
+=== RSpec matchers
+
+The library provides RSpec matchers for testing equivalence between serialized
+formats:
+
+[source,ruby]
+----
+require 'rspec'
+require 'canon'
+
+RSpec.describe 'Serialization tests' do
+  # Unified matcher with format parameter
+  it 'compares equivalent XML' do
+    xml1 = '<root><a>1</a><b>2</b></root>'
+    xml2 = '<root><b>2</b><a>1</a></root>'
+    expect(xml1).to be_serialization_equivalent_to(xml2, format: :xml)
+  end
+
+  it 'compares equivalent YAML' do
+    yaml1 = "---\na: 1\nb: 2\n"
+    yaml2 = "---\nb: 2\na: 1\n"
+    expect(yaml1).to be_serialization_equivalent_to(yaml2, format: :yaml)
+  end
+
+  it 'compares equivalent JSON' do
+    json1 = '{"a":1,"b":2}'
+    json2 = '{"b":2,"a":1}'
+    expect(json1).to be_serialization_equivalent_to(json2, format: :json)
+  end
+
+  # Format-specific matchers
+  it 'uses format-specific matchers' do
+    expect(xml1).to be_xml_equivalent_to(xml2)    # XML
+    expect(xml1).to be_analogous_with(xml2)       # XML (legacy matcher)
+    expect(yaml1).to be_yaml_equivalent_to(yaml2) # YAML
+    expect(json1).to be_json_equivalent_to(json2) # JSON
+  end
+end
+----
+
+
+== Development
+
+After checking out the repo, run `bin/setup` to install dependencies. Then, run
+`rake spec` to run the tests. You can also run `bin/console` for an interactive
+prompt that will allow you to experiment.
+
+
+== Contributing
+
+Bug reports and pull requests are welcome on GitHub at
+https://github.com/lutaml/canon.
+
+
+== Copyright and license
+
+Copyright Ribose. https://opensource.org/licenses/BSD-2-Clause[BSD-2-Clause License].

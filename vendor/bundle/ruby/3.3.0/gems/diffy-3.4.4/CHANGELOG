@@ -1,0 +1,65 @@
+== 3.4.4 ==
+Fix HTML diff highlighting bug for lines containing '\n'. Thanks @P-SiZK!
+
+== 3.4.3 ==
+Require open3 unconditionally on Windows. Thanks @avdv!
+
+== 3.4.2 ==
+Silence warning from unused variable when using `ruby -w`.  Thanks
+@sambostock!
+
+== 3.4.1 ==
+Prevent remote code execution from user controlled diff file paths.  This
+issue was only present in Windows platforms. Thanks @tehryanx for reporting
+and testing the fix!
+
+== 3.4.0 ==
+Remove space between U diff option and context number. Thanks @tomas!
+Add option to ignore CRLF diffs in HTML comparisons. Thanks @ptyagi16!
+
+== 3.3.0 ==
+Fix diff lines that begin with -- or ++. Thanks @dark-panda!
+
+== 3.2.1 ==
+Fix default options on alpine linux.  Thanks @evgen!
+
+== 3.1.0 ==
+Side by side diffs.  Thanks Runar Skaare Tveiten!
+
+== 3.0.5 ==
+Improve performance when generating html output (with inline highlighting) on
+long lines. Thanks Jason Barnabe!
+
+== 3.0.4 ==
+handle windows vs. unix line breaks consistently in html output
+
+== 3.0.3 ==
+explicitly unlink tempfiles to avoid occasional file handle leaks
+
+== 3.0.0 ==
+allow_empty_diff is true by default
+
+== 2.1.0 ==
+Windows support
+
+== 2.0.10 ==
+Close tempfile after it's been written to to avoid too many open file handles
+
+== 2.0.9 ==
+Memoize calls to `which diff` which should result in a minor performance
+improvement in high use environments.
+
+== 2.0.8 ==
+Handle non-UTF-8 byte sequences in Ruby 1.9.
+Avoid non-deterministic deletion of temp files when GC runs
+
+== 2.0.7 ==
+Added :allow_empty_diff option
+
+== Oops, need to backfill changelog ==
+
+== 1.0.1 ==
+* Compatibility with ruby 1.8.6 and 1.9
+
+== 1.0.0 ==
+* HTML output and better documentation

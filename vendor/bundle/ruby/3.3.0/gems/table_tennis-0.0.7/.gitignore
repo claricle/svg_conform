@@ -1,0 +1,7 @@
+.envrc
+.tool-versions
+.vscode
+pkg/
+
+# gems don't need to include this since the gemspec is enough
+Gemfile.lock

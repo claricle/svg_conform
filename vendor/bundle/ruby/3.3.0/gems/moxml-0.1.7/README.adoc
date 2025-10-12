@@ -1,0 +1,675 @@
+= Moxml: Modern XML processing for Ruby
+:toc: macro
+:toclevels: 3
+:toc-title: Contents
+:source-highlighter: highlight.js
+
+image:https://github.com/lutaml/moxml/workflows/rake/badge.svg["Build Status", link="https://github.com/lutaml/moxml/actions?workflow=rake"]
+
+toc::[]
+
+== Introduction and purpose
+
+Moxml provides a unified, modern XML processing interface for Ruby applications.
+It offers a consistent API that abstracts away the underlying XML implementation
+details while maintaining high performance through efficient node mapping and
+native XPath querying.
+
+Key features:
+
+* Intuitive, Ruby-idiomatic API for XML manipulation
+* Consistent interface across different XML libraries
+* Efficient node mapping for XPath queries
+* Support for all XML node types and features
+* Easy switching between XML processing engines
+* Clean separation between interface and implementation
+
+== Supported XML libraries
+
+Moxml supports the following XML libraries:
+
+REXML:: https://github.com/ruby/rexml[REXML], a pure Ruby XML parser
+distributed with standard Ruby. Not the fastest, but always available.
+
+Nokogiri:: (default) https://github.com/sparklemotion/nokogiri[Nokogiri], a
+widely used implementation which wraps around the performant
+https://github.com/GNOME/libxml2[libxml2] C library.
+
+Oga:: https://github.com/yorickpeterse/oga[Oga], a pure Ruby XML parser.
+Recommended when you need a pure Ruby solution say for
+https://github.com/opal/opal[Opal].
+
+Ox:: https://github.com/ohler55/ox[Ox], a fast XML parser.
+
+=== Feature table
+
+Moxml exercises its best effort to provide a consistent interface across basic
+XML features, various XML libraries have different features and capabilities.
+
+The following table summarizes the features supported by each library.
+
+NOTE: The checkmarks indicate support for the feature, while the footnotes
+provide additional context for specific features.
+
+[cols="1,1,1,1,3"]
+|===
+|Feature |Nokogiri |Oga |REXML |Ox
+
+|Parsing, serializing
+| ✅
+| ✅
+| ✅
+| ✅
+
+|Node manipulation
+| ✅
+| ✅
+| ✅
+| ✅ See NOTE 1.
+
+|Basic XPath
+| ✅
+| ✅
+| ✅
+a|
+Uses `locate`. See NOTE 2.
+
+|XPath with namespaces
+| ✅
+| ✅
+| ❌
+a|
+Uses `locate`. See NOTE 2.
+
+|===
+
+NOTE 1: Ox's node manipulation may have issues, especially when manipulating Text nodes.
+
+NOTE 2: The native Ox method `locate` is similar to XPath but has a different syntax.
+
+== Getting started
+
+=== Installation
+
+Install the gem and at least one supported XML library:
+
+[source,ruby]
+----
+# In your Gemfile
+gem 'moxml'
+gem 'nokogiri'  # Or 'oga', 'rexml', or 'ox'
+----
+
+=== Basic document creation
+
+[source,ruby]
+----
+require 'moxml'
+
+# Create a new XML document
+doc = Moxml.new.create_document
+
+# Add XML declaration
+doc.add_child(doc.create_declaration("1.0", "UTF-8"))
+
+# Create root element with namespace
+root = doc.create_element('book')
+root.add_namespace('dc', 'http://purl.org/dc/elements/1.1/')
+doc.add_child(root)
+
+# Add content
+title = doc.create_element('dc:title')
+title.text = 'XML Processing with Ruby'
+root.add_child(title)
+
+# Output formatted XML
+puts doc.to_xml(indent: 2)
+----
+
+== Working with documents
+
+=== Using the builder pattern
+
+The builder pattern provides a clean DSL for creating XML documents:
+
+[source,ruby]
+----
+doc = Moxml::Builder.new(Moxml.new).build do
+  declaration version: "1.0", encoding: "UTF-8"
+
+  element 'library', xmlns: 'http://example.org/library' do
+    element 'book' do
+      element 'title' do
+        text 'Ruby Programming'
+      end
+
+      element 'author' do
+        text 'Jane Smith'
+      end
+
+      comment 'Publication details'
+      element 'published', year: '2024'
+
+      cdata '<custom>metadata</custom>'
+    end
+  end
+end
+----
+
+=== Direct document manipulation
+
+[source,ruby]
+----
+doc = Moxml.new.create_document
+
+# Add declaration
+doc.add_child(doc.create_declaration("1.0", "UTF-8"))
+
+# Create root with namespace
+root = doc.create_element('library')
+root.add_namespace(nil, 'http://example.org/library')
+root.add_namespace("dc", "http://purl.org/dc/elements/1.1/")
+doc.add_child(root)
+
+# Add elements with attributes
+book = doc.create_element('book')
+book['id'] = 'b1'
+root.add_child(book)
+
+# Add mixed content
+book.add_child(doc.create_comment('Book details'))
+title = doc.create_element('title')
+title.text = 'Ruby Programming'
+book.add_child(title)
+----
+
+== XML objects and their methods
+
+=== Document object
+
+The Document object represents an XML document and serves as the root container
+for all XML nodes.
+
+[source,ruby]
+----
+# Creating a document
+doc = Moxml.new.create_document
+doc = Moxml.new.parse(xml_string)
+
+# Document properties and methods
+doc.encoding               # Get document encoding
+doc.encoding = "UTF-8"     # Set document encoding
+doc.version                # Get XML version
+doc.version = "1.1"        # Set XML version
+doc.standalone             # Get standalone declaration
+doc.standalone = "yes"     # Set standalone declaration
+
+# Document structure
+doc.root                  # Get root element
+doc.children              # Get all top-level nodes
+doc.add_child(node)       # Add a child node
+doc.remove_child(node)    # Remove a child node
+
+# Node creation methods
+doc.create_element(name)    # Create new element
+doc.create_text(content)    # Create text node
+doc.create_cdata(content)   # Create CDATA section
+doc.create_comment(content) # Create comment
+doc.create_processing_instruction(target, content) # Create PI
+
+# Document querying
+doc.xpath(expression)      # Find nodes by XPath
+doc.at_xpath(expression)   # Find first node by XPath
+
+# Serialization
+doc.to_xml(options)        # Convert to XML string
+----
+
+=== Element object
+
+Elements are the primary structural components of an XML document, representing
+tags with attributes and content.
+
+[source,ruby]
+----
+# Element properties
+element.name               # Get element name
+element.name = "new_name"  # Set element name
+element.text              # Get text content
+element.text = "content"   # Set text content
+element.inner_text        # Get text content for current node only
+element.inner_xml         # Get inner XML content
+element.inner_xml = xml   # Set inner XML content
+
+# Attributes
+element[name]             # Get attribute value
+element[name] = value     # Set attribute value
+element.attributes        # Get all attributes
+element.remove_attribute(name) # Remove attribute
+
+# Namespace handling
+element.namespace         # Get element's namespace
+element.namespace = ns     # Set element's namespace
+element.add_namespace(prefix, uri) # Add new namespace
+element.namespaces        # Get all namespace definitions
+
+# Node structure
+element.parent            # Get parent node
+element.children          # Get child nodes
+element.add_child(node)   # Add child node
+element.remove_child(node) # Remove child node
+element.add_previous_sibling(node) # Add sibling before
+element.add_next_sibling(node)    # Add sibling after
+element.replace(node)     # Replace with another node
+element.remove           # Remove from document
+
+# Node type checking
+element.element?         # Returns true
+element.text?           # Returns false
+element.cdata?          # Returns false
+element.comment?        # Returns false
+element.processing_instruction? # Returns false
+
+# Node querying
+element.xpath(expression)  # Find nodes by XPath
+element.at_xpath(expression) # Find first node by XPath
+----
+
+=== Text object
+
+Text nodes represent character data in the XML document.
+
+[source,ruby]
+----
+# Creating text nodes
+text = doc.create_text("content")
+
+# Text properties
+text.content             # Get text content
+text.content = "new"     # Set text content
+
+# Node type checking
+text.text?              # Returns true
+
+# Structure
+text.parent             # Get parent node
+text.remove             # Remove from document
+text.replace(node)      # Replace with another node
+----
+
+=== CDATA object
+
+CDATA sections contain text that should not be parsed as markup.
+
+[source,ruby]
+----
+# Creating CDATA sections
+cdata = doc.create_cdata("<raw>content</raw>")
+
+# CDATA properties
+cdata.content           # Get CDATA content
+cdata.content = "new"   # Set CDATA content
+
+# Node type checking
+cdata.cdata?           # Returns true
+
+# Structure
+cdata.parent           # Get parent node
+cdata.remove           # Remove from document
+cdata.replace(node)    # Replace with another node
+----
+
+=== Comment object
+
+Comments contain human-readable notes in the XML document.
+
+[source,ruby]
+----
+# Creating comments
+comment = doc.create_comment("Note")
+
+# Comment properties
+comment.content         # Get comment content
+comment.content = "new" # Set comment content
+
+# Node type checking
+comment.comment?        # Returns true
+
+# Structure
+comment.parent          # Get parent node
+comment.remove         # Remove from document
+comment.replace(node)   # Replace with another node
+----
+
+=== Processing instruction object
+
+Processing instructions provide instructions to applications processing the XML.
+
+[source,ruby]
+----
+# Creating processing instructions
+pi = doc.create_processing_instruction("xml-stylesheet",
+  'type="text/xsl" href="style.xsl"')
+
+# PI properties
+pi.target              # Get PI target
+pi.target = "new"      # Set PI target
+pi.content             # Get PI content
+pi.content = "new"     # Set PI content
+
+# Node type checking
+pi.processing_instruction? # Returns true
+
+# Structure
+pi.parent             # Get parent node
+pi.remove             # Remove from document
+pi.replace(node)      # Replace with another node
+----
+
+=== Attribute object
+
+Attributes represent name-value pairs on elements.
+
+[source,ruby]
+----
+# Attribute properties
+attr.name              # Get attribute name
+attr.name = "new"      # Set attribute name
+attr.value            # Get attribute value
+attr.value = "new"     # Set attribute value
+
+# Namespace handling
+attr.namespace         # Get attribute's namespace
+attr.namespace = ns    # Set attribute's namespace
+
+# Node type checking
+attr.attribute?        # Returns true
+----
+
+=== Namespace object
+
+Namespaces define XML namespaces used in the document.
+
+[source,ruby]
+----
+# Namespace properties
+ns.prefix             # Get namespace prefix
+ns.uri               # Get namespace URI
+
+# Formatting
+ns.to_s              # Format as xmlns declaration
+
+# Node type checking
+ns.namespace?        # Returns true
+----
+
+=== Node traversal and inspection
+
+Each node type provides methods for traversing the document structure:
+
+[source,ruby]
+----
+node.parent              # Get parent node
+node.children            # Get child nodes
+node.next_sibling        # Get next sibling
+node.previous_sibling    # Get previous sibling
+
+# Type checking
+node.element?          # Is it an element?
+node.text?             # Is it a text node?
+node.cdata?            # Is it a CDATA section?
+node.comment?          # Is it a comment?
+node.processing_instruction? # Is it a PI?
+node.attribute?        # Is it an attribute?
+node.namespace?        # Is it a namespace?
+
+# Node information
+node.document          # Get owning document
+----
+
+== Advanced features
+
+=== XPath querying and node mapping
+
+==== Nokogiri, Oga, REXML
+
+Moxml provides efficient XPath querying by leveraging the native XML library's
+implementation while maintaining consistent node mapping:
+
+[source,ruby]
+----
+# Find all book elements
+books = doc.xpath('//book')
+# Returns Moxml::Element objects mapped to native nodes
+
+# Find with namespaces
+titles = doc.xpath('//dc:title',
+  'dc' => 'http://purl.org/dc/elements/1.1/')
+
+# Find first matching node
+first_book = doc.at_xpath('//book')
+
+# Chain queries
+doc.xpath('//book').each do |book|
+  # Each book is a mapped Moxml::Element
+  title = book.at_xpath('.//title')
+  puts "#{book['id']}: #{title.text}"
+end
+----
+
+==== Ox
+
+The native Ox's query method
+https://www.ohler.com/ox/Ox/Element.html#method-i-locate[`locate`] resembles
+XPath but has a different syntax.
+
+=== Namespace handling
+
+[source,ruby]
+----
+# Add namespace to element
+element.add_namespace('dc', 'http://purl.org/dc/elements/1.1/')
+
+# Create element in namespace
+title = doc.create_element('dc:title')
+title.text = 'Document Title'
+
+# Query with namespaces
+doc.xpath('//dc:title',
+  'dc' => 'http://purl.org/dc/elements/1.1/')
+----
+
+=== Accessing native implementation
+
+While not typically needed, you can access the underlying XML library's nodes:
+
+[source,ruby]
+----
+# Get native node
+native_node = element.native
+
+# Get adapter being used
+adapter = element.context.config.adapter
+
+# Create from native node
+element = Moxml::Element.new(native_node, context)
+----
+
+== Error handling
+
+Moxml provides specific error classes for different types of errors that may
+occur during XML processing:
+
+[source,ruby]
+----
+begin
+  doc = context.parse(xml_string)
+rescue Moxml::ParseError => e
+  # Handles XML parsing errors
+  puts "Parse error at line #{e.line}, column #{e.column}"
+  puts "Message: #{e.message}"
+rescue Moxml::ValidationError => e
+  # Handles XML validation errors
+  puts "Validation error: #{e.message}"
+rescue Moxml::XPathError => e
+  # Handles XPath expression errors
+  puts "XPath error: #{e.message}"
+rescue Moxml::NamespaceError => e
+  # Handles namespace errors
+  puts "Namespace error: #{e.message}"
+rescue Moxml::Error => e
+  # Handles other Moxml-specific errors
+  puts "Error: #{e.message}"
+end
+----
+
+== Configuration
+
+=== General
+
+Moxml can be configured globally or per instance.
+
+[source,ruby]
+----
+# Global configuration
+Moxml.configure do |config|
+  config.default_adapter = :nokogiri
+  config.strict = true
+  config.encoding = 'UTF-8'
+end
+
+# Instance configuration
+moxml = Moxml.new do |config|
+  config.adapter = :oga
+  config.strict = false
+end
+----
+
+=== Default adapter selection
+
+To select a non-default adapter, set it before processing any input using the
+following syntax.
+
+[source,ruby]
+----
+Moxml::Config.default_adapter = <adapter-symbol>
+----
+
+Where, `<adapter-symbol>` is one of the following:
+
+`:rexml`:: REXML
+
+`:nokogiri`:: Nokogiri (default)
+
+`:oga`:: Oga
+
+`:ox`:: Ox
+
+
+== Thread safety
+
+Moxml is thread-safe when used properly. Each instance maintains its own state
+and can be used safely in concurrent operations:
+
+[source,ruby]
+----
+class XmlProcessor
+  def initialize
+    @mutex = Mutex.new
+    @context = Moxml.new
+  end
+
+  def process(xml)
+    @mutex.synchronize do
+      doc = @context.parse(xml)
+      # Modify document
+      doc.to_xml
+    end
+  end
+end
+----
+
+== Performance considerations
+
+=== Memory management
+
+Moxml maintains a node registry to ensure consistent object mapping:
+
+[source,ruby]
+----
+doc = context.parse(large_xml)
+# Process document
+doc = nil  # Allow garbage collection of document and registry
+GC.start   # Force garbage collection if needed
+----
+
+=== Efficient querying
+
+Use specific XPath expressions for better performance:
+
+[source,ruby]
+----
+# More efficient - specific path
+doc.xpath('//book/title')
+
+# Less efficient - requires full document scan
+doc.xpath('//title')
+
+# Most efficient - direct child access
+root.xpath('./*/title')
+----
+
+== Best practices
+
+=== Document creation
+
+[source,ruby]
+----
+# Preferred - using builder pattern
+doc = Moxml::Builder.new(Moxml.new).build do
+  declaration version: "1.0", encoding: "UTF-8"
+  element 'root' do
+    element 'child' do
+      text 'content'
+    end
+  end
+end
+
+# Alternative - direct manipulation
+doc = Moxml.new.create_document
+doc.add_child(doc.create_declaration("1.0", "UTF-8"))
+root = doc.create_element('root')
+doc.add_child(root)
+----
+
+=== Node manipulation
+
+[source,ruby]
+----
+# Preferred - chainable operations
+element
+  .add_namespace('dc', 'http://purl.org/dc/elements/1.1/')
+  .add_child(doc.create_text('content'))
+
+# Preferred - clear node type checking
+if node.element?
+  node.add_namespace('dc', 'http://purl.org/dc/elements/1.1/')
+  node.add_child(doc.create_text('content'))
+end
+----
+
+== Contributing
+
+. Fork the repository
+. Create your feature branch (`git checkout -b feature/my-new-feature`)
+. Commit your changes (`git commit -am 'Add some feature'`)
+. Push to the branch (`git push origin feature/my-new-feature`)
+. Create a new Pull Request
+
+== License
+
+Copyright Ribose.
+
+This project is licensed under the BSD-2-Clause License. See the
+link:LICENSE.md[] file for details.
+

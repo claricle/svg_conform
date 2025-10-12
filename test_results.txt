@@ -1,0 +1,121 @@
+
+SvgCheck Compatibility
+  IETF profile validation
+    DrawBerry-sample-2
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    IETF-test
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    circle
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    colors
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    dia-sample-svg
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    example-dot
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    full-tiny
+      produces compatible validation errors (PENDING: Comprehensive test file with known 3% discrepancy)
+      produces compatible fixed output (PENDING: No svgcheck repair output)
+      handles the same elements as svgcheck
+    good
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    httpbis-proxy20-fig6
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    malformed
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    rfc-svg
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    rgb
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    svg-wordle
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    threshold
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    utf8
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    viewBox-both
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    viewBox-height
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    viewBox-none
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+    viewBox-width
+      produces compatible validation errors
+      produces compatible fixed output
+      handles the same elements as svgcheck
+  Error message format compatibility
+    produces error messages in similar format to svgcheck
+  Color handling compatibility
+    handles color restrictions like svgcheck
+  ViewBox handling compatibility
+    handles viewBox-none like svgcheck
+    handles viewBox-width like svgcheck
+    handles viewBox-height like svgcheck
+    handles viewBox-both like svgcheck
+  UTF-8 handling compatibility
+    handles UTF-8 content like svgcheck
+  Malformed SVG handling
+    handles malformed SVG like svgcheck
+  Embedded SVG validation (XML files)
+    rfc.xml
+      extracts and validates embedded SVG
+  Summary statistics
+
+============================================================
+SVGCHECK COMPATIBILITY SUMMARY
+============================================================
+Total files processed: 19
+Identical error counts: 18/19
+Compatibility: 94.7%
+
+Real-world files: 18/18 (100.0%)
+============================================================
+    achieves 100% compatibility with svgcheck (excluding full-tiny)
+
+Pending: (Failures listed here are expected and do not affect your suite's status)
+
+  1) SvgCheck Compatibility IETF profile validation full-tiny produces compatible validation errors
+     # Comprehensive test file with known 3% discrepancy
+     # ./spec/svgcheck_compatibility_spec.rb:21
+
+  2) SvgCheck Compatibility IETF profile validation full-tiny produces compatible fixed output
+     # No svgcheck repair output
+     # ./spec/svgcheck_compatibility_spec.rb:51
+
+Finished in 51.23 seconds (files took 0.37157 seconds to load)
+67 examples, 0 failures, 2 pending
+
