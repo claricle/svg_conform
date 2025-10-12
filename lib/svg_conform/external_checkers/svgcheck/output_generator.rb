@@ -86,10 +86,14 @@ svgcheck_path: "svgcheck/svgcheck")
           command_available?(@svgcheck_exec) && Dir.exist?(@svgcheck_path)
         end
 
+        # SECURITY: Prevent command injection by using array form of system()
+        # GitHub CodeQL: Uncontrolled command line (CWE-078)
+        # This affects svgcheck comparison commands (development use only)
         def command_available?(command)
-          system("which #{command} > /dev/null 2>&1") ||
-            system("where #{command} > NUL 2>&1") || # Windows
-            File.executable?(command) # Direct path
+          # Use array form to prevent shell injection
+          system("which", command, out: File::NULL, err: File::NULL) ||
+            system("where", command, out: File::NULL, err: File::NULL) || # Windows
+            File.executable?(command) # Direct path check
         end
       end
     end

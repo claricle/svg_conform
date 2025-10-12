@@ -74,8 +74,13 @@ module SvgConform
       private
 
       def embed_images_in_style(style_value, changes)
+        # SECURITY: Prevent ReDoS by limiting input length and using bounded quantifiers
+        # GitHub CodeQL: Regular expression with excessive backtracking
+        return style_value if style_value.length > 10_000
+
         # Replace url() references with data URIs
-        style_value.gsub(/url\s*\(\s*['"]?([^'")\s]+)['"]?\s*\)/i) do |url_match|
+        # Use bounded quantifier {1,2000} to prevent exponential backtracking
+        style_value.gsub(/url\s*\(\s*['"]?([^'")\s]{1,2000})['"]?\s*\)/i) do |url_match|
           url = ::Regexp.last_match(1)
 
           # Skip if already embedded or internal reference

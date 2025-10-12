@@ -126,34 +126,44 @@ module SvgConform
                   issue.to_s
                 end
 
+      # SECURITY: Prevent ReDoS attacks by limiting message length
+      # GitHub CodeQL: Regular expressions with excessive backtracking can cause DoS
+      # This affects svgcheck comparison commands (development use only)
+      # Note: Ruby 3.2+ has built-in regex caching that prevents ReDoS
+      if message.length > 1000
+        # Truncate very long messages to prevent exponential backtracking
+        message = message[0, 997] + "..."
+      end
+
       # Map ONLY the exact 28 svgcheck.py log patterns to semantic keys
+      # SECURITY: Regex patterns use quantifier limits to prevent ReDoS
       case message
       # Error patterns from checksvg.py (4 patterns)
-      when /^Malformed field '([^']+)' in style attribute found\. Field removed\.$/
+      when /\AMalformed field '([^']{1,200})' in style attribute found\. Field removed\.\z/
         "malformed_style_field:#{normalize_value(::Regexp.last_match(1))}"
-      when /^Malformed field '(\[[^\]]+\])' in style attribute found\. Field removed\.$/
+      when /\AMalformed field '(\[[^\]]{1,200}\])' in style attribute found\. Field removed\.\z/
         "malformed_style_field:#{normalize_value(::Regexp.last_match(1))}"
-      when /^Malformed style declaration '([^']+)' found\. Declaration removed\.$/
+      when /\AMalformed style declaration '([^']{1,200})' found\. Declaration removed\.\z/
         "malformed_style_field:#{normalize_value(::Regexp.last_match(1))}"
-      when /^Style property '([^']+)' promoted to attribute$/
+      when /\AStyle property '([^']{1,100})' promoted to attribute\z/
         "style_promotion:#{::Regexp.last_match(1)}"
-      when /^Style property '([^']+)' removed$/
+      when /\AStyle property '([^']{1,100})' removed\z/
         "style_property_removed:#{::Regexp.last_match(1)}"
-      when /^Error when calculating SVG size: (.+)$/
+      when /\AError when calculating SVG size: (.{1,500})\z/
         "informative:svg_size_calculation_error"
-      when /^File does not conform to SVG requirements$/
+      when /\AFile does not conform to SVG requirements\z/
         "informative:file_nonconformant"
 
       # Warning patterns from checksvg.py (10 patterns)
-      when /^Element '([^']+)' in namespace '([^']+)' is not allowed$/
+      when /\AElement '([^']{1,100})' in namespace '([^']{1,200})' is not allowed\z/
         "invalid_element_namespace:#{::Regexp.last_match(1)}:#{normalize_namespace(::Regexp.last_match(2))}"
-      when /^Element '([^']+)' not allowed$/
+      when /\AElement '([^']{1,100})' not allowed\z/
         "invalid_element:#{::Regexp.last_match(1)}"
-      when /^Element '([^']+)' does not allow attributes with namespace '([^']+)'$/
+      when /\AElement '([^']{1,100})' does not allow attributes with namespace '([^']{1,200})'\z/
         "namespace_violation:#{::Regexp.last_match(1)}:#{normalize_namespace(::Regexp.last_match(2))}"
-      when /^The element '([^']+)' does not allow the attribute '([^']+)', attribute to be removed\.$/
+      when /\AThe element '([^']{1,100})' does not allow the attribute '([^']{1,100})', attribute to be removed\.\z/
         "invalid_attribute:#{::Regexp.last_match(1)}:#{::Regexp.last_match(2)}"
-      when /^The attribute '([^']+)' does not allow the value '([^']+)', replaced with '([^']+)'$/
+      when /\AThe attribute '([^']{1,100})' does not allow the value '([^']{1,200})', replaced with '([^']{1,200})'\z/
         # Normalize color values for semantic equivalence
         attribute = ::Regexp.last_match(1)
         value = ::Regexp.last_match(2)
@@ -164,58 +174,58 @@ module SvgConform
         else
           "invalid_attribute_value:#{attribute}:#{normalize_value(value)}"
         end
-      when /^The attribute '([^']+)' does not allow the value '([^']+)', attribute to be removed$/
+      when /\AThe attribute '([^']{1,100})' does not allow the value '([^']{1,200})', attribute to be removed\z/
         "invalid_attribute_value:#{::Regexp.last_match(1)}:#{normalize_value(::Regexp.last_match(2))}"
-      when /^The attribute viewBox is required on the root svg element$/
+      when /\AThe attribute viewBox is required on the root svg element\z/
         "viewbox_required"
-      when /^Trying to put in the attribute with value '([^']+)'$/
+      when /\ATrying to put in the attribute with value '([^']{1,200})'\z/
         "informative:viewbox_auto_added"
-      when /^The namespace ([^\s]+) is not permitted for svg elements\.$/
+      when /\AThe namespace ([^\s]{1,200}) is not permitted for svg elements\.\z/
         "namespace_violation:element:#{normalize_namespace(::Regexp.last_match(1))}"
-      when /^The element '([^']+)' is not allowed as a child of '([^']+)'$/
+      when /\AThe element '([^']{1,100})' is not allowed as a child of '([^']{1,100})'\z/
         "invalid_child:#{::Regexp.last_match(1)}:#{::Regexp.last_match(2)}"
-      when /^Malformed namespace\. Should have errored during parsing$/
+      when /\AMalformed namespace\. Should have errored during parsing\z/
         "informative:malformed_namespace"
-      when /^--no-xinclude option is deprecated and has no effect\.$/
+      when /\A--no-xinclude option is deprecated and has no effect\.\z/
         "informative:deprecated_option"
 
       # Note patterns from checksvg.py (13 patterns)
-      when /^modify_style check '([^']+)' in '([^']+)'$/
+      when /\Amodify_style check '([^']{1,100})' in '([^']{1,100})'\z/
         "informative:modify_style_check"
-      when /^   modify_style - p=([^\s]+)  v=(.+)$/
+      when /\A   modify_style - p=([^\s]{1,100})  v=(.{1,200})\z/
         "informative:modify_style_processing"
-      when /^value_ok look for (.+) in (.+)$/
+      when /\Avalue_ok look for (.{1,200}) in (.{1,200})\z/
         "informative:value_validation"
-      when /^  legal value list (.+)$/
+      when /\A  legal value list (.{1,500})\z/
         "informative:legal_values"
-      when /^ --- skip to end -- (.+)$/
+      when /\A --- skip to end -- (.{1,200})\z/
         "informative:validation_skip"
-      when /^Color or grayscale heuristic applied to: '([^']+)' yields shade: '([^']+)'$/
+      when /\AColor or grayscale heuristic applied to: '([^']{1,100})' yields shade: '([^']{1,100})'\z/
         "informative:color_heuristic"
-      when /^[^\s]+ tag = (.+)$/
+      when /\A[^\s]{1,50} tag = (.{1,200})\z/
         "informative:element_processing"
-      when /^[^\s]+ element [^:]+: (.+)$/
+      when /\A[^\s]{1,50} element [^:]{1,50}: (.{1,200})\z/
         "informative:element_attributes"
-      when /^[^\s]+ attr ([^\s]+) = ([^\s]+) \(ns = ([^)]*)\)$/
+      when /\A[^\s]{1,50} attr ([^\s]{1,100}) = ([^\s]{1,200}) \(ns = ([^)]{0,200})\)\z/
         "informative:attribute_processing"
-      when /^[^\s]+child, tag = (.+)$/
+      when /\A[^\s]{1,50}child, tag = (.{1,200})\z/
         "informative:child_processing"
-      when /^Checking svg element at line (\d+) in file (.+)$/
+      when /\AChecking svg element at line (\d{1,10}) in file (.{1,500})\z/
         "informative:svg_element_check"
 
       # SvgConform-specific patterns that map to svgcheck semantic equivalents
-      when /^Color '([^']+)' in attribute '([^']+)' is not allowed in this profile$/
+      when /\AColor '([^']{1,100})' in attribute '([^']{1,100})' is not allowed in this profile\z/
         # Map SvgConform color restriction to svgcheck invalid_attribute_value pattern
         # Normalize color values to handle different formats (WHITE -> white, etc.)
         "invalid_attribute_value:#{::Regexp.last_match(2)}:#{normalize_color_value(::Regexp.last_match(1))}"
-      when /^Color '([^']+)' in style property '([^']+)' is not allowed in this profile$/
+      when /\AColor '([^']{1,100})' in style property '([^']{1,100})' is not allowed in this profile\z/
         # Map SvgConform style property color restriction to svgcheck invalid_attribute_value pattern
         # Svgcheck promotes style properties to attributes, so we map accordingly
         "invalid_attribute_value:#{::Regexp.last_match(2)}:#{normalize_color_value(::Regexp.last_match(1))}"
-      when /^Font family '([^']+)' is not allowed in this profile$/
+      when /\AFont family '([^']{1,200})' is not allowed in this profile\z/
         # Map SvgConform font family restriction to svgcheck invalid_attribute_value pattern
         "invalid_attribute_value:font-family:#{normalize_value(::Regexp.last_match(1))}"
-      when /^Font family '([^']+)' in style is not allowed in this profile$/
+      when /\AFont family '([^']{1,200})' in style is not allowed in this profile\z/
         # Map SvgConform style font family restriction to svgcheck invalid_attribute_value pattern
         font_family = normalize_value(::Regexp.last_match(1))
         # Embedded font restrictions are profile differences
@@ -224,7 +234,7 @@ module SvgConform
         else
           "invalid_attribute_value:font-family:#{font_family}"
         end
-      when /^Font family '([^']+)' is not allowed in this profile$/
+      when /\AFont family '([^']{1,200})' is not allowed in this profile\z/
         # Map SvgConform font family restriction to svgcheck invalid_attribute_value pattern
         font_family = normalize_value(::Regexp.last_match(1))
         # Embedded font restrictions are profile differences
@@ -233,10 +243,10 @@ module SvgConform
         else
           "invalid_attribute_value:font-family:#{font_family}"
         end
-      when /^svg root element must have a viewbox attribute$/i
+      when /\Asvg root element must have a viewbox attribute\z/i
         # Map SvgConform viewBox requirement to svgcheck pattern (case insensitive)
         "viewbox_required"
-      when /^Element '([^']+)' is not allowed in this profile$/
+      when /\AElement '([^']{1,100})' is not allowed in this profile\z/
         # Map SvgConform element restriction to svgcheck invalid_child pattern
         element = ::Regexp.last_match(1)
         # Font-related and clipPath elements are profile differences, not validation errors
@@ -245,7 +255,7 @@ module SvgConform
         else
           "invalid_child:#{element}:svg"
         end
-      when /^The element '([^']+)' is not allowed as a child of '([^']+)'$/
+      when /\AThe element '([^']{1,100})' is not allowed as a child of '([^']{1,100})'\z/
         # Map SvgConform child element restriction to svgcheck pattern
         element = ::Regexp.last_match(1)
         parent = ::Regexp.last_match(2)
@@ -255,13 +265,13 @@ module SvgConform
         else
           "invalid_child:#{element}:#{parent}"
         end
-      when /^Attribute '([^']+)' is not allowed on element '([^']+)'$/
+      when /\AAttribute '([^']{1,100})' is not allowed on element '([^']{1,100})'\z/
         # Map SvgConform attribute restriction to svgcheck pattern
         "invalid_attribute:#{::Regexp.last_match(2)}:#{::Regexp.last_match(1)}"
-      when /^The namespace ([^\s]+) is not permitted for svg elements\.?$/
+      when /\AThe namespace ([^\s]{1,200}) is not permitted for svg elements\.?\z/
         # Map SvgConform namespace restriction to svgcheck pattern
         "namespace_violation:element:#{normalize_namespace(::Regexp.last_match(1))}"
-      when /^viewBox attribute must contain four numeric values/i
+      when /\AviewBox attribute must contain four numeric values/i
         # Map SvgConform viewBox format validation (more strict than svgcheck)
         "viewbox_format_error"
 
@@ -765,7 +775,7 @@ repair_mode = false, _mixed_mode = false)
       normalized = value.downcase.strip
 
       # Handle array-like values from svgcheck (e.g., "['malformed']" -> "malformed")
-      normalized = ::Regexp.last_match(1) if normalized =~ /^\['([^']+)'\]$/
+      normalized = ::Regexp.last_match(1) if normalized =~ /\A\['([^']{1,200})'\]\z/
 
       normalized
     end
@@ -790,9 +800,9 @@ repair_mode = false, _mixed_mode = false)
         "grey"
       else
         # For hex colors, normalize to lowercase without spaces
-        if /^#[0-9a-f]+$/i.match?(normalized)
+        if /\A#[0-9a-f]{3,8}\z/i.match?(normalized)
           normalized.downcase
-        elsif /^rgb\s*\(/i.match?(normalized)
+        elsif /\Argb\s*\(/i.match?(normalized)
           # Normalize RGB format by removing spaces
           normalized.gsub(/\s+/, "")
         else
