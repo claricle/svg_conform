@@ -180,18 +180,25 @@ List available profiles:
 $ svg_conform profiles
 ----
 
-Validate an SVG file against a profile:
+Check/validate an SVG file against a profile:
 
 [source,bash]
 ----
-$ svg_conform validate {svg-filename} --profile={profile-name}
+$ svg_conform check file.svg --profile=metanorma
 ----
 
-Fix an SVG file to conform to a profile:
+Check and fix an SVG file to conform to a profile:
 
 [source,bash]
 ----
-$ svg_conform fix {svg-filename} --in-place --profile={profile-name}
+$ svg_conform check file.svg --profile=metanorma -f --fix-output=fixed.svg
+----
+
+Batch process a directory of SVG files:
+
+[source,bash]
+----
+$ svg_conform check --directory=images/ --profile=metanorma -f --output-dir=fixed/
 ----
 
 
@@ -630,8 +637,61 @@ Available SVG Profiles
 │ svg_1_2_rfc_with_rdf │ SVG 1.2 RFC Profile with RDF metadata support - Allows RDF/Dublin Core metadata in SVG files                      │
 ╰──────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
+
+[source,bash]
+----
+# Validate single file
+svg_conform validate diagram.svg
+
+# Validate multiple files with custom profile
+svg_conform validate -p no_external_css *.svg
+
+# Output JSON results
+svg_conform validate -f json -o results.json diagram.svg
+----
+
+
+=== `svg_conform fix`
+
+The `fix` command allows you to automatically fix SVG files to conform to a
+specified profile, with options for in-place modification or custom output.
+
+Whether a file can be fixed depends on the specific issues present and the
+remediations available in the selected profile.
+
+Syntax:
+
+[source,bash]
+----
+svg_conform fix [OPTIONS] FILES...
+
+Options:
+  -p, --profile PROFILE    Profile to use (default: svg_1_2_rfc)
+  --in-place              Fix files in place
+  --dry-run               Show what would be fixed without applying
+  -o, --output FILE       Output file for fixed content
+  -v, --verbose           Verbose output
+----
+
+[example]
+[source,bash]
+----
+# Fix file in place
+svg_conform fix --in-place diagram.svg
+
+# Dry run to see what would be fixed
+svg_conform fix --dry-run diagram.svg
+
+# Fix with custom output
+svg_conform fix -o fixed_diagram.svg diagram.svg
+----
+
+=== `svg_conform check`
 Use --verbose for detailed information about each profile
 ----
+
+
+=== `svg_conform check`
 ====
 
 [source,bash]
@@ -681,6 +741,7 @@ svg_conform fix --dry-run diagram.svg
 # Fix with custom output
 svg_conform fix -o fixed_diagram.svg diagram.svg
 ----
+
 === `svg_conform check`
 
 The `check` command validates SVG files against a specified profile and optionally
@@ -826,9 +887,74 @@ YAML format using lutaml-model serialization:
   "manifest": {
     "/path/to/images/diagram.svg": "/path/to/fixed/diagram.svg"
   }
+[source,bash]
+----
+# Validate single file
+svg_conform validate diagram.svg
+
+# Validate multiple files with custom profile
+svg_conform validate -p no_external_css *.svg
+
+# Output JSON results
+svg_conform validate -f json -o results.json diagram.svg
+----
+
+
+=== `svg_conform fix`
 }
 ----
 
+
+=== `svg_conform compare`
+
+The `compare` command compares SvgConform validation results with existing
+svgcheck reports to assess compatibility.
+
+This command is useful for verifying that SvgConform produces equivalent results
+to the IETF svgcheck tool.
+
+Syntax:
+
+[source,bash]
+----
+svg_conform compare FILE [OPTIONS]
+
+Options:
+  -p, --profile PROFILE        Profile to use (default: svg_1_2_rfc)
+      --svgcheck-report FILE   Path to svgcheck report (default: auto-detect)
+----
+
+[example]
+[source,bash]
+----
+# Compare with auto-detected svgcheck report
+$ svg_conform compare diagram.svg -p svg_1_2_rfc
+
+# Specify svgcheck report explicitly
+$ svg_conform compare diagram.svg --svgcheck-report diagram.svg.svgcheck.yaml
+----
+
+
+=== `svg_conform version`
+
+The `version` command displays the current version of SvgConform.
+
+Syntax:
+
+[source,bash]
+----
+svg_conform version
+----
+
+[example]
+[source,bash]
+----
+$ svg_conform version
+SvgConform 0.1.0
+----
+
+
+=== `svg_conform fix`
 **Manifest File:**
 
 When using `--fix`, a manifest file is automatically created (or can be
@@ -846,6 +972,7 @@ to their remediated counterparts:
   }
 }
 ----
+
 ====
 [source,bash]
 ----
