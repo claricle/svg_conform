@@ -17,28 +17,62 @@ module SvgConform
       super
     end
 
-    desc "check FILE", "Check SVG file validity (svgcheck-like functionality)"
+    desc "check [*FILES]", "Check SVG file(s) validity (single file, multiple files, or directory)"
     long_desc <<~DESC
-      Check SVG file validity against a profile, similar to svgcheck.
+      Check SVG file validity against a profile.
+
+      MODES:
+      1. Single file: svg_conform check file.svg -p PROFILE
+      2. Multiple files: svg_conform check *.svg -p PROFILE
+      3. Directory: svg_conform check --directory PATH -p PROFILE
 
       By default, only validates without creating remediated files.
-      Use --fix to create remediated files.
+      Use --fix to enable automatic remediation.
 
-      Output formats:
-      - table: Human-readable table format (default)
-      - yaml: YAML format
-      - json: JSON format
+      REMEDIATION OUTPUT:
+      - Single file: Uses --fix-output (default: FILE.fixed.svg)
+      - Multiple files: Requires --output-dir or --in-place
+      - Directory: Requires --output-dir or --in-place
+
+      REPORT FORMATS:
+      - table: Human-readable (default for single file)
+      - json: JSON format using lutaml-model
+      - yaml: YAML format using lutaml-model
+
+      EXAMPLES:
+        svg_conform check file.svg -p metanorma
+        svg_conform check *.svg -p metanorma -f --output-dir fixed/
+        svg_conform check -d images/ -p metanorma --report-format json --report-output report.json
+        svg_conform check -d images/ -p metanorma -f --in-place --force
     DESC
+    option :directory, aliases: "-d", type: :string,
+                       desc: "Directory to scan recursively for SVG files"
     option :profile, aliases: "-p", default: "svg_1_2_rfc",
                      desc: "Profile to validate against"
-    option :format, aliases: "-f", default: "table", enum: %w[table yaml json],
-                    desc: "Output format"
-    option :output, aliases: "-o", desc: "Output file (default: stdout)"
-    option :fix, type: :boolean, default: false, desc: "Create remediated file"
-    option :fix_output,
-           desc: "Output file for remediated SVG (default: FILE.fixed.svg)"
-    def check(file)
-      SvgConform::Commands::Check.new(file, options).execute
+    option :format, default: "table", enum: %w[table yaml json],
+                    desc: "Output format (single file mode)"
+    option :fix, aliases: "-f", type: :boolean, default: false,
+                 desc: "Create remediated files"
+    option :output, aliases: "-o", desc: "Output file (single file mode)"
+    option :output_dir, type: :string,
+                        desc: "Output directory for remediated files (multi-file mode)"
+    option :in_place, type: :boolean, default: false,
+                      desc: "Replace original files (requires --force)"
+    option :force, type: :boolean, default: false,
+                   desc: "Confirm destructive operations (required for --in-place)"
+    option :fix_output, desc: "Output file for remediated SVG (single file mode, default: FILE.fixed.svg)"
+    option :report_format, enum: %w[json yaml],
+                           desc: "Batch report format (json or yaml)"
+    option :report_output, type: :string,
+                           desc: "Save detailed batch report to file"
+    option :manifest, type: :string,
+                      desc: "Manifest file path (default: manifest.json with --fix)"
+    option :quiet, aliases: "-q", type: :boolean, default: false,
+                   desc: "Suppress per-file output, show summary only"
+    option :verbose, aliases: "-v", type: :boolean, default: false,
+                     desc: "Show detailed progress"
+    def check(*files)
+      SvgConform::Commands::Check.new(files, options).execute
     end
 
     desc "compare FILE", "Compare SvgConform validation with svgcheck report"
