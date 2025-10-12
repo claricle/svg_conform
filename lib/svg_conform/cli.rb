@@ -75,7 +75,8 @@ module SvgConform
       SvgConform::Commands::Check.new(files, options).execute
     end
 
-    desc "svgcheck SUBCOMMAND", "Svgcheck-related commands (compare, compatibility, generate)"
+    desc "svgcheck SUBCOMMAND",
+         "Svgcheck-related commands (compare, compatibility, generate)"
     subcommand "svgcheck", Commands::Svgcheck
 
     desc "profiles", "List available validation profiles"

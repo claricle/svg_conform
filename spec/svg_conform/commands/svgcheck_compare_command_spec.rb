@@ -7,7 +7,7 @@ RSpec.describe SvgConform::Commands::SvgcheckCompare do
     it "initializes with file and options" do
       options = { profile: "svg_1_2_rfc" }
       command = described_class.new("test.svg", options)
-      expect(command).to be_a(SvgConform::Commands::SvgcheckCompare)
+      expect(command).to be_a(described_class)
     end
   end
 end

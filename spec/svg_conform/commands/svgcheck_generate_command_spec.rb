@@ -7,7 +7,7 @@ RSpec.describe SvgConform::Commands::SvgcheckGenerate do
     it "initializes with options" do
       options = { single_file: "test.svg" }
       command = described_class.new(options)
-      expect(command).to be_a(SvgConform::Commands::SvgcheckGenerate)
+      expect(command).to be_a(described_class)
     end
   end
 end

@@ -132,7 +132,7 @@ module SvgConform
       # Note: Ruby 3.2+ has built-in regex caching that prevents ReDoS
       if message.length > 1000
         # Truncate very long messages to prevent exponential backtracking
-        message = message[0, 997] + "..."
+        message = "#{message[0, 997]}..."
       end
 
       # Map ONLY the exact 28 svgcheck.py log patterns to semantic keys
