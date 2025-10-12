@@ -1051,7 +1051,7 @@ from external tools and comparing validation results:
 [source,bash]
 ----
 # 1. Generate external tool outputs for reference
-svg_conform svgcheck generate --mode both
+svg_conform svgcheck generate SVGCHECK_REPO_LOCAL_PATH --mode both
 
 # 2. Generate comparison reports
 svg_conform svgcheck compatibility --output comparison_report.json
@@ -1206,21 +1206,36 @@ for check-only and repair modes.
 
 [source,bash]
 ----
-svg_conform svgcheck generate [OPTIONS]
+Usage:
+  svg_conform svgcheck generate SVGCHECK_REPO_PATH
 
 Options:
-  -m, --mode MODE          Generation mode: check, repair, or both (default: both)
-  --svgcheck-exec PATH     Path to svgcheck executable (default: svgcheck from PATH)
-  --fixtures-path PATH     Output directory (default: spec/fixtures/svgcheck)
-  -f, --single-file FILE   Process single file only
-  --force                  Overwrite existing outputs
-  -v, --verbose            Verbose output
+  -m, [--mode=MODE]                                  # Generation mode: check, repair, or both
+                                                     # Default: both
+                                                     # Possible values: check, repair, both
+      [--svgcheck-exec=SVGCHECK_EXEC]                # Path to svgcheck executable
+      [--fixtures-path=FIXTURES_PATH]                # Output directory (default: spec/fixtures/svgcheck)
+  -f, [--single-file=SINGLE_FILE]                    # Process single file only
+      [--force]                                      # Overwrite existing outputs
+                                                     # Default: false
+  -v, [--verbose], [--no-verbose], [--skip-verbose]  # Verbose output
+                                                     # Default: false
+
+Description:
+  Generate svgcheck outputs for test files by running svgcheck on them.
+
+  SVGCHECK_REPO_PATH: Path to the svgcheck repository (e.g., svgcheck-reference)
+
+  By default, processes all test files in SVGCHECK_REPO_PATH/svgcheck/Tests/ and generates BOTH check and repair
+  outputs in separate subdirectories.
+
+  Examples: svg_conform svgcheck generate svgcheck-reference svg_conform svgcheck generate svgcheck-reference --mode
+  check svg_conform svgcheck generate svgcheck-reference --single-file example.svg
 ----
 
 This command provides a bridge between SvgConform and the Python svgcheck tool,
 enabling comprehensive compatibility testing and analysis. By default, it
 generates both check and repair outputs in separate subdirectories.
-
 
 The command creates a structured output directory with separate subdirectories
 for different svgcheck modes:
@@ -1238,6 +1253,12 @@ spec/fixtures/svgcheck/
     ├── file1.svg.code  # Exit status from svgcheck
     └── file1.svg.file  # Remediated SVG content
 ----
+
+Some svgcheck test files are renamed to indicate their actual type of content,
+which is defined in `svgcheck_generate.rb`:
+
+* svgcheck `full-tiny.xml` is renamed to `full-tiny.svg`
+* svgcheck `rfc-svg.xml` is renamed to `rfc-svg.svg`
 
 The generated outputs are used by the `compatibility` command to perform
 detailed comparisons between SvgConform and svgcheck validation results. The
@@ -1274,22 +1295,22 @@ There are three modes of operation for generating svgcheck outputs:
 [source,bash]
 ----
 # Generate both check and repair outputs for all test files
-svg_conform svgcheck generate
+svg_conform svgcheck generate /path/to/svgcheck-reference
 
 # Generate only check outputs
-svg_conform svgcheck generate --mode check
+svg_conform svgcheck generate /path/to/svgcheck-reference --mode check
 
 # Generate only repair outputs
-svg_conform svgcheck generate --mode repair
+svg_conform svgcheck generate /path/to/svgcheck-reference --mode repair
 
 # Process a single file with verbose output
-svg_conform svgcheck generate --single-file example.svg --verbose
+svg_conform svgcheck generate /path/to/svgcheck-reference --single-file example.svg --verbose
 
 # Force regeneration of existing outputs
-svg_conform svgcheck generate --force
+svg_conform svgcheck generate /path/to/svgcheck-reference --force
 
 # Use custom output directory
-svg_conform svgcheck generate --fixtures-path /path/to/custom/output
+svg_conform svgcheck generate /path/to/svgcheck-reference --fixtures-path /path/to/custom/output
 ----
 
 
