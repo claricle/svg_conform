@@ -95,8 +95,6 @@ module SvgConform
         end
       end
 
-      private
-
       def output_table(report)
         puts Paint["SVG Validation Report", :bold]
         puts "=" * 50
@@ -209,7 +207,8 @@ module SvgConform
         begin
           # Initial validation
           validator = SvgConform::Validator.new
-          initial_result = validator.validate_file(file, profile: @options[:profile].to_sym)
+          initial_result = validator.validate_file(file,
+                                                   profile: @options[:profile].to_sym)
 
           file_result.valid_before = initial_result.valid?
           file_result.errors_before = initial_result.errors.count
@@ -276,7 +275,8 @@ module SvgConform
 
         # Multiple files require output-dir
         if files.length > 1 && !@options[:output_dir]
-          puts Paint["Error: --output-dir required for multiple files with --fix", :red]
+          puts Paint["Error: --output-dir required for multiple files with --fix",
+                     :red]
           exit 1
         end
 
@@ -328,10 +328,12 @@ module SvgConform
           case @options[:report_format]
           when "json"
             File.write(@options[:report_output], batch_report.to_json)
-            puts Paint["Detailed JSON report written to #{@options[:report_output]}", :green]
+            puts Paint["Detailed JSON report written to #{@options[:report_output]}",
+                       :green]
           when "yaml"
             File.write(@options[:report_output], batch_report.to_yaml)
-            puts Paint["Detailed YAML report written to #{@options[:report_output]}", :green]
+            puts Paint["Detailed YAML report written to #{@options[:report_output]}",
+                       :green]
           end
         end
       end

@@ -12,7 +12,7 @@ module SvgConform
     attribute :errors_before, :integer
     attribute :errors_after, :integer
     attribute :remediated_path, :string
-    attribute :status, :string  # "valid", "remediated", "failed", "error"
+    attribute :status, :string # "valid", "remediated", "failed", "error"
     attribute :error_message, :string
 
     yaml do
@@ -32,15 +32,15 @@ module SvgConform
   class BatchReport < Lutaml::Model::Serializable
     attribute :directory, :string
     attribute :profile, :string
-    attribute :timestamp, :string
+    attribute :timestamp, :string, default: -> { Time.now.iso8601 }
     attribute :total_files, :integer
     attribute :valid_before, :integer
     attribute :valid_after, :integer
     attribute :remediated, :integer
     attribute :failed, :integer
     attribute :success_rate, :float
-    attribute :files, FileResult, collection: true
-    attribute :manifest, :hash
+    attribute :files, FileResult, collection: true, default: []
+    attribute :manifest, :hash, default: {}
 
     yaml do
       map "directory", to: :directory
@@ -56,19 +56,14 @@ module SvgConform
       map "manifest", to: :manifest
     end
 
-    def initialize(*args)
-      super
-      self.files ||= []
-      self.manifest ||= {}
-      self.timestamp ||= Time.now.iso8601
-    end
-
     def calculate_statistics
       self.total_files = files.length
       self.valid_before = files.count(&:valid_before)
       self.valid_after = files.count(&:valid_after)
       self.remediated = files.count { |f| f.status == "remediated" }
-      self.failed = files.count { |f| f.status == "failed" || f.status == "error" }
+      self.failed = files.count do |f|
+        ["failed", "error"].include?(f.status)
+      end
       self.success_rate = total_files.zero? ? 0.0 : (valid_after.to_f / total_files * 100).round(1)
     end
   end

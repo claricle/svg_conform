@@ -5,7 +5,7 @@ require "paint"
 module SvgConform
   module Commands
     # Compare command for comparing SvgConform validation with svgcheck reports
-    class Compare
+    class SvgcheckCompare
       def initialize(file, options)
         @file = file
         @options = options

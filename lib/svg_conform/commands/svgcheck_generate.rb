@@ -8,7 +8,7 @@ require "open3"
 module SvgConform
   module Commands
     # Generate svgcheck outputs using Open3 for proper process management
-    class GenerateSvgcheck
+    class SvgcheckGenerate
       def initialize(options)
         @options = options
         @svgcheck_exec = @options[:svgcheck_exec] || "svgcheck"
