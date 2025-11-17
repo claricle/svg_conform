@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
   spec.email = ["open.source@ribose.com"]
 
   spec.summary = "SVG profile conformance checker for Ruby."
-  spec.homepage = "https://github.com/metanorma/svg_conform"
+  spec.homepage = "https://github.com/claricle/svg_conform"
   spec.license = "BSD-2-Clause"
   spec.required_ruby_version = Gem::Requirement.new(">= 3.1.0")
 
