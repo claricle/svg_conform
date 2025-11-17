@@ -30,7 +30,7 @@ class RequirementsDemo
 
     begin
       # Load IETF profile from YAML
-      svg_1_2_rfc_profile = SvgConform::ProfileRegistry.load_profile("svg_1_2_rfc")
+      svg_1_2_rfc_profile = SvgConform::Profiles.get(:svg_1_2_rfc)
       puts "✓ Loaded IETF profile: #{svg_1_2_rfc_profile.name}"
       puts "  Description: #{svg_1_2_rfc_profile.description}"
       puts "  Requirements: #{svg_1_2_rfc_profile.requirement_count}"
@@ -38,7 +38,7 @@ class RequirementsDemo
       puts
 
       # Load Lucid fix profile
-      lucid_profile = SvgConform::ProfileRegistry.load_profile("lucid_fix")
+      lucid_profile = SvgConform::Profiles.get(:lucid_fix)
       puts "✓ Loaded Lucid Fix profile: #{lucid_profile.name}"
       puts "  Description: #{lucid_profile.description}"
       puts "  Requirements: #{lucid_profile.requirement_count}"
@@ -46,7 +46,7 @@ class RequirementsDemo
       puts
 
       # List available profiles
-      available = SvgConform::ProfileRegistry.available_profiles
+      available = SvgConform::Profiles.available_profiles
       puts "Available profiles: #{available.join(', ')}"
       puts
     rescue StandardError => e
@@ -204,7 +204,7 @@ class RequirementsDemo
 
     begin
       # Load the Lucid fix profile
-      profile = SvgConform::ProfileRegistry.load_profile("lucid_fix")
+      profile = SvgConform::Profiles.get(:lucid_fix)
 
       # Process the SVG
       document = SvgConform::Document.new(lucid_svg)
