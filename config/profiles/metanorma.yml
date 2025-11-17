@@ -150,12 +150,12 @@ requirements:
     type: "IdReferenceRequirement"
     description: "Validates ID references point to existing elements"
 
-  # Forbidden content - no multimedia, animation, scripting, etc.
+  # Forbidden content - no multimedia, scripting, etc.
   - id: "forbidden_content"
     type: "ForbiddenContentRequirement"
-    description: "Prohibits multimedia, animation, scripting content"
-    forbidden_elements: ["script", "audio", "video", "animation", "animateColor", "animateMotion", "animateTransform", "set"]
-    forbidden_attributes: ["onload", "onclick", "onmouseover", "onmouseout", "onfocus", "onblur", "onkeydown", "onkeyup", "onkeypress"]
+    description: "Prohibits multimedia, scripting content"
+    forbidden_elements: ["script", "audio", "video", "set"]
+    forbidden_attributes: ["onload", "onclick", "onkeydown", "onkeyup", "onkeypress"]
 
   # NEW: No external CSS - reject without remediation
   - id: "no_external_css"
