@@ -3,15 +3,15 @@
      version="1.2" baseProfile="tiny" width="100" height="100" viewBox="0 0 100 100">
   <title>Namespace Violations</title>
 
-  <!-- Invalid namespace elements removed -->
+  <!-- Invalid namespace elements -->
 
-  <!-- Invalid namespace attributes removed -->
+  <!-- Invalid namespace attributes on valid elements -->
   <rect x="10" y="10" width="20" height="20"/>
   <g>
     <circle cx="50" cy="50" r="15"/>
   </g>
 
-  <!-- Valid namespaces remain -->
+  <!-- Valid namespaces -->
   <use xlink:href="#test" x="10" y="10"/>
   <text xml:space="preserve" x="10" y="90">Valid</text>
 </svg>
