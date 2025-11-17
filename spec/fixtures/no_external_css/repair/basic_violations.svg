@@ -10,9 +10,9 @@
     </style>
   </defs>
 
-  <!-- External stylesheet link removed -->
+  <!-- External stylesheet link -->
 
-  <!-- Valid internal styles remain -->
+  <!-- Valid internal styles -->
   <rect x="10" y="10" width="30" height="30" class="internal"/>
   <circle cx="70" cy="25" r="15" style="fill: white; stroke: black"/>
 </svg>
