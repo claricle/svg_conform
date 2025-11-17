@@ -41,7 +41,7 @@ if result.errors.any?
 end
 
 # Apply remediations to fix issues
-if !result.valid? && profile.remediation_count > 0
+if !result.valid? && profile.remediation_count.positive?
   puts "Applying remediations (profile has #{profile.remediation_count} remediations)..."
   changes = profile.apply_remediations(document)
 
