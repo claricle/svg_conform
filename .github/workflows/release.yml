@@ -2,6 +2,10 @@
 # See https://github.com/metanorma/cimas
 name: release
 
+permissions:
+  contents: write
+  packages: write
+
 on:
   workflow_dispatch:
     inputs:
