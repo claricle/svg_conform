@@ -75,8 +75,8 @@ module SvgConform
           content = node.text || ""
           original_content = content.dup
 
-          # Remove @import url() statements
-          content.gsub!(/@import\s+url\s*\(\s*['"]?([^'")\s]+)['"]?\s*\)\s*;?/i) do |match|
+          # Remove @import url() statements (including the newline)
+          content.gsub!(/@import\s+url\s*\(\s*['"]?([^'")\s]+)['"]?\s*\)\s*;?\s*\n?/i) do |match|
             url = ::Regexp.last_match(1)
             if allowed_url?(url)
               match # Keep allowed URLs
@@ -95,8 +95,8 @@ module SvgConform
             end
           end
 
-          # Remove @import "url" statements
-          content.gsub!(/@import\s+['"]([^'"]+)['"]\s*;?/i) do |match|
+          # Remove @import "url" statements (including the newline)
+          content.gsub!(/@import\s+['"]([^'"]+)['"]\s*;?\s*\n?/i) do |match|
             url = ::Regexp.last_match(1)
             if allowed_url?(url)
               match # Keep allowed URLs
