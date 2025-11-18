@@ -16,6 +16,7 @@ module SvgConform
         @content = content_or_path
       end
 
+      @xpath_cache = {}
       parse_document
     end
 
@@ -36,7 +37,8 @@ module SvgConform
     end
 
     def xpath(path, namespaces = {})
-      @moxml_document.xpath(path, namespaces)
+      cache_key = [path, namespaces].hash
+      @xpath_cache[cache_key] ||= @moxml_document.xpath(path, namespaces)
     end
 
     def traverse(&)
@@ -58,6 +60,10 @@ module SvgConform
 
     def dup
       Document.from_content(to_xml)
+    end
+
+    def clear_cache
+      @xpath_cache.clear
     end
 
     def valid_xml?
