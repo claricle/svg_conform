@@ -80,6 +80,59 @@ module SvgConform
         end
       end
 
+      def validate_sax_element(element, context)
+        # Skip attribute validation for structurally invalid nodes
+        return if context.node_structurally_invalid?(element)
+
+        # Check color-related attributes
+        color_attributes = %w[fill stroke color stop-color flood-color lighting-color]
+
+        color_attributes.each do |attr_name|
+          value = element.raw_attributes[attr_name]
+          next if value.nil? || value.empty?
+
+          next if valid_color?(value)
+
+          context.add_error(
+            requirement_id: id,
+            message: "Color '#{value}' in attribute '#{attr_name}' is not allowed in this profile",
+            node: element,
+            severity: :error,
+            data: {
+              attribute: attr_name,
+              value: value,
+              element: element.name
+            }
+          )
+        end
+
+        # Check style attribute for color properties
+        style_value = element.raw_attributes["style"]
+        return unless style_value
+
+        styles = parse_style(style_value)
+        color_properties = %w[fill stroke color stop-color flood-color lighting-color]
+
+        color_properties.each do |prop|
+          value = styles[prop]
+          next if value.nil? || value.empty?
+
+          next if valid_color?(value)
+
+          context.add_error(
+            requirement_id: id,
+            message: "Color '#{value}' in style property '#{prop}' is not allowed in this profile",
+            node: element,
+            severity: :error,
+            data: {
+              attribute: prop,
+              value: value,
+              element: element.name
+            }
+          )
+        end
+      end
+
       private
 
       def valid_color?(color)

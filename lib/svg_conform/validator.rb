@@ -9,6 +9,7 @@ module SvgConform
       @options = {
         fix: false,
         strict: false,
+        mode: :auto  # :auto, :dom, or :sax
       }.merge(options)
     end
 
@@ -19,17 +20,31 @@ module SvgConform
               "File not found: #{file_path}"
       end
 
-      document = Document.from_file(file_path)
-      validate_document(document, profile: profile, **options)
+      merged_options = @options.merge(options)
+      mode = determine_mode(file_path, merged_options[:mode])
+
+      case mode
+      when :sax
+        validate_file_sax(file_path, profile: profile, **merged_options)
+      when :dom
+        validate_file_dom(file_path, profile: profile, **merged_options)
+      end
     end
 
     # Validate SVG content string
     def validate(svg_content, profile: :svg_1_2_rfc, **options)
-      document = Document.from_content(svg_content)
-      validate_document(document, profile: profile, **options)
+      merged_options = @options.merge(options)
+      mode = merged_options[:mode] == :sax ? :sax : :dom
+
+      case mode
+      when :sax
+        validate_content_sax(svg_content, profile: profile, **merged_options)
+      when :dom
+        validate_content_dom(svg_content, profile: profile, **merged_options)
+      end
     end
 
-    # Validate a Document object
+    # Validate a Document object (DOM only)
     def validate_document(document, profile: :svg_1_2_rfc, **options)
       merged_options = @options.merge(options)
       profile_obj = resolve_profile(profile)
@@ -64,6 +79,59 @@ module SvgConform
 
     private
 
+    def determine_mode(file_path, requested_mode)
+      case requested_mode
+      when :sax
+        :sax
+      when :dom
+        :dom
+      when :auto
+        # Use SAX for files larger than 1MB
+        file_size = File.size(file_path)
+        file_size > 1_000_000 ? :sax : :dom
+      else
+        :dom
+      end
+    end
+
+    def validate_file_sax(file_path, profile:, **options)
+      profile_obj = resolve_profile(profile)
+      sax_doc = SvgConform::SaxDocument.from_file(file_path)
+      result = sax_doc.validate_with_profile(profile_obj)
+
+      # If fixing is requested, convert to DOM and apply fixes
+      if options[:fix] && result.has_errors?
+        dom_doc = SvgConform::Document.from_file(file_path)
+        result = validate_document(dom_doc, profile: profile_obj, **options)
+      end
+
+      result
+    end
+
+    def validate_file_dom(file_path, profile:, **options)
+      document = SvgConform::Document.from_file(file_path)
+      validate_document(document, profile: profile, **options)
+    end
+
+    def validate_content_sax(content, profile:, **options)
+      profile_obj = resolve_profile(profile)
+      sax_doc = SvgConform::SaxDocument.from_content(content)
+      result = sax_doc.validate_with_profile(profile_obj)
+
+      # If fixing is requested, convert to DOM and apply fixes
+      if options[:fix] && result.has_errors?
+        dom_doc = SvgConform::Document.from_content(content)
+        result = validate_document(dom_doc, profile: profile_obj, **options)
+      end
+
+      result
+    end
+
+    def validate_content_dom(content, profile:, **options)
+      document = SvgConform::Document.from_content(content)
+      validate_document(document, profile: profile, **options)
+    end
+
     def resolve_profile(profile)
       case profile
       when Symbol, String
@@ -84,7 +152,7 @@ module SvgConform
         warnings: [],
         file_path: file_path,
         error?: true,
-        to_s: -> { "Error processing #{file_path}: #{error.message}" },
+        to_s: -> { "Error processing #{file_path}: #{error.message}" }
       )
     end
   end

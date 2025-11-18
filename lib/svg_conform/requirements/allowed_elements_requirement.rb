@@ -120,6 +120,75 @@ module SvgConform
         end
       end
 
+      def validate_sax_element(element, context)
+        # Skip foreign namespace elements if configured (let NamespaceRequirement handle them)
+        if skip_foreign_namespaces && foreign_namespace_sax?(element)
+          return
+        end
+
+        element_name = element.name
+
+        # Check if element is explicitly disallowed
+        if disallowed_element?(element_name)
+          context.add_error(
+            requirement_id: id,
+            message: "Element '#{element_name}' is not allowed in this profile",
+            node: element,
+            severity: :error,
+            data: { element: element_name }
+          )
+          return
+        end
+
+        # Check parent-child relationships
+        if check_parent_child && element.parent
+          parent_name = element.parent.name
+          if invalid_parent_child?(parent_name, element_name)
+            context.add_error(
+              requirement_id: id,
+              message: "The element '#{element_name}' is not allowed as a child of '#{parent_name}'",
+              node: element,
+              severity: :error,
+              data: { element: element_name, parent: parent_name }
+            )
+            # Mark node as structurally invalid
+            context.mark_node_structurally_invalid(element)
+            return
+          end
+        end
+
+        # Check if element is in allowed list
+        if element_configs&.any?
+          allowed_elements = element_configs.map(&:tag)
+          unless allowed_elements.include?(element_name)
+            context.add_error(
+              requirement_id: id,
+              message: "Element '#{element_name}' is not allowed in this profile",
+              node: element,
+              severity: :error,
+              data: { element: element_name }
+            )
+            # Mark as structurally invalid
+            context.mark_node_structurally_invalid(element)
+            return
+          end
+        end
+
+        # Validate attributes
+        potential_errors = collect_attribute_errors_sax(element)
+        prioritized_errors = prioritize_errors(potential_errors)
+
+        # Add the prioritized errors to the context
+        prioritized_errors.each do |error|
+          context.add_error(
+            requirement_id: id,
+            message: error[:message],
+            node: element,
+            severity: :error
+          )
+        end
+      end
+
       private
 
       def disallowed_element?(element_name)
@@ -261,6 +330,139 @@ module SvgConform
             type: :globally_disallowed,
             attribute: attr_name,
             message: "Attribute '#{attr_name}' is globally disallowed in this profile",
+          }
+        end
+
+        errors
+      end
+
+      def foreign_namespace_sax?(element)
+        return false unless skip_foreign_namespaces
+
+        # Check if element has a namespace
+        element_namespace = element.namespace
+
+        # No namespace or empty namespace means SVG namespace (default)
+        return false if element_namespace.nil? || element_namespace.empty?
+
+        # Check if namespace is in allowed list
+        effective_allowed_namespaces = allowed_namespaces
+        if allow_rdf_metadata
+          effective_allowed_namespaces = allowed_namespaces + RDF_NAMESPACES
+        end
+
+        return false if effective_allowed_namespaces.empty?
+
+        !effective_allowed_namespaces.include?(element_namespace)
+      end
+
+      def collect_attribute_errors_sax(element)
+        errors = []
+
+        # Always collect global disallowed attributes first
+        errors.concat(collect_global_disallowed_errors_sax(element))
+
+        # Collect element-specific attribute errors if enabled
+        errors.concat(collect_element_attribute_errors_sax(element)) if check_attributes
+
+        errors
+      end
+
+      def collect_element_attribute_errors_sax(element)
+        errors = []
+        element_name = element.name
+
+        return errors unless element_configs&.any?
+
+        element_config = element_configs.find { |config| config.tag == element_name }
+        return errors unless element_config&.attr
+
+        allowed_attrs = []
+        disallowed_attrs = []
+
+        # Parse attributes, separating allowed from disallowed (prefixed with !)
+        element_config.attr.each do |attribute|
+          if attribute.start_with?("!")
+            disallowed_attrs << attribute[1..].downcase
+          else
+            allowed_attrs << attribute.downcase
+          end
+        end
+
+        # Add common attributes that are allowed on all elements
+        common_attrs = %w[id class style xmlns]
+        allowed_attrs = (allowed_attrs + common_attrs).uniq
+
+        # Add global properties
+        global_properties = %w[
+          about base baseprofile d break class content cx cy datatype height href
+          label lang pathlength points preserveaspectratio property r rel resource
+          rev role rotate rx ry space snapshottime transform typeof version width
+          viewbox x x1 x2 y y1 y2 stroke stroke-width stroke-linecap stroke-linejoin
+          stroke-miterlimit stroke-dasharray stroke-dashoffset stroke-opacity
+          vector-effect viewport-fill display viewport-fill-opacity visibility
+          image-rendering color-rendering shape-rendering text-rendering
+          buffered-rendering solid-opacity solid-color color stop-color stop-opacity
+          line-increment text-align display-align font-size font-family font-weight
+          font-style font-variant direction unicode-bidi text-anchor fill fill-rule
+          fill-opacity requiredfeatures requiredformats requiredextensions
+          requiredfonts systemlanguage
+        ]
+        allowed_attrs = (allowed_attrs + global_properties).uniq
+
+        element.attributes.each do |attr|
+          attr_name = attr.name.downcase
+          next if attr_name.start_with?("xmlns:")
+          next if attr_name.start_with?("xml:")
+          next if attr.namespace
+          next if attr_name.start_with?("data-")
+
+          # Check if explicitly disallowed
+          if disallowed_attrs.include?(attr_name)
+            errors << {
+              type: :explicitly_disallowed,
+              attribute: attr_name,
+              message: "Attribute '#{attr_name}' is explicitly disallowed on element '#{element_name}'"
+            }
+            next
+          end
+
+          # Check if not in allowed list
+          next if allowed_attrs.include?(attr_name)
+
+          errors << {
+            type: :not_allowed,
+            attribute: attr_name,
+            message: "Attribute '#{attr_name}' is not allowed on element '#{element_name}'"
+          }
+        end
+
+        errors
+      end
+
+      def collect_global_disallowed_errors_sax(element)
+        errors = []
+
+        return errors unless element_configs&.any?
+
+        global_config = element_configs.find { |config| config.tag == "*" }
+        return errors unless global_config&.attr
+
+        global_disallowed = []
+        global_config.attr.each do |attribute|
+          global_disallowed << attribute[1..].downcase if attribute.start_with?("!")
+        end
+
+        return errors if global_disallowed.empty?
+
+        element.attributes.each do |attr|
+          attr_name = attr.name.downcase
+          next unless global_disallowed.include?(attr_name)
+
+          errors << {
+            type: :globally_disallowed,
+            attribute: attr_name,
+            message: "Attribute '#{attr_name}' is globally disallowed in this profile"
           }
         end
 

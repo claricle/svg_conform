@@ -44,6 +44,17 @@ module SvgConform
           has_style_attribute?(node)
       end
 
+      def validate_sax_element(element, context)
+        case element.name
+        when "style"
+          check_style_element_sax(element, context) if check_style_elements
+        when "link"
+          check_link_element_sax(element, context) if check_link_elements
+        else
+          check_style_attribute_sax(element, context) if check_style_attributes
+        end
+      end
+
       private
 
       def check_style_element(node, context)
@@ -106,6 +117,69 @@ module SvgConform
           message: "External URL reference in style attribute not allowed: #{url}",
           node: node,
           severity: :error,
+        )
+      end
+
+      def check_style_element_sax(element, context)
+        # Check for @import rules in style elements
+        content = element.text_content
+
+        if content =~ /@import\s+url\s*\(\s*['"]?([^'")\s]+)['"]?\s*\)/i
+          url = ::Regexp.last_match(1)
+          unless allowed_url?(url)
+            context.add_error(
+              requirement_id: id,
+              message: "External CSS import not allowed: #{url}",
+              node: element,
+              severity: :error
+            )
+          end
+        end
+
+        return unless content =~ /@import\s+['"]([^'"]+)['"]/i
+
+        url = ::Regexp.last_match(1)
+        return if allowed_url?(url)
+
+        context.add_error(
+          requirement_id: id,
+          message: "External CSS import not allowed: #{url}",
+          node: element,
+          severity: :error
+        )
+      end
+
+      def check_link_element_sax(element, context)
+        rel = element.raw_attributes["rel"]
+        href = element.raw_attributes["href"]
+
+        return unless rel&.downcase == "stylesheet" && href
+
+        return if allowed_url?(href)
+
+        context.add_error(
+          requirement_id: id,
+          message: "External CSS link not allowed: #{href}",
+          node: element,
+          severity: :error
+        )
+      end
+
+      def check_style_attribute_sax(element, context)
+        style_value = element.raw_attributes["style"]
+        return unless style_value
+
+        # Check for url() references in style attributes
+        return unless style_value =~ /url\s*\(\s*['"]?([^'")\s]+)['"]?\s*\)/i
+
+        url = ::Regexp.last_match(1)
+        return if allowed_url?(url)
+
+        context.add_error(
+          requirement_id: id,
+          message: "External URL reference in style attribute not allowed: #{url}",
+          node: element,
+          severity: :error
         )
       end
 

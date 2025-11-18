@@ -21,6 +21,97 @@ module SvgConform
         map "strict_mode", to: :strict_mode
       end
 
+      def initialize(*args)
+        super
+        @collected_ids = Set.new
+        @use_element_refs = []  # [element, ref_id, href]
+        @other_refs = []  # [element, ref_id, attr_name, value]
+      end
+
+      def needs_deferred_validation?
+        true
+      end
+
+      def collect_sax_data(element, context)
+        # Initialize collections on first call
+        @collected_ids ||= Set.new
+        @use_element_refs ||= []
+        @other_refs ||= []
+
+        # Collect IDs
+        id_attr = element.raw_attributes["id"]
+        @collected_ids.add(id_attr) if id_attr && !id_attr.empty?
+
+        # Collect use element references
+        if check_use_elements && element.name == "use"
+          href = element.raw_attributes["xlink:href"] || element.raw_attributes["href"]
+          if href&.start_with?("#")
+            ref_id = href[1..]
+            @use_element_refs << [element, ref_id, href] unless ref_id.empty?
+          end
+        end
+
+        # Collect other ID references if enabled
+        if check_other_references
+          id_reference_attributes = %w[clip-path mask filter marker-start marker-mid marker-end fill stroke]
+
+          id_reference_attributes.each do |attr_name|
+            attr_value = element.raw_attributes[attr_name]
+            next unless attr_value&.match?(/^url\(#(.+)\)$/)
+
+            ref_id = Regexp.last_match(1)
+            @other_refs << [element, ref_id, attr_name, attr_value]
+          end
+
+          # Check style attribute
+          style_value = element.raw_attributes["style"]
+          if style_value
+            styles = parse_style(style_value)
+            styles.each do |property, value|
+              next unless value&.match?(/^url\(#(.+)\)$/)
+
+              ref_id = Regexp.last_match(1)
+              @other_refs << [element, ref_id, "style:#{property}", value]
+            end
+          end
+        end
+      end
+
+      def validate_sax_complete(context)
+        # Validate use element references
+        @use_element_refs.each do |element, ref_id, href|
+          next if @collected_ids.include?(ref_id)
+
+          context.add_error(
+            requirement_id: id,
+            node: element,
+            message: "use element references non-existent ID: #{ref_id}",
+            severity: :error,
+            data: { invalid_id: ref_id, href: href }
+          )
+        end
+
+        # Validate other references if enabled
+        @other_refs.each do |element, ref_id, attr_name, value|
+          next if @collected_ids.include?(ref_id)
+
+          message = if attr_name.start_with?("style:")
+                      property = attr_name.split(":", 2)[1]
+                      "style property #{property} references non-existent ID: #{ref_id}"
+                    else
+                      "#{attr_name} references non-existent ID: #{ref_id}"
+                    end
+
+          context.add_error(
+            requirement_id: id,
+            node: element,
+            message: message,
+            severity: :error,
+            data: { invalid_id: ref_id, attribute: attr_name, value: value }
+          )
+        end
+      end
+
       def validate_document(document, context)
         # Collect all existing IDs in the document
         existing_ids = collect_existing_ids(document)

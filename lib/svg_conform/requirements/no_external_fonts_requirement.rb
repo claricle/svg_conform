@@ -41,6 +41,17 @@ module SvgConform
           has_style_attribute?(node)
       end
 
+      def validate_sax_element(element, context)
+        case element.name
+        when "style"
+          check_style_element_sax(element, context) if check_style_fonts
+        when "font-face"
+          check_font_face_element_sax(element, context) if check_font_face
+        else
+          check_style_attribute_sax(element, context) if check_style_fonts
+        end
+      end
+
       private
 
       def check_style_element(node, context)
@@ -97,6 +108,53 @@ module SvgConform
           message: "External font URL in style attribute not allowed: #{url}. Fonts must be embedded as data URIs.",
           node: node,
           severity: :error,
+        )
+      end
+
+      def check_style_element_sax(element, context)
+        # Check for @font-face with external src in style elements
+        content = element.text_content
+
+        # Match @font-face blocks
+        content.scan(/@font-face\s*\{([^}]+)\}/m) do |match|
+          font_face_content = match[0]
+
+          # Check for src with url() that is not data: URI
+          if font_face_content =~ /src\s*:\s*url\s*\(\s*['"]?([^'")\s]+)['"]?\s*\)/i
+            url = ::Regexp.last_match(1)
+            unless embedded_font?(url)
+              context.add_error(
+                requirement_id: id,
+                message: "External font reference not allowed: #{url}. Fonts must be embedded as data URIs.",
+                node: element,
+                severity: :error
+              )
+            end
+          end
+        end
+      end
+
+      def check_font_face_element_sax(element, context)
+        # Note: For SAX, we can't traverse children yet
+        # This would need to be handled differently or deferred
+        # For now, skip XPath-based checking in SAX mode
+      end
+
+      def check_style_attribute_sax(element, context)
+        style_value = element.raw_attributes["style"]
+        return unless style_value
+
+        # Check for font-family with url() references
+        return unless style_value =~ /font-family\s*:\s*.*url\s*\(\s*['"]?([^'")\s]+)['"]?\s*\)/i
+
+        url = ::Regexp.last_match(1)
+        return if embedded_font?(url)
+
+        context.add_error(
+          requirement_id: id,
+          message: "External font URL in style attribute not allowed: #{url}. Fonts must be embedded as data URIs.",
+          node: element,
+          severity: :error
         )
       end
 

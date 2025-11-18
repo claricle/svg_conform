@@ -45,6 +45,36 @@ module SvgConform
         end
       end
 
+      def validate_sax_element(element, context)
+        # Check href attributes
+        href_value = element.raw_attributes["href"] || element.raw_attributes["xlink:href"]
+
+        if href_value && !ascii_only?(href_value)
+          context.add_error(
+            requirement_id: id,
+            message: "Link href '#{href_value}' contains non-ASCII characters",
+            node: element,
+            severity: :error
+          )
+        end
+
+        # Check other IRI attributes
+        iri_attributes = %w[src action formaction cite longdesc usemap]
+        iri_attributes.each do |attr_name|
+          iri_value = element.raw_attributes[attr_name]
+          next unless iri_value
+
+          next if ascii_only?(iri_value)
+
+          context.add_error(
+            requirement_id: id,
+            message: "IRI attribute '#{attr_name}' value '#{iri_value}' contains non-ASCII characters",
+            node: element,
+            severity: :error
+          )
+        end
+      end
+
       private
 
       def ascii_only?(string)
