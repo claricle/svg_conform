@@ -17,6 +17,8 @@ module SvgConform
       @infos = []
       @data = {}
       @structurally_invalid_node_ids = Set.new
+      @node_id_cache = {}
+      @cache_populated = false
     end
 
     # Mark a node as structurally invalid (e.g., invalid parent-child relationship)
@@ -120,16 +122,85 @@ requirement_id: nil, severity: nil, fix: nil, data: {})
 
     # Generate a unique identifier for a node based on its path
     # Builds a stable path by walking up the parent chain
+    # OPTIMIZED: Lazy cache population - populate entire cache on first call
     def generate_node_id(node)
       return nil unless node.respond_to?(:name)
 
-      # Build path by walking up parent chain
+      # Populate cache for ALL nodes on first access
+      unless @cache_populated
+        populate_node_id_cache
+        @cache_populated = true
+      end
+
+      # Return from cache (nil if node wasn't in traversal)
+      @node_id_cache[node]
+    end
+
+    private
+
+    # Populate cache for all nodes using document.traverse with parent tracking
+    def populate_node_id_cache
+      parent_stack = []
+      counter_stack = [{}]  # Stack of {element_name => count} hashes
+
+      @document.traverse do |node|
+        next unless node.respond_to?(:name) && node.name
+
+        # Detect parent changes by checking node.parent
+        current_parent = node.respond_to?(:parent) ? node.parent : nil
+
+        # Adjust stack based on actual parent
+        while parent_stack.size > 0 && !parent_stack.last.equal?(current_parent)
+          parent_stack.pop
+          counter_stack.pop
+        end
+
+        # If we have a new parent level, push it
+        if current_parent && (parent_stack.empty? || !parent_stack.last.equal?(current_parent))
+          parent_stack.push(current_parent)
+          counter_stack.push({})
+        end
+
+        # Increment counter at current level
+        current_counters = counter_stack.last || {}
+        current_counters[node.name] ||= 0
+        current_counters[node.name] += 1
+
+        # Build path using original backward logic (for correctness)
+        @node_id_cache[node] = build_node_path(node)
+      end
+    end
+
+    # Traverse tree, building paths with forward position counters
+    def traverse_with_forward_counting(node, path_parts, sibling_counters)
+      return unless node.respond_to?(:name) && node.name
+
+      # Increment counter for this node name at current level
+     sibling_counters[node.name] ||= 0
+      sibling_counters[node.name] += 1
+      position = sibling_counters[node.name]
+
+      # Build and cache path
+      current_path = path_parts + ["#{node.name}[#{position}]"]
+      @node_id_cache[node] = "/#{current_path.join('/')}"
+
+      # Traverse children with fresh counters
+      if node.respond_to?(:children)
+        child_counters = {}
+        node.children.each do |child|
+          traverse_with_forward_counting(child, current_path, child_counters)
+        end
+      end
+    end
+
+    # Build path-based ID for a node (original logic, unchanged)
+    def build_node_path(node)
       path_parts = []
       current = node
 
       while current
         if current.respond_to?(:name) && current.name
-          # Count previous siblings of the same type for position
+          # Count previous siblings of the same type for position (ORIGINAL LOGIC)
           position = 1
           if current.respond_to?(:previous_sibling)
             sibling = current.previous_sibling
