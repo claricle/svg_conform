@@ -43,6 +43,18 @@ module SvgConform
         check_style_properties(style_value, node, context)
       end
 
+      def validate_sax_element(element, context)
+        style_value = element.raw_attributes["style"]
+        return unless style_value
+        return if style_value.strip.empty?
+
+        # 1. Check for malformed style syntax
+        check_malformed_syntax(style_value, element, context)
+
+        # 2. Check for allowed/disallowed properties and validate their values
+        check_style_properties(style_value, element, context)
+      end
+
       private
 
       def check_malformed_syntax(style_value, node, context)

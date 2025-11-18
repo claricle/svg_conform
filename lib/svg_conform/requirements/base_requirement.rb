@@ -28,6 +28,33 @@ module SvgConform
         end
       end
 
+      # SAX-based validation methods (NEW for streaming validation)
+
+      # Called for each element during SAX parsing
+      # Override in subclasses for immediate validation
+      def validate_sax_element(element, context)
+        # Default: Empty - subclasses must override for SAX support
+        # Cannot call check() here as it's abstract
+      end
+
+      # Called for each element to collect data for deferred validation
+      # Override in subclasses that need to collect data
+      def collect_sax_data(element, context)
+        # Default: no data collection
+      end
+
+      # Called at end of document for deferred validation
+      # Override in subclasses that need full document data
+      def validate_sax_complete(context)
+        # Default: no deferred validation
+      end
+
+      # Indicates if requirement needs deferred validation
+      # Override to return true for requirements that need forward references
+      def needs_deferred_validation?
+        false
+      end
+
       # Determine if this requirement should check a specific node
       def should_check_node?(node, context = nil)
         return false unless node.respond_to?(:name) && node.respond_to?(:attributes)

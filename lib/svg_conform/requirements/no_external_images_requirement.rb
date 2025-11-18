@@ -37,6 +37,15 @@ module SvgConform
         node.name == "image" || has_style_attribute?(node)
       end
 
+      def validate_sax_element(element, context)
+        case element.name
+        when "image"
+          check_image_element_sax(element, context) if check_image_elements
+        else
+          check_style_attribute_sax(element, context) if check_style_images
+        end
+      end
+
       private
 
       def check_image_element(node, context)
@@ -66,6 +75,37 @@ module SvgConform
             message: "External image URL in style attribute not allowed: #{url}. Images must be embedded as data URIs.",
             node: node,
             severity: :error,
+          )
+        end
+      end
+
+      def check_image_element_sax(element, context)
+        # Check href and xlink:href attributes
+        href = element.raw_attributes["href"] || element.raw_attributes["xlink:href"]
+        return unless href && !embedded_image?(href)
+
+        context.add_error(
+          requirement_id: id,
+          message: "External image reference not allowed: #{href}. Images must be embedded as data URIs.",
+          node: element,
+          severity: :error
+        )
+      end
+
+      def check_style_attribute_sax(element, context)
+        style_value = element.raw_attributes["style"]
+        return unless style_value
+
+        # Check for url() references to images in background, background-image, etc.
+        style_value.scan(/url\s*\(\s*['"]?([^'")\s]+)['"]?\s*\)/i) do
+          url = ::Regexp.last_match(1)
+          next if embedded_image?(url)
+
+          context.add_error(
+            requirement_id: id,
+            message: "External image URL in style attribute not allowed: #{url}. Images must be embedded as data URIs.",
+            node: element,
+            severity: :error
           )
         end
       end

@@ -26,6 +26,8 @@ module SvgConform
     # Also marks all descendants as invalid since they'll be removed with the parent
     def mark_node_structurally_invalid(node)
       node_id = generate_node_id(node)
+      return if node_id.nil?  # Safety check
+
       @structurally_invalid_node_ids.add(node_id)
 
       # Mark all descendants as invalid too
@@ -38,6 +40,8 @@ module SvgConform
 
       node.children.each do |child|
         child_id = generate_node_id(child)
+        return if child_id.nil?  # Safety check
+
         @structurally_invalid_node_ids.add(child_id)
         # Recursively mark descendants
         mark_descendants_invalid(child)
@@ -47,6 +51,8 @@ module SvgConform
     # Check if a node is structurally invalid
     def node_structurally_invalid?(node)
       node_id = generate_node_id(node)
+      return false if node_id.nil?  # Safety check
+
       @structurally_invalid_node_ids.include?(node_id)
     end
 
@@ -132,8 +138,13 @@ requirement_id: nil, severity: nil, fix: nil, data: {})
         @cache_populated = true
       end
 
-      # Return from cache (nil if node wasn't in traversal)
-      @node_id_cache[node]
+      # Try cache lookup first
+      cached_id = @node_id_cache[node]
+      return cached_id if cached_id
+
+      # Fall back to building path if node not in cache
+      # (happens when different traversals create different wrapper objects)
+      build_node_path(node)
     end
 
     private

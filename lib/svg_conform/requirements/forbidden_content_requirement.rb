@@ -55,6 +55,32 @@ module SvgConform
           end
         end
       end
+
+      def validate_sax_element(element, context)
+        # Check if this is a forbidden element
+        if forbidden_elements.include?(element.name)
+          context.add_error(
+            requirement_id: id,
+            message: "Forbidden element '#{element.name}' is not allowed",
+            node: element,
+            severity: :error
+          )
+        end
+
+        # Check for forbidden attributes
+        element.attributes.each do |attr|
+          attr_name = attr.name
+
+          if forbidden_attributes.include?(attr_name)
+            context.add_error(
+              requirement_id: id,
+              message: "Forbidden attribute '#{attr_name}' is not allowed",
+              node: element,
+              severity: :error
+            )
+          end
+        end
+      end
     end
   end
 end

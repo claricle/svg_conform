@@ -1,20 +1,34 @@
 # frozen_string_literal: true
 
 module SvgConform
+  # Lightweight attribute representation for SAX parsing
+  class SaxAttribute
+    attr_reader :name, :value
+
+    def initialize(name, value)
+      @name = name
+      @value = value
+    end
+
+    def namespace
+      nil  # Simplified for now
+    end
+  end
+
   # Lightweight element representation during SAX parsing
   # Provides a node-like interface for validation requirements
   # without the overhead of full DOM tree
   class ElementProxy
-    attr_reader :name, :attributes, :position, :path, :parent
+    attr_reader :name, :position, :path, :parent, :raw_attributes
     attr_accessor :text_content, :child_counters
 
     def initialize(name:, attributes:, position:, path:, parent:)
       @name = name
-      @attributes = attributes
+      @raw_attributes = attributes  # Hash of attribute name => value
       @position = position
       @path = path  # Array of parent path parts
       @parent = parent
-      @text_content = ""
+      @text_content = String.new  # Mutable string
       @child_counters = {}  # Track child element positions
     end
 
@@ -24,24 +38,30 @@ module SvgConform
       "/#{parts.join('/')}"
     end
 
+    # Return attributes as array of SaxAttribute objects (for compatibility)
+    def attributes
+      @raw_attributes.map { |name, value| SaxAttribute.new(name, value) }
+    end
+
     # Check if this element has a specific attribute
     def attribute(name)
-      @attributes[name]
+      value = @raw_attributes[name] || @raw_attributes[name.to_s]
+      value ? SaxAttribute.new(name, value) : nil
     end
 
     # Get attribute value (alias for compatibility)
     def [](name)
-      @attributes[name]
+      @raw_attributes[name] || @raw_attributes[name.to_s]
     end
 
     # Check if attribute exists
     def has_attribute?(name)
-      @attributes.key?(name)
+      @raw_attributes.key?(name) || @raw_attributes.key?(name.to_s)
     end
 
     # Get namespace from attributes or parent
     def namespace
-      @attributes['xmlns'] || @parent&.namespace
+      @raw_attributes['xmlns'] || @parent&.namespace
     end
 
     # Check if this is a text node (always false for ElementProxy)
@@ -61,7 +81,7 @@ module SvgConform
     end
 
     def respond_to_missing?(method, include_private = false)
-      @attributes.key?(method.to_s) || @attributes.key?(method.to_sym) || super
+      @raw_attributes.key?(method.to_s) || @raw_attributes.key?(method.to_sym) || super
     end
 
     # For compatibility with validation context

@@ -41,6 +41,65 @@ module SvgConform
         end
       end
 
+      def validate_sax_element(element, context)
+        # Skip validation for exempt elements (e.g., RDF metadata elements)
+        return if exempt_elements.include?(element.name)
+
+        # Check all attributes for namespace violations
+        element.attributes.each do |attr|
+          check_sax_attribute(attr, element, context)
+        end
+      end
+
+      private
+
+      def check_sax_attribute(attr, element, context)
+        attr_name = attr.name
+
+        # Check if this is a namespaced attribute by looking for colon in name
+        return unless attr_name.include?(":")
+
+        prefix, = attr_name.split(":", 2)
+
+        # Find the namespace URI for this prefix by walking up parent chain
+        namespace_uri = find_namespace_uri_sax(element, prefix)
+        return unless namespace_uri
+
+        # Determine if this namespace is invalid based on configuration
+        invalid_namespace = if allowed_namespaces.empty?
+                             # Blacklist mode: disallowed namespaces are forbidden
+                             disallowed_namespaces.include?(namespace_uri)
+                           else
+                             # Whitelist mode: only allowed namespaces are permitted
+                             !allowed_namespaces.include?(namespace_uri)
+                           end
+
+        return unless invalid_namespace
+
+        context.add_error(
+          requirement_id: id,
+          message: "Element '#{element.name}' does not allow attributes with namespace '#{namespace_uri}'",
+          node: element,
+          severity: :error,
+          data: { attribute: attr_name, namespace: namespace_uri }
+        )
+      end
+
+      def find_namespace_uri_sax(element, prefix)
+        # Check current element and ancestors for xmlns:prefix declarations
+        current = element
+        while current
+          # Check for xmlns:prefix attribute in raw_attributes
+          xmlns_value = current.raw_attributes["xmlns:#{prefix}"]
+          return xmlns_value if xmlns_value
+
+          # Move to parent
+          current = current.parent
+        end
+
+        nil
+      end
+
       private
 
       def check_attribute_nodes(node, context)

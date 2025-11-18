@@ -11,6 +11,7 @@ end
 
 require_relative "svg_conform/version"
 require_relative "svg_conform/document"
+require_relative "svg_conform/sax_document"
 require_relative "svg_conform/validation_context"
 require_relative "svg_conform/validation_result"
 require_relative "svg_conform/profiles"

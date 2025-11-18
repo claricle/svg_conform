@@ -190,7 +190,81 @@ module SvgConform
         )
       end
 
+      def validate_sax_element(element, context)
+        # Check if this element has a namespace
+        element_namespace = get_element_namespace_sax(element)
+
+        # Skip if no namespace (default SVG namespace)
+        return if element_namespace.nil? || element_namespace.empty?
+
+        # Check against allowed namespaces if configured
+        # If allow_rdf_metadata is enabled, also allow RDF namespaces
+        effective_allowed_namespaces = allowed_namespaces
+        if allow_rdf_metadata
+          effective_allowed_namespaces = allowed_namespaces + RDF_NAMESPACES
+        end
+
+        if effective_allowed_namespaces && !effective_allowed_namespaces.empty? && !effective_allowed_namespaces.include?(element_namespace)
+          context.add_error(
+            requirement_id: id,
+            message: "The namespace #{element_namespace} is not permitted for svg elements.",
+            node: element,
+            severity: :error,
+            data: {
+              element_name: element.name,
+              namespace: element_namespace,
+              allowed_namespaces: effective_allowed_namespaces
+            }
+          )
+          return
+        end
+
+        # Check against disallowed namespaces if configured
+        return unless disallowed_namespaces && !disallowed_namespaces.empty? && disallowed_namespaces.include?(element_namespace)
+
+        context.add_error(
+          requirement_id: id,
+          message: "The namespace #{element_namespace} is not permitted for svg elements.",
+          node: element,
+          severity: :error,
+          data: {
+            element_name: element.name,
+            namespace: element_namespace,
+            disallowed_namespaces: disallowed_namespaces
+          }
+        )
+      end
+
       private
+
+      def get_element_namespace_sax(element)
+        # Try to get namespace from the element
+        namespace = element.namespace
+        return namespace if namespace && !namespace.empty?
+
+        # If no namespace found, check if element has a prefix (indicating it's namespaced)
+        if element.name.include?(":")
+          prefix = element.name.split(":").first
+          return find_namespace_uri_for_prefix_sax(element, prefix)
+        end
+
+        nil
+      end
+
+      def find_namespace_uri_for_prefix_sax(element, prefix)
+        # Check current element and ancestors for namespace declarations
+        current = element
+        while current
+          # Check for xmlns:prefix attribute
+          xmlns_attr = "xmlns:#{prefix}"
+          return current.raw_attributes[xmlns_attr] if current.raw_attributes[xmlns_attr]
+
+          # Move to parent
+          current = current.parent
+        end
+
+        nil
+      end
 
       def check_all_elements(document, context)
         # Recursively check all elements in the document
