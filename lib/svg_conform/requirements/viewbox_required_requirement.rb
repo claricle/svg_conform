@@ -95,7 +95,7 @@ module SvgConform
             message: "SVG root element must have a viewBox attribute",
             node: element,
             severity: :error,
-            data: { missing_attribute: "viewBox" }
+            data: { missing_attribute: "viewBox" },
           )
 
           # Add informational message about calculated viewBox if width/height are present
@@ -112,8 +112,8 @@ module SvgConform
               data: {
                 calculated_viewbox: calculated_viewbox,
                 source_width: width,
-                source_height: height
-              }
+                source_height: height,
+              },
             )
           end
           return
@@ -130,8 +130,8 @@ module SvgConform
             severity: :error,
             data: {
               viewbox_value: viewbox,
-              parsed_parts: parts
-            }
+              parsed_parts: parts,
+            },
           )
           return
         end
@@ -150,8 +150,8 @@ module SvgConform
           data: {
             viewbox_value: viewbox,
             width: width,
-            height: height
-          }
+            height: height,
+          },
         )
       end
 

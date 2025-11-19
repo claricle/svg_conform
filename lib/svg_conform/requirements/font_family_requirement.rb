@@ -55,14 +55,15 @@ module SvgConform
         return unless font_family
 
         if svgcheck_compatibility
-          check_font_family_svgcheck_mode(element, context, font_family, "font-family")
+          check_font_family_svgcheck_mode(element, context, font_family,
+                                          "font-family")
         elsif !valid_font_family?(font_family)
           context.add_error(
             requirement_id: id,
             message: "Font family '#{font_family}' is not allowed in this profile",
             node: element,
             severity: :error,
-            data: { attribute: "font-family", value: font_family }
+            data: { attribute: "font-family", value: font_family },
           )
         end
       end

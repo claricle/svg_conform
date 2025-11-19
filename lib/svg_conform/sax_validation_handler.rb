@@ -13,11 +13,11 @@ module SvgConform
 
     def initialize(profile)
       @profile = profile
-      @element_stack = []  # Track parent-child hierarchy
-      @path_stack = []  # Current element path
-      @position_counters = []  # Stack of sibling counters per level
+      @element_stack = [] # Track parent-child hierarchy
+      @path_stack = [] # Current element path
+      @position_counters = [] # Stack of sibling counters per level
       @parse_errors = []
-      @result = nil  # Will be set in end_document
+      @result = nil # Will be set in end_document
 
       # Create validation context (without document reference for SAX)
       @context = create_sax_context
@@ -50,13 +50,13 @@ module SvgConform
         attributes: attrs,
         position: position,
         path: @path_stack.dup,
-        parent: @element_stack.last
+        parent: @element_stack.last,
       )
 
       # Push to stacks
       @element_stack.push(element)
       @path_stack.push("#{name}[#{position}]")
-      @position_counters.push({})  # New level for this element's children
+      @position_counters.push({}) # New level for this element's children
 
       # Validate with immediate requirements
       @immediate_requirements.each do |req|
@@ -65,12 +65,15 @@ module SvgConform
 
       # Deferred requirements may need to collect data
       @deferred_requirements.each do |req|
-        req.collect_sax_data(element, @context) if req.respond_to?(:collect_sax_data)
+        if req.respond_to?(:collect_sax_data)
+          req.collect_sax_data(element,
+                               @context)
+        end
       end
     end
 
     # SAX Event: Element end tag
-    def end_element(name)
+    def end_element(_name)
       @element_stack.pop
       @path_stack.pop
       @position_counters.pop
@@ -79,6 +82,7 @@ module SvgConform
     # SAX Event: Text content
     def characters(string)
       return if @element_stack.empty?
+
       @element_stack.last.text_content << string
     end
 
@@ -109,7 +113,7 @@ module SvgConform
         node: nil,
         message: "Parse error: #{error.message}",
         requirement_id: "parse_error",
-        severity: :error
+        severity: :error,
       )
     end
 
@@ -138,7 +142,7 @@ module SvgConform
       context.instance_variable_set(:@data, {})
       context.instance_variable_set(:@structurally_invalid_node_ids, Set.new)
       context.instance_variable_set(:@node_id_cache, {})
-      context.instance_variable_set(:@cache_populated, true)  # Skip population for SAX
+      context.instance_variable_set(:@cache_populated, true) # Skip population for SAX
       context
     end
 

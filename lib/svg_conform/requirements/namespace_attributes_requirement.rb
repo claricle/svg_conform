@@ -43,7 +43,12 @@ module SvgConform
 
       def validate_sax_element(element, context)
         # Extract local name without prefix for exemption check
-        local_name = element.name.include?(':') ? element.name.split(':', 2).last : element.name
+        local_name = if element.name.include?(":")
+                       element.name.split(":",
+                                          2).last
+                     else
+                       element.name
+                     end
 
         # Skip validation for exempt elements (e.g., RDF metadata elements)
         return if exempt_elements.include?(local_name) || exempt_elements.include?(element.name)
@@ -70,12 +75,12 @@ module SvgConform
 
         # Determine if this namespace is invalid based on configuration
         invalid_namespace = if allowed_namespaces.empty?
-                             # Blacklist mode: disallowed namespaces are forbidden
-                             disallowed_namespaces.include?(namespace_uri)
-                           else
-                             # Whitelist mode: only allowed namespaces are permitted
-                             !allowed_namespaces.include?(namespace_uri)
-                           end
+                              # Blacklist mode: disallowed namespaces are forbidden
+                              disallowed_namespaces.include?(namespace_uri)
+                            else
+                              # Whitelist mode: only allowed namespaces are permitted
+                              !allowed_namespaces.include?(namespace_uri)
+                            end
 
         return unless invalid_namespace
 
@@ -84,7 +89,7 @@ module SvgConform
           message: "Element '#{element.name}' does not allow attributes with namespace '#{namespace_uri}'",
           node: element,
           severity: :error,
-          data: { attribute: attr_name, namespace: namespace_uri }
+          data: { attribute: attr_name, namespace: namespace_uri },
         )
       end
 
@@ -102,8 +107,6 @@ module SvgConform
 
         nil
       end
-
-      private
 
       def check_attribute_nodes(node, context)
         node.attribute_nodes.each do |attr|

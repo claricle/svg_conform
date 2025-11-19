@@ -127,7 +127,7 @@ module SvgConform
                 requirement_id: id,
                 message: "External font reference not allowed: #{url}. Fonts must be embedded as data URIs.",
                 node: element,
-                severity: :error
+                severity: :error,
               )
             end
           end
@@ -154,7 +154,7 @@ module SvgConform
           requirement_id: id,
           message: "External font URL in style attribute not allowed: #{url}. Fonts must be embedded as data URIs.",
           node: element,
-          severity: :error
+          severity: :error,
         )
       end
 

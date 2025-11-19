@@ -27,14 +27,14 @@ module SvgConform
     def validate_with_profile(profile)
       handler = SaxValidationHandler.new(profile)
       parser = Nokogiri::XML::SAX::Parser.new(handler)
-      
+
       begin
         parser.parse(@content)
       rescue StandardError => e
         # Handle parse errors
         handler.add_parse_error(e)
       end
-      
+
       handler.result
     end
 

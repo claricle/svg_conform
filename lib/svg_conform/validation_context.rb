@@ -26,7 +26,7 @@ module SvgConform
     # Also marks all descendants as invalid since they'll be removed with the parent
     def mark_node_structurally_invalid(node)
       node_id = generate_node_id(node)
-      return if node_id.nil?  # Safety check
+      return if node_id.nil? # Safety check
 
       @structurally_invalid_node_ids.add(node_id)
 
@@ -42,7 +42,7 @@ module SvgConform
 
       node.children.each do |child|
         child_id = generate_node_id(child)
-        next if child_id.nil?  # Skip if can't generate ID
+        next if child_id.nil? # Skip if can't generate ID
 
         @structurally_invalid_node_ids.add(child_id)
         # Recursively mark descendants
@@ -53,7 +53,7 @@ module SvgConform
     # Check if a node is structurally invalid
     def node_structurally_invalid?(node)
       node_id = generate_node_id(node)
-      return false if node_id.nil?  # Safety check
+      return false if node_id.nil? # Safety check
 
       @structurally_invalid_node_ids.include?(node_id)
     end
@@ -154,7 +154,7 @@ requirement_id: nil, severity: nil, fix: nil, data: {})
     # Populate cache for all nodes using document.traverse with parent tracking
     def populate_node_id_cache
       parent_stack = []
-      counter_stack = [{}]  # Stack of {element_name => count} hashes
+      counter_stack = [{}] # Stack of {element_name => count} hashes
 
       @document.traverse do |node|
         next unless node.respond_to?(:name) && node.name
@@ -163,7 +163,7 @@ requirement_id: nil, severity: nil, fix: nil, data: {})
         current_parent = node.respond_to?(:parent) ? node.parent : nil
 
         # Adjust stack based on actual parent
-        while parent_stack.size > 0 && !parent_stack.last.equal?(current_parent)
+        while parent_stack.size.positive? && !parent_stack.last.equal?(current_parent)
           parent_stack.pop
           counter_stack.pop
         end
@@ -189,7 +189,7 @@ requirement_id: nil, severity: nil, fix: nil, data: {})
       return unless node.respond_to?(:name) && node.name
 
       # Increment counter for this node name at current level
-     sibling_counters[node.name] ||= 0
+      sibling_counters[node.name] ||= 0
       sibling_counters[node.name] += 1
       position = sibling_counters[node.name]
 
