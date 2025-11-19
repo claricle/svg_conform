@@ -20,7 +20,7 @@ module SvgConform
       @node_id_cache = {}
       @cache_populated = false
       @reference_manifest = References::ReferenceManifest.new(
-        source_document: document.file_path
+        source_document: document.file_path,
       )
     end
 
@@ -132,12 +132,13 @@ requirement_id: nil, severity: nil, fix: nil, data: {})
     end
 
     # Register an ID definition
-    def register_id(id_value, element_name:, line_number: nil, column_number: nil)
+    def register_id(id_value, element_name:, line_number: nil,
+column_number: nil)
       @reference_manifest.register_id(
         id_value,
         element_name: element_name,
         line_number: line_number,
-        column_number: column_number
+        column_number: column_number,
       )
     end
 
@@ -157,7 +158,7 @@ requirement_id: nil, severity: nil, fix: nil, data: {})
         type: :external_reference,
         node: node,
         message: message || "External reference: #{reference.value}",
-        data: { reference: reference }
+        data: { reference: reference },
       )
       @infos << notice
       notice

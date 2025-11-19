@@ -37,13 +37,13 @@ RSpec.describe SvgConform::References::ReferenceManifest do
       internal_ref = SvgConform::References::InternalFragmentReference.new(
         value: "#element-1",
         element_name: "use",
-        attribute_name: "href"
+        attribute_name: "href",
       )
 
       external_ref = SvgConform::References::UrnReference.new(
         value: "urn:test",
         element_name: "a",
-        attribute_name: "href"
+        attribute_name: "href",
       )
 
       manifest.register_reference(internal_ref)
@@ -77,19 +77,19 @@ RSpec.describe SvgConform::References::ReferenceManifest do
       ref1 = SvgConform::References::InternalFragmentReference.new(
         value: "#target-element",
         element_name: "use",
-        attribute_name: "href"
+        attribute_name: "href",
       )
 
       ref2 = SvgConform::References::InternalFragmentReference.new(
         value: "#target-element",
         element_name: "a",
-        attribute_name: "href"
+        attribute_name: "href",
       )
 
       ref3 = SvgConform::References::InternalFragmentReference.new(
         value: "#other-element",
         element_name: "use",
-        attribute_name: "href"
+        attribute_name: "href",
       )
 
       manifest.register_reference(ref1)
@@ -115,24 +115,24 @@ RSpec.describe SvgConform::References::ReferenceManifest do
         SvgConform::References::InternalFragmentReference.new(
           value: "#id-1",
           element_name: "use",
-          attribute_name: "href"
-        )
+          attribute_name: "href",
+        ),
       )
 
       manifest.register_reference(
         SvgConform::References::UrnReference.new(
           value: "urn:test",
           element_name: "a",
-          attribute_name: "href"
-        )
+          attribute_name: "href",
+        ),
       )
 
       manifest.register_reference(
         SvgConform::References::ExternalUrlReference.new(
           value: "https://example.com",
           element_name: "a",
-          attribute_name: "href"
-        )
+          attribute_name: "href",
+        ),
       )
     end
 
@@ -142,7 +142,7 @@ RSpec.describe SvgConform::References::ReferenceManifest do
       expect(by_type.keys).to include(
         "InternalFragmentReference",
         "UrnReference",
-        "ExternalUrlReference"
+        "ExternalUrlReference",
       )
       expect(by_type["InternalFragmentReference"].size).to eq(1)
       expect(by_type["UrnReference"].size).to eq(1)
@@ -157,19 +157,19 @@ RSpec.describe SvgConform::References::ReferenceManifest do
       ref1 = SvgConform::References::InternalFragmentReference.new(
         value: "#element-1",
         element_name: "use",
-        attribute_name: "href"
+        attribute_name: "href",
       )
 
       ref2 = SvgConform::References::InternalFragmentReference.new(
         value: "#missing-element",
         element_name: "use",
-        attribute_name: "href"
+        attribute_name: "href",
       )
 
       ref3 = SvgConform::References::InternalFragmentReference.new(
         value: "#another-missing",
         element_name: "use",
-        attribute_name: "href"
+        attribute_name: "href",
       )
 
       manifest.register_reference(ref1)
@@ -181,7 +181,8 @@ RSpec.describe SvgConform::References::ReferenceManifest do
       unresolved = manifest.unresolved_internal_references
 
       expect(unresolved.size).to eq(2)
-      expect(unresolved.map(&:value)).to include("#missing-element", "#another-missing")
+      expect(unresolved.map(&:value)).to include("#missing-element",
+                                                 "#another-missing")
       expect(unresolved.map(&:value)).not_to include("#element-1")
     end
 
@@ -192,7 +193,7 @@ RSpec.describe SvgConform::References::ReferenceManifest do
       ref = SvgConform::References::InternalFragmentReference.new(
         value: "#element-1",
         element_name: "use",
-        attribute_name: "href"
+        attribute_name: "href",
       )
       manifest2.register_reference(ref)
 
@@ -209,32 +210,32 @@ RSpec.describe SvgConform::References::ReferenceManifest do
         SvgConform::References::InternalFragmentReference.new(
           value: "#id-1",
           element_name: "use",
-          attribute_name: "href"
-        )
+          attribute_name: "href",
+        ),
       )
 
       manifest.register_reference(
         SvgConform::References::InternalFragmentReference.new(
           value: "#missing",
           element_name: "use",
-          attribute_name: "href"
-        )
+          attribute_name: "href",
+        ),
       )
 
       manifest.register_reference(
         SvgConform::References::UrnReference.new(
           value: "urn:test",
           element_name: "a",
-          attribute_name: "href"
-        )
+          attribute_name: "href",
+        ),
       )
 
       manifest.register_reference(
         SvgConform::References::ExternalUrlReference.new(
           value: "https://example.com",
           element_name: "a",
-          attribute_name: "href"
-        )
+          attribute_name: "href",
+        ),
       )
     end
 
@@ -261,8 +262,8 @@ RSpec.describe SvgConform::References::ReferenceManifest do
           value: "#test-id",
           element_name: "use",
           attribute_name: "href",
-          line_number: 10
-        )
+          line_number: 10,
+        ),
       )
     end
 
@@ -284,8 +285,8 @@ RSpec.describe SvgConform::References::ReferenceManifest do
         SvgConform::References::UrnReference.new(
           value: "urn:test",
           element_name: "a",
-          attribute_name: "href"
-        )
+          attribute_name: "href",
+        ),
       )
     end
 

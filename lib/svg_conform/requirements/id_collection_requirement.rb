@@ -17,7 +17,7 @@ module SvgConform
           id_value,
           element_name: node.name,
           line_number: node.respond_to?(:line) ? node.line : nil,
-          column_number: node.respond_to?(:column) ? node.column : nil
+          column_number: node.respond_to?(:column) ? node.column : nil,
         )
       end
 
@@ -30,7 +30,7 @@ module SvgConform
           id_value,
           element_name: element.name,
           line_number: element.respond_to?(:line) ? element.line : nil,
-          column_number: element.respond_to?(:column) ? element.column : nil
+          column_number: element.respond_to?(:column) ? element.column : nil,
         )
       end
     end
