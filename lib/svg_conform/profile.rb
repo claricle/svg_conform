@@ -114,19 +114,34 @@ module SvgConform
     end
 
     def validate(document)
-      context = ValidationContext.new(document, self)
+      # Use SAX mode for validation performance
+      # Convert document to content string if it's a DOM document
+      if document.is_a?(Document)
+        content = document.to_xml
+        sax_doc = SaxDocument.from_content(content)
+       return sax_doc.validate_with_profile(self)
+      elsif document.respond_to?(:to_xml)
+        # Handle any document-like object
+        content = document.to_xml
+        sax_doc = SaxDocument.from_content(content)
+        return sax_doc.validate_with_profile(self)
+      else
+        # Fallback to DOM mode for backward compatibility
+        context = ValidationContext.new(document, self)
 
-      # Validate using requirements system
-      requirements&.each do |requirement|
-        requirement.validate_document(document, context)
+        # Validate using requirements system
+        requirements&.each do |requirement|
+          requirement.validate_document(document, context)
+        end
+
+        return ValidationResult.new(document, self, context)
       end
-
-      ValidationResult.new(document, self, context)
     end
 
     def validate_file(file_path)
-      document = Document.from_file(file_path)
-      validate(document)
+      # Use SAX mode directly
+      sax_doc = SaxDocument.from_file(file_path)
+      sax_doc.validate_with_profile(self)
     end
 
     # Apply remediations to a document after validation
