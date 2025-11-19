@@ -41,10 +41,10 @@ module SvgConform
       end
 
       def needs_deferred_validation?
-        check_style_elements  # Only deferred if checking style elements
+        check_style_elements # Only deferred if checking style elements
       end
 
-      def collect_sax_data(element, context)
+      def collect_sax_data(element, _context)
         # Collect style elements for deferred validation (text content needs to be complete)
         if check_style_elements && element.name == "style"
           @collected_style_elements << element

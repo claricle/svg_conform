@@ -119,12 +119,12 @@ module SvgConform
       if document.is_a?(Document)
         content = document.to_xml
         sax_doc = SaxDocument.from_content(content)
-       return sax_doc.validate_with_profile(self)
+        sax_doc.validate_with_profile(self)
       elsif document.respond_to?(:to_xml)
         # Handle any document-like object
         content = document.to_xml
         sax_doc = SaxDocument.from_content(content)
-        return sax_doc.validate_with_profile(self)
+        sax_doc.validate_with_profile(self)
       else
         # Fallback to DOM mode for backward compatibility
         context = ValidationContext.new(document, self)
@@ -134,7 +134,7 @@ module SvgConform
           requirement.validate_document(document, context)
         end
 
-        return ValidationResult.new(document, self, context)
+        ValidationResult.new(document, self, context)
       end
     end
 
