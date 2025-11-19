@@ -121,6 +121,13 @@ module SvgConform
       end
 
       def validate_sax_element(element, context)
+        # Skip if parent is structurally invalid (matches DOM behavior)
+        if element.parent && context.node_structurally_invalid?(element.parent)
+          # Mark this element as invalid too since it won't be in final document
+          context.mark_node_structurally_invalid(element)
+          return
+        end
+
         # Skip foreign namespace elements if configured (let NamespaceRequirement handle them)
         if skip_foreign_namespaces && foreign_namespace_sax?(element)
           return
@@ -339,7 +346,13 @@ module SvgConform
       def foreign_namespace_sax?(element)
         return false unless skip_foreign_namespaces
 
-        # Check if element has a namespace
+        # Check if element name has a namespace prefix (e.g., rdf:RDF, cc:Work)
+        if element.name.include?(':')
+          # Element has prefix, it's in a foreign namespace
+          return true
+        end
+
+        # Also check xmlns attribute
         element_namespace = element.namespace
 
         # No namespace or empty namespace means SVG namespace (default)
@@ -414,6 +427,11 @@ module SvgConform
           attr_name = attr.name.downcase
           next if attr_name.start_with?("xmlns:")
           next if attr_name.start_with?("xml:")
+
+          # Skip namespaced attributes (those with colon prefix like inkscape:label)
+          # This matches DOM behavior where XPath skips attributes with namespaces
+          next if attr_name.include?(":") && !attr_name.start_with?("xmlns:")
+
           next if attr.namespace
           next if attr_name.start_with?("data-")
 

@@ -238,15 +238,16 @@ module SvgConform
       private
 
       def get_element_namespace_sax(element)
-        # Try to get namespace from the element
-        namespace = element.namespace
-        return namespace if namespace && !namespace.empty?
-
-        # If no namespace found, check if element has a prefix (indicating it's namespaced)
+        # Check if element name has a namespace prefix (e.g., rdf:RDF, cc:Work)
         if element.name.include?(":")
           prefix = element.name.split(":").first
-          return find_namespace_uri_for_prefix_sax(element, prefix)
+          namespace_uri = find_namespace_uri_for_prefix_sax(element, prefix)
+          return namespace_uri if namespace_uri
         end
+
+        # Try to get namespace from xmlns attribute
+        namespace = element.namespace
+        return namespace if namespace && !namespace.empty?
 
         nil
       end

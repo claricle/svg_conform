@@ -11,7 +11,7 @@ module SvgConform
     end
 
     def namespace
-      nil  # Simplified for now
+      nil  # DOM handles namespaces via XPath; SAX checks attribute names directly
     end
   end
 
