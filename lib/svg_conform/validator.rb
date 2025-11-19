@@ -9,7 +9,7 @@ module SvgConform
       @options = {
         fix: false,
         strict: false,
-        mode: :auto  # :auto, :dom, or :sax
+        mode: :sax  # Testing SAX mode
       }.merge(options)
     end
 

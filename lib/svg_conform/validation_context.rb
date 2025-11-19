@@ -36,11 +36,13 @@ module SvgConform
 
     # Mark all descendants of a node as structurally invalid
     def mark_descendants_invalid(node)
-      return unless node.respond_to?(:children)
+      # In SAX mode, ElementProxy doesn't have children yet
+      # Children will be validated individually and will check parent validity
+      return unless node.respond_to?(:children) && node.children
 
       node.children.each do |child|
         child_id = generate_node_id(child)
-        return if child_id.nil?  # Safety check
+        next if child_id.nil?  # Skip if can't generate ID
 
         @structurally_invalid_node_ids.add(child_id)
         # Recursively mark descendants

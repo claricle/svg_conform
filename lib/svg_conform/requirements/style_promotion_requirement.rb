@@ -20,6 +20,13 @@ module SvgConform
         end
       end
 
+      def validate_sax_element(element, context)
+        style_attr = element.raw_attributes["style"]
+        return if style_attr.nil? || style_attr.strip.empty?
+
+        validate_style_properties(element, style_attr, context)
+      end
+
       private
 
       def validate_style_properties(element, style_attr, context)

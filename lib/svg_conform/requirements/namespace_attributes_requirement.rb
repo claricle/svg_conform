@@ -42,8 +42,11 @@ module SvgConform
       end
 
       def validate_sax_element(element, context)
+        # Extract local name without prefix for exemption check
+        local_name = element.name.include?(':') ? element.name.split(':', 2).last : element.name
+
         # Skip validation for exempt elements (e.g., RDF metadata elements)
-        return if exempt_elements.include?(element.name)
+        return if exempt_elements.include?(local_name) || exempt_elements.include?(element.name)
 
         # Check all attributes for namespace violations
         element.attributes.each do |attr|

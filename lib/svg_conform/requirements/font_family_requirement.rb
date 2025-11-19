@@ -47,6 +47,9 @@ module SvgConform
       end
 
       def validate_sax_element(element, context)
+        # Skip if parent is structurally invalid
+        return if element.parent && context.node_structurally_invalid?(element.parent)
+
         # Check font-family attribute only
         font_family = element.raw_attributes["font-family"]
         return unless font_family
