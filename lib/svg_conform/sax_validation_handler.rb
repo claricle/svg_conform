@@ -145,13 +145,13 @@ module SvgConform
       context.instance_variable_set(:@node_id_cache, {})
       context.instance_variable_set(:@cache_populated, true) # Skip population for SAX
       context.instance_variable_set(:@reference_manifest,
-        References::ReferenceManifest.new(source_document: nil))
+                                    References::ReferenceManifest.new(source_document: nil))
       context
     end
 
     # Classify requirements based on validation needs
     def classify_requirements
-      return unless @profile && @profile.requirements
+      return unless @profile&.requirements
 
       @profile.requirements.each do |req|
         if req.respond_to?(:needs_deferred_validation?) && req.needs_deferred_validation?

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "svg_conform/commands/svgcheck_generate"
 
 RSpec.describe SvgConform::Commands::SvgcheckGenerate do
   describe "#execute" do

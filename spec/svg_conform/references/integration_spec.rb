@@ -55,7 +55,7 @@ RSpec.describe "Reference Manifest Integration" do
       manifest = result.reference_manifest
 
       by_type = manifest.references_by_type
-      expect(by_type["InternalFragmentReference"].size).to eq(2)  # 2 uses
+      expect(by_type["InternalFragmentReference"].size).to eq(2) # 2 uses
       expect(by_type["UrnReference"].size).to eq(1)
       expect(by_type["ExternalUrlReference"].size).to eq(1)
       expect(by_type["DataUriReference"].size).to eq(1)

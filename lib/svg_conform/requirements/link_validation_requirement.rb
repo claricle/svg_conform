@@ -29,7 +29,7 @@ module SvgConform
           # Don't error - just notify consumer
           context.add_external_reference_notice(
             node: node,
-            reference: reference
+            reference: reference,
           )
         end
 
@@ -60,7 +60,7 @@ module SvgConform
             element_name: element.name,
             attribute_name: "href",
             line_number: element.line,
-            column_number: element.column
+            column_number: element.column,
           )
 
           if reference
@@ -71,7 +71,7 @@ module SvgConform
             elsif reference.requires_consumer_validation?
               context.add_external_reference_notice(
                 node: element,
-                reference: reference
+                reference: reference,
               )
             end
           end
@@ -91,7 +91,7 @@ module SvgConform
             element_name: element.name,
             attribute_name: attr_name,
             line_number: element.line,
-            column_number: element.column
+            column_number: element.column,
           )
           context.register_reference(iri_ref) if iri_ref
         end
@@ -118,7 +118,7 @@ module SvgConform
           element_name: node.name,
           attribute_name: attr_name,
           line_number: node.respond_to?(:line) ? node.line : nil,
-          column_number: node.respond_to?(:column) ? node.column : nil
+          column_number: node.respond_to?(:column) ? node.column : nil,
         )
       end
 
@@ -129,7 +129,7 @@ module SvgConform
           requirement_id: id,
           message: "Link href '#{href_value}' contains non-ASCII characters",
           node: node,
-          severity: :error
+          severity: :error,
         )
       end
 
@@ -140,7 +140,7 @@ module SvgConform
           requirement_id: id,
           message: "IRI attribute '#{attr_name}' value '#{iri_value}' contains non-ASCII characters",
           node: node,
-          severity: :error
+          severity: :error,
         )
       end
 
@@ -155,7 +155,7 @@ module SvgConform
             requirement_id: id,
             message: "Internal reference '#{reference.value}' points to non-existent element",
             node: node,
-            severity: :error
+            severity: :error,
           )
         end
       end

@@ -10,9 +10,15 @@ module SvgConform
     # Provides complete context for consumer validation decisions
     class ReferenceManifest < Lutaml::Model::Serializable
       attribute :source_document, :string
-      attribute :available_ids, IdDefinition, collection: true, default: -> { [] }
-      attribute :internal_references, BaseReference, collection: true, default: -> { [] }
-      attribute :external_references, BaseReference, collection: true, default: -> { [] }
+      attribute :available_ids, IdDefinition, collection: true, default: -> {
+        []
+      }
+      attribute :internal_references, BaseReference, collection: true, default: -> {
+        []
+      }
+      attribute :external_references, BaseReference, collection: true, default: -> {
+        []
+      }
 
       yaml do
         map "source_document", to: :source_document
@@ -37,7 +43,8 @@ module SvgConform
       end
 
       # Register an ID definition
-      def register_id(id_value, element_name:, line_number: nil, column_number: nil)
+      def register_id(id_value, element_name:, line_number: nil,
+column_number: nil)
         @available_ids << IdDefinition.new(
           id_value: id_value,
           element_name: element_name,

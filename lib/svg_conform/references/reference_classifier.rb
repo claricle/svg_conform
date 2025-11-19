@@ -21,8 +21,6 @@ module SvgConform
         )
       end
 
-      private
-
       def self.determine_type(href)
         case href
         when /^#/
