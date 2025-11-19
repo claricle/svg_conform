@@ -79,6 +79,9 @@ module SvgConform
       end
 
       def validate_sax_complete(context)
+        # Guard against nil collections
+        return unless @use_element_refs && @other_refs && @collected_ids
+
         # Validate use element references
         @use_element_refs.each do |element, ref_id, href|
           next if @collected_ids.include?(ref_id)

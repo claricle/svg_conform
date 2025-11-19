@@ -25,6 +25,7 @@ SvgConform is distributed as a Ruby gem.
 
 * **Profile-based validation**: Validate SVG files against predefined or custom profiles
 * **Remediation**: Automatically fix common SVG conformance issues
+* **Reference manifest**: Complete tracking of IDs and references for consumer-level validation
 * **Extensible architecture**: Easy to add new rules and profiles
 * **Command-line interface**: Validate and fix files from the command line
 * **Ruby API**: Integrate validation into Ruby applications
@@ -229,6 +230,166 @@ if !result.valid? && profile.remediation_count > 0
   puts document.to_xml
 end
 ----
+
+
+=== Reference manifest and external reference handling
+
+==== General
+
+SvgConform provides a comprehensive reference manifest that tracks all IDs and
+references in SVG documents, enabling consumers like Metanorma to validate
+external references in their own context.
+
+The reference manifest separates references by validation scope:
+
+* **Internal references**: Validated by svg_conform (e.g., `#element-id`)
+
+* **External references**: Require consumer-level validation (e.g., URNs, URLs,
+relative paths)
+
+This separation allows svg_conform to validate what it can while providing
+structured data for consumer-specific validation of external resources.
+
+==== Basic usage
+
+[source,ruby]
+----
+require 'svg_conform'
+
+validator = SvgConform::Validator.new(profile: 'metanorma')
+result = validator.validate(svg_content)
+
+# Access the reference manifest
+manifest = result.reference_manifest
+
+# Check for external references
+if result.has_external_references?
+  puts "External references found: #{result.external_references.size}"
+
+  result.external_references.each do |ref|
+    puts "#{ref.class.name}: #{ref.value}"
+    puts "  Element: #{ref.element_name} at line #{ref.line_number}"
+  end
+end
+
+# Get all defined IDs
+puts "IDs defined: #{result.available_ids.map(&:id_value).join(', ')}"
+
+# Check for unresolved internal references
+unresolved = result.unresolved_internal_references
+if unresolved.any?
+  puts "Unresolved references:"
+  unresolved.each do |ref|
+    puts "  #{ref.value} at line #{ref.line_number}"
+  end
+end
+----
+
+==== Reference types
+
+The manifest classifies references into specific types:
+
+[cols="2,2,3", options="header"]
+|===
+|Type |Validation Scope |Description
+
+|`InternalFragmentReference`
+|Internal
+|Internal SVG references (`#element-id`)
+
+|`DataUriReference`
+|Internal
+|Data URIs (`data:image/png;base64,...`)
+
+|`ExternalUrlReference`
+|External
+|HTTP/HTTPS URLs
+
+|`UrnReference`
+|External
+|URN references (`urn:ietf:rfc:7996`)
+
+|`RelativePathReference`
+|External
+|Relative and absolute file paths
+|===
+
+==== Consumer validation
+
+External references can be validated based on consumer context:
+
+[source,ruby]
+----
+# Validate URN references in Metanorma context
+result.external_references.each do |ref|
+  case ref
+  when SvgConform::References::UrnReference
+    # Validate URN resolves in your registry
+    unless your_urn_registry.resolve(ref.value)
+      puts "Unresolved URN: #{ref.value} at line #{ref.line_number}"
+    end
+
+  when SvgConform::References::ExternalUrlReference
+    # Optionally verify URL accessibility
+    unless url_accessible?(ref.value)
+      puts "Warning: URL may not be accessible: #{ref.value}"
+    end
+
+  when SvgConform::References::RelativePathReference
+    # Resolve relative to document location
+    resolved = resolve_path(ref.value)
+    unless File.exist?(resolved)
+      puts "File not found: #{ref.value}"
+    end
+  end
+end
+----
+
+==== Manifest export
+
+Export the manifest for external processing:
+
+[source,ruby]
+----
+# Export as YAML for human inspection
+File.write('manifest.yml', result.export_manifest(format: :yaml))
+
+# Export as JSON for programmatic processing
+File.write('manifest.json', result.export_manifest(format: :json))
+
+# Get as Hash
+manifest_data = result.export_manifest(format: :hash)
+----
+
+==== Query interface
+
+The manifest provides methods to query IDs and references:
+
+[source,ruby]
+----
+manifest = result.reference_manifest
+
+# Check if ID exists
+if manifest.id_defined?('target-element')
+  # Find references to this ID
+  refs = manifest.references_to_id('target-element')
+  puts "#{refs.size} references found to 'target-element'"
+end
+
+# Group references by type
+manifest.references_by_type.each do |type, refs|
+  puts "#{type}: #{refs.size} references"
+end
+
+# Get statistics
+stats = manifest.statistics
+puts "Total IDs: #{stats[:total_ids]}"
+puts "External refs: #{stats[:external_references]}"
+puts "Unresolved internal: #{stats[:unresolved_internal]}"
+----
+
+For complete documentation and advanced usage examples, see
+link:docs/reference_manifest.adoc[Reference Manifest Documentation].
 
 
 
@@ -852,22 +1013,27 @@ SvgConform 0.1.0
 
 [source,ruby]
 ----
-require 'svg_conform'
+# Create validator instance
+validator = SvgConform::Validator.new
 
-# Validate a file
-result = SvgConform.validate_file('diagram.svg', profile: :svg_1_2_rfc)
+# Validate with custom options
+result = validator.validate_file('diagram.svg',
+  profile: :svg_1_2_rfc,
+  fix: true,
+  strict: false
+)
 
-# Check validation status
-puts "Valid: #{result.valid?}"
-puts "Errors: #{result.errors.count}"
-puts "Warnings: #{result.warnings.count}"
-
-# Get detailed error information
-result.errors.each do |error|
-  puts "#{error.rule.id}: #{error.message}"
-  puts "  Element: #{error.element}" if error.element
-  puts "  Location: #{error.location}" if error.location
+# Access fixed document
+if result.fixed?
+  fixed_svg = result.fixed_document.to_xml
+  File.write('diagram_fixed.svg', fixed_svg)
 end
+
+# Get profile information
+profile_info = validator.profile_info(:svg_1_2_rfc)
+puts "Profile: #{profile_info[:name]}"
+puts "Description: #{profile_info[:description]}"
+puts "Rules: #{profile_info[:rules].map { |r| r[:id] }.join(', ')}"
 ----
 
 === Advanced usage
@@ -896,6 +1062,9 @@ puts "Profile: #{profile_info[:name]}"
 puts "Description: #{profile_info[:description]}"
 puts "Rules: #{profile_info[:rules].map { |r| r[:id] }.join(', ')}"
 ----
+
+See <<core_components>> for deeper exploration of internal document representation,
+fixing, and validation architecture.
 
 === Working with loaded SVG content
 
@@ -1030,6 +1199,8 @@ if !result.valid? && profile.remediation_count > 0
   puts "Applied #{changes.length} remediations"
 end
 ----
+
+
 
 [[external_compliance]]
 == External compliance

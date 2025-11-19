@@ -52,6 +52,9 @@ module SvgConform
       end
 
       def validate_sax_complete(context)
+        # Guard against nil collection
+        return unless @collected_style_elements
+
         # Validate collected style elements
         @collected_style_elements.each do |element|
           check_style_element_sax(element, context)

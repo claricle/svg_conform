@@ -873,14 +873,81 @@ elements within the document.
 * link:remediation.adoc#invalid-id-references-remediation[InvalidIdReferencesRemediation]
 
 
+[[id-collection-requirement]]
+=== ID collection requirement
+
+==== General
+
+Collects all ID definitions in the document to build a comprehensive reference
+manifest for validation and consumer-level processing.
+
+Implemented as `IdCollectionRequirement`.
+
+==== Configuration options
+
+No configuration options. This requirement automatically collects all IDs during validation.
+
+==== Configuration
+
+.Example configuration of IdCollectionRequirement
+[example]
+====
+[source,yaml]
+----
+- id: "id_collection"
+  type: "IdCollectionRequirement"
+  description: "Collects all ID definitions for reference validation"
+----
+====
+
+==== Example from metanorma profile
+
+[example]
+====
+[source,yaml]
+----
+- id: "id_collection"
+  type: "IdCollectionRequirement"
+  description: "Collects all ID definitions for reference validation"
+----
+
+The metanorma profile uses this requirement as the first requirement to build
+the ID manifest before other requirements validate references.
+====
+
+==== Features
+
+* Tracks all ID definitions with location information (line/column numbers)
+* Builds reference manifest for cross-validation
+* Enables consumer-level validation of external references
+* Works in both DOM and SAX validation modes
+* Zero overhead - collects during normal traversal
+
+==== Related features
+
+* Reference Manifest - Complete context of IDs and references
+* Link Validation - Uses collected IDs for validation
+
+
 [[link-validation-requirement]]
 === Link validation requirement
 
 ==== General
 
-Validates that links use only ASCII characters (IETF requirement).
+Validates that links use only ASCII characters (IETF requirement) and classifies
+references by validation scope for consumer-level processing.
 
 Implemented as `LinkValidationRequirement`.
+
+==== Reference classification
+
+The requirement classifies references into types based on validation scope:
+
+* **Internal references**: Validated by svg_conform (e.g., `#element-id`, `data:` URIs)
+* **External references**: Deferred to consumer validation (e.g., URNs, URLs, relative paths)
+
+This enables consumers like Metanorma to validate external references in their
+own context rather than having svg_conform report them as errors.
 
 ==== Configuration options
 

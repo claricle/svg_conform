@@ -10,16 +10,25 @@ Lutaml::Model::Config.configure do |config|
 end
 
 require_relative "svg_conform/version"
+require_relative "svg_conform/constants"
+require_relative "svg_conform/profile"
+require_relative "svg_conform/profiles"
 require_relative "svg_conform/document"
 require_relative "svg_conform/sax_document"
+require_relative "svg_conform/element_proxy"
 require_relative "svg_conform/validation_context"
 require_relative "svg_conform/validation_result"
-require_relative "svg_conform/profiles"
+require_relative "svg_conform/validator"
+require_relative "svg_conform/conformance_report"
+require_relative "svg_conform/batch_report"
 require_relative "svg_conform/requirements"
+require_relative "svg_conform/references"
 require_relative "svg_conform/remediations"
 require_relative "svg_conform/remediation_result"
+require_relative "svg_conform/remediation_engine"
+require_relative "svg_conform/remediation_runner"
+require_relative "svg_conform/fixer"
 require_relative "svg_conform/external_checkers"
-require_relative "svg_conform/cli"
 
 module SvgConform
   class Error < StandardError; end
