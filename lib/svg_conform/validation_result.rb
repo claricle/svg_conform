@@ -6,7 +6,7 @@ module SvgConform
   # Represents the result of validating an SVG document
   class ValidationResult
     attr_reader :document, :profile, :errors, :warnings, :validity_errors,
-                :fixes_applied, :fixed_document
+                :fixes_applied, :fixed_document, :reference_manifest
 
     def initialize(document, profile, context)
       @document = document
@@ -16,6 +16,7 @@ module SvgConform
       @validity_errors = context.validity_errors
       @fixes_applied = []
       @fixed_document = nil
+      @reference_manifest = context.reference_manifest
     end
 
     def valid?
@@ -58,6 +59,31 @@ module SvgConform
       @errors.select(&:requirement_id)
     end
 
+    # Convenience accessors for manifest data
+    def available_ids
+      @reference_manifest.available_ids
+    end
+
+    def internal_references
+      @reference_manifest.internal_references
+    end
+
+    def external_references
+      @reference_manifest.external_references
+    end
+
+    def has_external_references?
+      !@reference_manifest.external_references.empty?
+    end
+
+    def unresolved_internal_references
+      @reference_manifest.unresolved_internal_references
+    end
+
+    def reference_statistics
+      @reference_manifest.statistics
+    end
+
     def apply_fixes
       return self unless fixable?
 
@@ -90,18 +116,33 @@ module SvgConform
 
     def to_h
       {
-        file: @document.file_path,
+        file: @document&.file_path,
         profile: @profile.name,
         valid: valid?,
         errors: @errors.map(&:to_h),
         warnings: @warnings.map(&:to_h),
         fixes_applied: @fixes_applied.size,
         fixable: fixable_count,
+        reference_manifest: @reference_manifest.to_h,
       }
     end
 
     def to_json(*args)
       JSON.pretty_generate(to_h, *args)
+    end
+
+    # Export manifest separately for detailed analysis
+    def export_manifest(format: :yaml)
+      case format
+      when :yaml
+        @reference_manifest.to_yaml
+      when :json
+        @reference_manifest.to_json
+      when :hash
+        @reference_manifest.to_h
+      else
+        @reference_manifest.to_yaml
+      end
     end
 
     private

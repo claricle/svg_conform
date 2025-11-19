@@ -6,7 +6,7 @@ module SvgConform
   # Context object passed to rules during validation
   class ValidationContext
     attr_reader :document, :profile, :errors, :warnings, :fixes,
-                :validity_errors
+                :validity_errors, :reference_manifest
 
     def initialize(document, profile)
       @document = document
@@ -19,6 +19,9 @@ module SvgConform
       @structurally_invalid_node_ids = Set.new
       @node_id_cache = {}
       @cache_populated = false
+      @reference_manifest = References::ReferenceManifest.new(
+        source_document: document.file_path
+      )
     end
 
     # Mark a node as structurally invalid (e.g., invalid parent-child relationship)
@@ -126,6 +129,38 @@ requirement_id: nil, severity: nil, fix: nil, data: {})
 
     def get_data(key)
       @data[key]
+    end
+
+    # Register an ID definition
+    def register_id(id_value, element_name:, line_number: nil, column_number: nil)
+      @reference_manifest.register_id(
+        id_value,
+        element_name: element_name,
+        line_number: line_number,
+        column_number: column_number
+      )
+    end
+
+    # Register a reference
+    def register_reference(reference)
+      @reference_manifest.register_reference(reference)
+    end
+
+    # Check if ID exists in manifest
+    def id_defined?(id_value)
+      @reference_manifest.id_defined?(id_value)
+    end
+
+    # Add notice for external references (not errors)
+    def add_external_reference_notice(node:, reference:, message: nil)
+      notice = ValidationNotice.new(
+        type: :external_reference,
+        node: node,
+        message: message || "External reference: #{reference.value}",
+        data: { reference: reference }
+      )
+      @infos << notice
+      notice
     end
 
     # Generate a unique identifier for a node based on its path
@@ -487,6 +522,36 @@ requirement_id: nil, severity: nil, violation_type: nil)
       else
         "unknown"
       end
+    end
+  end
+
+  # New class for non-error notifications
+  class ValidationNotice
+    attr_reader :type, :node, :message, :data
+
+    def initialize(type:, node:, message:, data: {})
+      @type = type
+      @node = node
+      @message = message
+      @data = data
+    end
+
+    def line
+      @node.respond_to?(:line) ? @node.line : nil
+    end
+
+    def column
+      @node.respond_to?(:column) ? @node.column : nil
+    end
+
+    def to_h
+      {
+        type: @type,
+        message: @message,
+        line: line,
+        column: column,
+        data: @data,
+      }
     end
   end
 end

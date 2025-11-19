@@ -2,6 +2,11 @@ name: "metanorma"
 description: "Metanorma SVG Profile - SVG requirements for Metanorma technical documents with embedded resources"
 
 requirements:
+  # ID Collection - must run first to build the ID manifest
+  - id: "id_collection"
+    type: "IdCollectionRequirement"
+    description: "Collects all ID definitions for reference validation"
+
   # Based on RFC 7996 Section 2.1: Elements, Properties, and Attributes
   - id: "allowed_elements"
     type: "AllowedElementsRequirement"

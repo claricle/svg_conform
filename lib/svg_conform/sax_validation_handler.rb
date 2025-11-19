@@ -4,6 +4,7 @@ require "nokogiri"
 require_relative "element_proxy"
 require_relative "validation_context"
 require_relative "validation_result"
+require_relative "references"
 
 module SvgConform
   # SAX event handler for streaming SVG validation
@@ -143,12 +144,14 @@ module SvgConform
       context.instance_variable_set(:@structurally_invalid_node_ids, Set.new)
       context.instance_variable_set(:@node_id_cache, {})
       context.instance_variable_set(:@cache_populated, true) # Skip population for SAX
+      context.instance_variable_set(:@reference_manifest,
+        References::ReferenceManifest.new(source_document: nil))
       context
     end
 
     # Classify requirements based on validation needs
     def classify_requirements
-      return unless @profile.requirements
+      return unless @profile && @profile.requirements
 
       @profile.requirements.each do |req|
         if req.respond_to?(:needs_deferred_validation?) && req.needs_deferred_validation?

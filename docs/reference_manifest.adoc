@@ -1,0 +1,370 @@
+= Reference Manifest and External Reference Handling
+:toc:
+:toclevels: 3
+
+== Overview
+
+The Reference Manifest provides a comprehensive view of all IDs and references in an SVG document, enabling consumers like Metanorma to make informed validation decisions about external references in their own context.
+
+== Architecture
+
+=== Reference Classification
+
+References are classified by validation scope:
+
+* **Internal References**: Can be validated by svg_conform (e.g., `#element-id`)
+* **External References**: Require consumer-level validation (e.g., URLs, URNs)
+
+.Reference Type Hierarchy
+[source]
+----
+BaseReference (abstract)
+├── InternalFragmentReference (#element-id)     - Internal validation
+├── DataUriReference (data:*)                   - Internal validation
+├── ExternalUrlReference (http://, https://)    - Consumer validation
+├── UrnReference (urn:*)                        - Consumer validation
+└── RelativePathReference (./path, /path)       - Consumer validation
+----
+
+=== ReferenceManifest Components
+
+The manifest provides complete context:
+
+* **Available IDs**: All IDs defined in the document
+* **Internal References**: Fragment identifiers referencing document IDs
+* **External References**: URLs, URNs, and paths requiring consumer validation
+
+== Usage
+
+=== Basic Usage
+
+[source,ruby]
+----
+require 'svg_conform'
+
+validator = SvgConform::Validator.new(profile: 'metanorma')
+result = validator.validate(svg_content)
+
+# Access the reference manifest
+manifest = result.reference_manifest
+
+# Check statistics
+stats = manifest.statistics
+puts "Total IDs: #{stats[:total_ids]}"
+puts "External references: #{stats[:external_references]}"
+----
+
+=== Accessing IDs
+
+[source,ruby]
+----
+# Get all defined IDs
+manifest.available_ids.each do |id_def|
+  puts "ID: #{id_def.id_value} on element #{id_def.element_name}"
+  puts "  at line #{id_def.line_number}" if id_def.line_number
+end
+
+# Check if specific ID exists
+if manifest.id_defined?('target-element')
+  puts "ID 'target-element' is defined"
+end
+----
+
+=== Accessing References
+
+[source,ruby]
+----
+# Get all internal references
+manifest.internal_references.each do |ref|
+  puts "Internal ref: #{ref.value} from #{ref.element_name}"
+end
+
+# Get all external references
+manifest.external_references.each do |ref|
+  puts "External ref: #{ref.value} from #{ref.element_name}"
+  puts "  Requires consumer validation"
+end
+
+# Get references by type
+manifest.references_by_type.each do |type, refs|
+  puts "#{type}: #{refs.size} references"
+end
+----
+
+=== Validating External References
+
+[source,ruby]
+----
+# Validate URN references in consumer context
+manifest.external_references
+  .select { |ref| ref.is_a?(SvgConform::References::UrnReference) }
+  .each do |urn_ref|
+    namespace = urn_ref.namespace
+
+    unless allowed_urn_namespaces.include?(namespace)
+      puts "Error: Disallowed URN namespace '#{namespace}'"
+      puts "  at line #{urn_ref.line_number}" if urn_ref.line_number
+    end
+  end
+
+# Validate external URLs
+manifest.external_references
+  .select { |ref| ref.is_a?(SvgConform::References::ExternalUrlReference) }
+  .each do |url_ref|
+    unless url_accessible?(url_ref.value)
+      puts "Warning: URL may be inaccessible: #{url_ref.value}"
+    end
+  end
+----
+
+=== Query Interface
+
+[source,ruby]
+----
+# Find references to a specific ID
+refs = manifest.references_to_id('target-element')
+puts "Found #{refs.size} references to 'target-element'"
+
+# Check for unresolved internal references
+unresolved = manifest.unresolved_internal_references
+if unresolved.any?
+  puts "Unresolved references:"
+  unresolved.each do |ref|
+    puts "  #{ref.value} at line #{ref.line_number}"
+  end
+end
+----
+
+=== Cross-Document Validation
+
+[source,ruby]
+----
+# Build manifests for multiple documents
+manifests = svg_files.map do |file|
+  result = validator.validate_file(file)
+  result.reference_manifest
+end
+
+# Validate cross-document references
+manifests.each do |manifest|
+  manifest.external_references.each do |ref|
+    # Parse reference like "other-doc.svg#element-42"
+    if ref.value =~ %r{^(.+\.svg)#(.+)$}
+      target_doc = $1
+      target_id = $2
+
+      # Find target manifest
+      target = manifests.find { |m| m.source_document.end_with?(target_doc) }
+
+      unless target&.id_defined?(target_id)
+        puts "Error: Cross-document reference to non-existent ID"
+        puts "  #{ref.value} at line #{ref.line_number}"
+      end
+    end
+  end
+end
+----
+
+=== Export Formats
+
+[source,ruby]
+----
+# Export as YAML for human inspection
+File.write('manifest.yml', result.export_manifest(format: :yaml))
+
+# Export as JSON for programmatic processing
+File.write('manifest.json', result.export_manifest(format: :json))
+
+# Get as Hash for in-memory processing
+manifest_hash = result.export_manifest(format: :hash)
+----
+
+== Reference Types
+
+=== InternalFragmentReference
+
+Internal SVG element references (e.g., `#element-id`).
+
+**Validation Scope**: Internal - validated by svg_conform
+
+**Methods**:
+
+* `target_id` - Returns the target ID without the `#` prefix
+
+[source,ruby]
+----
+ref = manifest.internal_references.first
+puts ref.target_id  # => "element-id" (without #)
+----
+
+=== ExternalUrlReference
+
+HTTP/HTTPS URL references.
+
+**Validation Scope**: External - requires consumer validation
+
+**Methods**:
+
+* `protocol` - Returns the URL protocol (`http` or `https`)
+
+[source,ruby]
+----
+ref = manifest.external_references.find { |r| r.is_a?(SvgConform::References::ExternalUrlReference) }
+puts ref.protocol  # => "https"
+----
+
+=== UrnReference
+
+URN (Uniform Resource Name) references (e.g., `urn:ietf:rfc:7996`).
+
+**Validation Scope**: External - requires consumer validation
+
+**Methods**:
+
+* `namespace` - Returns the URN namespace
+
+[source,ruby]
+----
+ref = manifest.external_references.find { |r| r.is_a?(SvgConform::References::UrnReference) }
+puts ref.namespace  # => "ietf"
+----
+
+=== RelativePathReference
+
+Relative path references (e.g., `./other.svg`, `/absolute/path.svg`).
+
+**Validation Scope**: External - requires consumer validation
+
+**Methods**:
+
+* `has_fragment?` - Returns true if reference includes fragment (`#`)
+* `path_component` - Returns path portion before fragment
+* `fragment_component` - Returns fragment portion after `#`
+
+[source,ruby]
+----
+ref = SvgConform::References::RelativePathReference.new(
+  value: "./other.svg#element"
+)
+puts ref.has_fragment?       # => true
+puts ref.path_component      # => "./other.svg"
+puts ref.fragment_component  # => "element"
+----
+
+=== DataUriReference
+
+Data URI references (e.g., `data:image/png;base64,iVBORw0KGgo=`).
+
+**Validation Scope**: Internal - validated by svg_conform
+
+**Methods**:
+
+* `media_type` - Returns the media type from data URI
+
+[source,ruby]
+----
+ref = manifest.internal_references.find { |r| r.is_a?(SvgConform::References::DataUriReference) }
+puts ref.media_type  # => "image/png"
+----
+
+== Integration with ValidationResult
+
+The manifest is automatically included in validation results:
+
+[source,ruby]
+----
+result = validator.validate(svg_content)
+
+# Convenience accessors
+result.available_ids              # All defined IDs
+result.internal_references        # Internal references
+result.external_references        # External references
+result.has_external_references?   # Boolean check
+result.unresolved_internal_references  # Broken internal refs
+result.reference_statistics       # Statistics hash
+
+# Export manifest
+result.export_manifest(format: :yaml)
+
+# Full result includes manifest
+result_hash = result.to_h
+puts result_hash[:reference_manifest]
+----
+
+== Metanorma Integration Example
+
+[source,ruby]
+----
+# Validate SVG document
+result = validator.validate(svg_content, profile: 'metanorma')
+
+# Get external references for consumer validation
+external_refs = result.external_references
+
+# Validate each reference type in Metanorma's context
+external_refs.each do |ref|
+  case ref
+  when SvgConform::References::UrnReference
+    # Validate URN resolves in Metanorma's registry
+    unless metanorma_urn_registry.resolve(ref.value)
+      metanorma_reporter.error(
+        "Unresolved URN: #{ref.value}",
+        line: ref.line_number
+      )
+    end
+
+  when SvgConform::References::ExternalUrlReference
+    # Optionally verify URL accessibility
+    if metanorma_config.verify_urls?
+      unless url_checker.accessible?(ref.value)
+        metanorma_reporter.warning(
+          "URL may not be accessible: #{ref.value}",
+          line: ref.line_number
+        )
+      end
+    end
+
+  when SvgConform::References::RelativePathReference
+    # Resolve relative path and verify file exists
+    resolved_path = resolve_relative_to_document(ref.value)
+    unless File.exist?(resolved_path)
+      metanorma_reporter.error(
+        "Referenced file not found: #{ref.value}",
+        line: ref.line_number
+      )
+    end
+  end
+end
+
+# Report summary
+puts "External references requiring validation: #{external_refs.size}"
+puts "By type: #{result.reference_statistics[:references_by_type]}"
+----
+
+== Benefits
+
+=== Complete Context
+
+The manifest provides both IDs and references, enabling comprehensive cross-validation.
+
+=== Consumer Control
+
+Consumers decide validation rules for external references based on their own context.
+
+=== Non-Breaking
+
+Existing svg_conform validation unchanged; external references reported but not errored.
+
+=== Type-Safe
+
+Strongly-typed reference objects with validation scope clearly defined.
+
+=== Extensible
+
+Easy to add new reference types without modifying existing code.
+
+== See Also
+
+* link:../EXTERNAL_REFERENCE_PROPOSAL.md[External Reference Architecture Proposal]
+* link:requirements.adoc[Requirements Documentation]
+* link:../config/profiles/metanorma.yml[Metanorma Profile Configuration]
