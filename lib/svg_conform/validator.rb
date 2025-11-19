@@ -34,13 +34,21 @@ module SvgConform
     # Validate SVG content string
     def validate(svg_content, profile: :svg_1_2_rfc, **options)
       merged_options = @options.merge(options)
-      mode = merged_options[:mode] == :sax ? :sax : :dom
+      mode = merged_options[:mode]
+
+      # Default to SAX if not specified
+      mode = :sax if mode.nil?
 
       case mode
       when :sax
         validate_content_sax(svg_content, profile: profile, **merged_options)
       when :dom
         validate_content_dom(svg_content, profile: profile, **merged_options)
+      when :auto
+        # For content, we can't check file size, so default to SAX
+        validate_content_sax(svg_content, profile: profile, **merged_options)
+      else
+        validate_content_sax(svg_content, profile: profile, **merged_options)
       end
     end
 
@@ -99,10 +107,21 @@ module SvgConform
       sax_doc = SvgConform::SaxDocument.from_file(file_path)
       result = sax_doc.validate_with_profile(profile_obj)
 
-      # If fixing is requested, convert to DOM and apply fixes
+      # If fixing is requested, load DOM and apply remediations directly
+      # Skip re-validation to avoid DOM performance penalty
       if options[:fix] && result.has_errors?
         dom_doc = SvgConform::Document.from_file(file_path)
-        result = validate_document(dom_doc, profile: profile_obj, **options)
+
+        # Apply remediations directly without re-validating
+        changes = profile_obj.apply_remediations(dom_doc)
+
+        # Write fixed output if specified
+        if options[:fix_output] && changes.any?
+          File.write(options[:fix_output], dom_doc.to_xml)
+        end
+
+        # Return original SAX validation result (errors already detected)
+        # Note: We don't re-validate to avoid DOM performance cost
       end
 
       result
