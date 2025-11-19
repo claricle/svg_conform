@@ -22,6 +22,11 @@ module SvgConform
         map "allowed_protocols", to: :allowed_protocols
       end
 
+      def initialize(*args)
+        super
+        @collected_style_elements = []
+      end
+
       def check(node, context)
         return unless element?(node)
 
@@ -33,6 +38,27 @@ module SvgConform
         else
           check_style_attribute(node, context) if check_style_attributes
         end
+      end
+
+      def needs_deferred_validation?
+        check_style_elements  # Only deferred if checking style elements
+      end
+
+      def collect_sax_data(element, context)
+        # Collect style elements for deferred validation (text content needs to be complete)
+        if check_style_elements && element.name == "style"
+          @collected_style_elements << element
+        end
+      end
+
+      def validate_sax_complete(context)
+        # Validate collected style elements
+        @collected_style_elements.each do |element|
+          check_style_element_sax(element, context)
+        end
+
+        # Reset for next validation
+        @collected_style_elements = []
       end
 
       def should_check_node?(node, context = nil)
@@ -47,7 +73,8 @@ module SvgConform
       def validate_sax_element(element, context)
         case element.name
         when "style"
-          check_style_element_sax(element, context) if check_style_elements
+          # Style elements handled in deferred validation (need text content)
+          # Already collected in collect_sax_data
         when "link"
           check_link_element_sax(element, context) if check_link_elements
         else
