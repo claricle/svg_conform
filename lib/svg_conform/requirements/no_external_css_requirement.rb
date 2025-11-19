@@ -131,7 +131,7 @@ module SvgConform
               requirement_id: id,
               message: "External CSS import not allowed: #{url}",
               node: element,
-              severity: :error
+              severity: :error,
             )
           end
         end
@@ -145,7 +145,7 @@ module SvgConform
           requirement_id: id,
           message: "External CSS import not allowed: #{url}",
           node: element,
-          severity: :error
+          severity: :error,
         )
       end
 
@@ -161,7 +161,7 @@ module SvgConform
           requirement_id: id,
           message: "External CSS link not allowed: #{href}",
           node: element,
-          severity: :error
+          severity: :error,
         )
       end
 
@@ -179,7 +179,7 @@ module SvgConform
           requirement_id: id,
           message: "External URL reference in style attribute not allowed: #{url}",
           node: element,
-          severity: :error
+          severity: :error,
         )
       end
 

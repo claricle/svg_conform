@@ -142,7 +142,7 @@ module SvgConform
             message: "Element '#{element_name}' is not allowed in this profile",
             node: element,
             severity: :error,
-            data: { element: element_name }
+            data: { element: element_name },
           )
           return
         end
@@ -156,7 +156,7 @@ module SvgConform
               message: "The element '#{element_name}' is not allowed as a child of '#{parent_name}'",
               node: element,
               severity: :error,
-              data: { element: element_name, parent: parent_name }
+              data: { element: element_name, parent: parent_name },
             )
             # Mark node as structurally invalid
             context.mark_node_structurally_invalid(element)
@@ -173,7 +173,7 @@ module SvgConform
               message: "Element '#{element_name}' is not allowed in this profile",
               node: element,
               severity: :error,
-              data: { element: element_name }
+              data: { element: element_name },
             )
             # Mark as structurally invalid
             context.mark_node_structurally_invalid(element)
@@ -191,7 +191,7 @@ module SvgConform
             requirement_id: id,
             message: error[:message],
             node: element,
-            severity: :error
+            severity: :error,
           )
         end
       end
@@ -347,7 +347,7 @@ module SvgConform
         return false unless skip_foreign_namespaces
 
         # Check if element name has a namespace prefix (e.g., rdf:RDF, cc:Work)
-        if element.name.include?(':')
+        if element.name.include?(":")
           # Element has prefix, it's in a foreign namespace
           return true
         end
@@ -387,7 +387,9 @@ module SvgConform
 
         return errors unless element_configs&.any?
 
-        element_config = element_configs.find { |config| config.tag == element_name }
+        element_config = element_configs.find do |config|
+          config.tag == element_name
+        end
         return errors unless element_config&.attr
 
         allowed_attrs = []
@@ -440,7 +442,7 @@ module SvgConform
             errors << {
               type: :explicitly_disallowed,
               attribute: attr_name,
-              message: "Attribute '#{attr_name}' is explicitly disallowed on element '#{element_name}'"
+              message: "Attribute '#{attr_name}' is explicitly disallowed on element '#{element_name}'",
             }
             next
           end
@@ -451,7 +453,7 @@ module SvgConform
           errors << {
             type: :not_allowed,
             attribute: attr_name,
-            message: "Attribute '#{attr_name}' is not allowed on element '#{element_name}'"
+            message: "Attribute '#{attr_name}' is not allowed on element '#{element_name}'",
           }
         end
 
@@ -480,7 +482,7 @@ module SvgConform
           errors << {
             type: :globally_disallowed,
             attribute: attr_name,
-            message: "Attribute '#{attr_name}' is globally disallowed in this profile"
+            message: "Attribute '#{attr_name}' is globally disallowed in this profile",
           }
         end
 

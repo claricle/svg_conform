@@ -63,7 +63,7 @@ module SvgConform
             requirement_id: id,
             message: "Forbidden element '#{element.name}' is not allowed",
             node: element,
-            severity: :error
+            severity: :error,
           )
         end
 
@@ -76,7 +76,7 @@ module SvgConform
               requirement_id: id,
               message: "Forbidden attribute '#{attr_name}' is not allowed",
               node: element,
-              severity: :error
+              severity: :error,
             )
           end
         end

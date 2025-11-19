@@ -54,7 +54,7 @@ module SvgConform
             requirement_id: id,
             message: "Link href '#{href_value}' contains non-ASCII characters",
             node: element,
-            severity: :error
+            severity: :error,
           )
         end
 
@@ -70,7 +70,7 @@ module SvgConform
             requirement_id: id,
             message: "IRI attribute '#{attr_name}' value '#{iri_value}' contains non-ASCII characters",
             node: element,
-            severity: :error
+            severity: :error,
           )
         end
       end

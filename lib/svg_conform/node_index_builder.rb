@@ -39,6 +39,7 @@ module SvgConform
         node.children.each do |child|
           # Only process nodes with name (skip text nodes, etc.)
           next unless child.respond_to?(:name) && child.name
+
           build_index(child, child_counter)
         end
       end

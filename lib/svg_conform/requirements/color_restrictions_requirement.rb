@@ -85,7 +85,8 @@ module SvgConform
         return if context.node_structurally_invalid?(element)
 
         # Check color-related attributes
-        color_attributes = %w[fill stroke color stop-color flood-color lighting-color]
+        color_attributes = %w[fill stroke color stop-color flood-color
+                              lighting-color]
 
         color_attributes.each do |attr_name|
           value = element.raw_attributes[attr_name]
@@ -101,8 +102,8 @@ module SvgConform
             data: {
               attribute: attr_name,
               value: value,
-              element: element.name
-            }
+              element: element.name,
+            },
           )
         end
 
@@ -111,7 +112,8 @@ module SvgConform
         return unless style_value
 
         styles = parse_style(style_value)
-        color_properties = %w[fill stroke color stop-color flood-color lighting-color]
+        color_properties = %w[fill stroke color stop-color flood-color
+                              lighting-color]
 
         color_properties.each do |prop|
           value = styles[prop]
@@ -127,8 +129,8 @@ module SvgConform
             data: {
               attribute: prop,
               value: value,
-              element: element.name
-            }
+              element: element.name,
+            },
           )
         end
       end

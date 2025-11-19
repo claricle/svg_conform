@@ -9,7 +9,7 @@ module SvgConform
       @options = {
         fix: false,
         strict: false,
-        mode: :sax  # Testing SAX mode
+        mode: :sax, # Testing SAX mode
       }.merge(options)
     end
 
@@ -152,7 +152,7 @@ module SvgConform
         warnings: [],
         file_path: file_path,
         error?: true,
-        to_s: -> { "Error processing #{file_path}: #{error.message}" }
+        to_s: -> { "Error processing #{file_path}: #{error.message}" },
       )
     end
   end

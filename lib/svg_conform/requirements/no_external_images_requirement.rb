@@ -88,7 +88,7 @@ module SvgConform
           requirement_id: id,
           message: "External image reference not allowed: #{href}. Images must be embedded as data URIs.",
           node: element,
-          severity: :error
+          severity: :error,
         )
       end
 
@@ -105,7 +105,7 @@ module SvgConform
             requirement_id: id,
             message: "External image URL in style attribute not allowed: #{url}. Images must be embedded as data URIs.",
             node: element,
-            severity: :error
+            severity: :error,
           )
         end
       end

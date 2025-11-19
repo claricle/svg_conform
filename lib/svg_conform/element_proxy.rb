@@ -11,7 +11,7 @@ module SvgConform
     end
 
     def namespace
-      nil  # DOM handles namespaces via XPath; SAX checks attribute names directly
+      nil # DOM handles namespaces via XPath; SAX checks attribute names directly
     end
   end
 
@@ -24,12 +24,12 @@ module SvgConform
 
     def initialize(name:, attributes:, position:, path:, parent:)
       @name = name
-      @raw_attributes = attributes  # Hash of attribute name => value
+      @raw_attributes = attributes # Hash of attribute name => value
       @position = position
-      @path = path  # Array of parent path parts
+      @path = path # Array of parent path parts
       @parent = parent
-      @text_content = String.new  # Mutable string
-      @child_counters = {}  # Track child element positions
+      @text_content = +"" # Mutable string
+      @child_counters = {} # Track child element positions
     end
 
     # Build full path ID for this element
@@ -61,7 +61,7 @@ module SvgConform
 
     # Get namespace from attributes or parent
     def namespace
-      @raw_attributes['xmlns'] || @parent&.namespace
+      @raw_attributes["xmlns"] || @parent&.namespace
     end
 
     # Check if this is a text node (always false for ElementProxy)
@@ -70,10 +70,10 @@ module SvgConform
     end
 
     # Support dynamic attribute access
-    def method_missing(method, *args)
-      if method.to_s.end_with?('?')
+    def method_missing(method, *_args)
+      if method.to_s.end_with?("?")
         # Boolean check
-        has_attribute?(method.to_s.chomp('?'))
+        has_attribute?(method.to_s.chomp("?"))
       else
         # Attribute access
         @attributes[method.to_s] || @attributes[method.to_sym]
@@ -86,7 +86,7 @@ module SvgConform
 
     # For compatibility with validation context
     def line
-      nil  # SAX doesn't provide line numbers easily
+      nil # SAX doesn't provide line numbers easily
     end
 
     def column

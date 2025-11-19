@@ -213,8 +213,8 @@ module SvgConform
             data: {
               element_name: element.name,
               namespace: element_namespace,
-              allowed_namespaces: effective_allowed_namespaces
-            }
+              allowed_namespaces: effective_allowed_namespaces,
+            },
           )
           return
         end
@@ -230,8 +230,8 @@ module SvgConform
           data: {
             element_name: element.name,
             namespace: element_namespace,
-            disallowed_namespaces: disallowed_namespaces
-          }
+            disallowed_namespaces: disallowed_namespaces,
+          },
         )
       end
 

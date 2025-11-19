@@ -24,15 +24,15 @@ module SvgConform
       def initialize(*args)
         super
         @collected_ids = Set.new
-        @use_element_refs = []  # [element, ref_id, href]
-        @other_refs = []  # [element, ref_id, attr_name, value]
+        @use_element_refs = [] # [element, ref_id, href]
+        @other_refs = [] # [element, ref_id, attr_name, value]
       end
 
       def needs_deferred_validation?
         true
       end
 
-      def collect_sax_data(element, context)
+      def collect_sax_data(element, _context)
         # Initialize collections on first call
         @collected_ids ||= Set.new
         @use_element_refs ||= []
@@ -53,7 +53,8 @@ module SvgConform
 
         # Collect other ID references if enabled
         if check_other_references
-          id_reference_attributes = %w[clip-path mask filter marker-start marker-mid marker-end fill stroke]
+          id_reference_attributes = %w[clip-path mask filter marker-start
+                                       marker-mid marker-end fill stroke]
 
           id_reference_attributes.each do |attr_name|
             attr_value = element.raw_attributes[attr_name]
@@ -87,7 +88,7 @@ module SvgConform
             node: element,
             message: "use element references non-existent ID: #{ref_id}",
             severity: :error,
-            data: { invalid_id: ref_id, href: href }
+            data: { invalid_id: ref_id, href: href },
           )
         end
 
@@ -107,7 +108,7 @@ module SvgConform
             node: element,
             message: message,
             severity: :error,
-            data: { invalid_id: ref_id, attribute: attr_name, value: value }
+            data: { invalid_id: ref_id, attribute: attr_name, value: value },
           )
         end
       end
