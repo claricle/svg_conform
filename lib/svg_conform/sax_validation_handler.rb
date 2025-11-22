@@ -33,7 +33,7 @@ module SvgConform
     def start_document
       # Reset state in requirements that maintain state across validations
       reset_stateful_requirements
-      
+
       # Initialize root level counters
       @position_counters.push({})
     end
