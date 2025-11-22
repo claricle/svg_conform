@@ -114,19 +114,25 @@ module SvgConform
     end
 
     def validate(document)
-      # Use SAX mode for validation performance
-      # Convert document to content string if it's a DOM document
+      # If it's a Document object, it's already loaded into DOM
+      # Use DOM validation (safe, already in memory)
       if document.is_a?(Document)
-        content = document.to_xml
-        sax_doc = SaxDocument.from_content(content)
-        sax_doc.validate_with_profile(self)
+        context = ValidationContext.new(document, self)
+
+        # Validate using requirements system
+        requirements&.each do |requirement|
+          requirement.validate_document(document, context)
+        end
+
+        ValidationResult.new(document, self, context)
       elsif document.respond_to?(:to_xml)
-        # Handle any document-like object
+        # For other document objects, serialize and use SAX for safety
+        # (This handles Nokogiri/Moxml documents that aren't wrapped in Document)
         content = document.to_xml
         sax_doc = SaxDocument.from_content(content)
         sax_doc.validate_with_profile(self)
       else
-        # Fallback to DOM mode for backward compatibility
+        # Fallback to DOM mode for non-serializable objects
         context = ValidationContext.new(document, self)
 
         # Validate using requirements system

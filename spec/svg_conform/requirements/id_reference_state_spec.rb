@@ -46,7 +46,9 @@ RSpec.describe "IdReferenceRequirement" do
                                   "State leaked from first validation! Second validation should not mention 'missing_id'"
 
     # Second validation should have no errors (or at least no reference errors)
-    reference_errors = result2.errors.select { |e| e.message.include?("Reference to undefined") }
+    reference_errors = result2.errors.select do |e|
+      e.message.include?("Reference to undefined")
+    end
     expect(reference_errors).to be_empty,
                                 "Second validation should have no reference errors, but got: #{reference_errors.map(&:message)}"
   end

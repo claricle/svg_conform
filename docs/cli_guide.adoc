@@ -1,0 +1,846 @@
+= SvgConform CLI Guide
+:toc: left
+:toclevels: 3
+:sectlinks:
+:sectanchors:
+:source-highlighter: rouge
+
+== Purpose
+
+This guide provides comprehensive documentation for the `svg_conform` command-line interface.
+
+The CLI provides tools for:
+
+* Validating SVG files against conformance profiles
+* Automatically remediating common SVG issues
+* Batch processing directories of SVG files
+* Generating validation reports
+* Managing file remediation workflows
+
+== Installation
+
+Install the gem:
+
+[source,bash]
+----
+$ gem install svg_conform
+----
+
+Or add to your Gemfile:
+
+[source,ruby]
+----
+gem 'svg_conform'
+----
+
+Verify installation:
+
+[source,bash]
+----
+$ svg_conform version
+SvgConform 0.2.0
+----
+
+== Command overview
+
+The `svg_conform` CLI provides the following commands:
+
+* `check` - Validate and optionally remediate SVG files
+* `profiles` - List available validation profiles
+* `version` - Show version information
+* `svgcheck` - SVGCheck compatibility commands (advanced)
+
+== Command: check
+
+The `check` command validates SVG files against a profile and optionally applies automatic remediations.
+
+=== Basic usage
+
+==== Single file validation
+
+[source,bash]
+----
+$ svg_conform check file.svg --profile=metanorma
+----
+
+Output example:
+
+[source,text]
+----
+SVG Validation Report
+==================================================
+File: file.svg
+Profile: metanorma
+Valid: ✗
+Total Errors: 2
+
+Validation Errors:
+
+• Viewbox is required
+    at svg
+
+• External images are not allowed
+    at image
+    ... and 1 more
+----
+
+==== Multiple file validation
+
+[source,bash]
+----
+$ svg_conform check file1.svg file2.svg file3.svg -p metanorma
+----
+
+==== Directory validation
+
+Recursively validate all SVG files in a directory:
+
+[source,bash]
+----
+$ svg_conform check --directory=images/ --profile=metanorma
+----
+
+Output shows a summary table and statistics.
+
+=== Options reference
+
+==== Input selection
+
+`*FILES`::
+One or more SVG files to process
+
+`--directory=PATH` or `-d`::
+Directory to scan recursively for SVG files
+
+==== Profile selection
+
+`--profile=PROFILE` or `-p`::
+Profile to validate against (default: `svg_1_2_rfc`)
++
+Available profiles:
++
+* `base` - Minimal SVG validation
+* `svg_1_2_rfc` - RFC 7996 compliance
+* `svg_1_2_rfc_with_rdf` - RFC 7996 with RDF support
+* `metanorma` - Metanorma requirements
+* `lucid` - Lucid profile
+* `no_external_css` - No external CSS
+
+==== Output format (single file)
+
+`--format=FORMAT`::
+Output format for single file mode (default: `table`)
++
+Options:
++
+* `table` - Human-readable table (default)
+* `json` - JSON format
+* `yaml` - YAML format
+
+`--output=FILE` or `-o`::
+Save report to file instead of stdout
+
+Examples:
+
+[source,bash]
+----
+# JSON output to stdout
+$ svg_conform check file.svg -p metanorma --format=json
+
+# JSON output to file
+$ svg_conform check file.svg -p metanorma --format=json -o report.json
+
+# YAML output to file
+$ svg_conform check file.svg -p metanorma --format=yaml -o report.yaml
+----
+
+==== Remediation options
+
+`--fix` or `-f`::
+Enable automatic remediation
+
+`--fix-output=FILE`::
+Output file for remediated SVG (single file mode)
++
+Default: `FILE.fixed.svg`
+
+`--output-dir=PATH`::
+Output directory for remediated files (multi-file/directory mode)
++
+Required when using `--fix` with multiple files or `--directory`
+
+`--in-place`::
+Replace original files with remediated versions
++
+**Warning**: This is destructive. Requires `--force` flag.
+
+`--force`::
+Confirm destructive operations (required for `--in-place`)
+
+Examples:
+
+[source,bash]
+----
+# Single file with custom output
+$ svg_conform check file.svg -p metanorma --fix --fix-output=cleaned.svg
+
+# Multiple files to output directory
+$ svg_conform check *.svg -p metanorma --fix --output-dir=fixed/
+
+# Directory with in-place replacement (destructive!)
+$ svg_conform check -d images/ -p metanorma --fix --in-place --force
+----
+
+==== Batch processing options
+
+`--quiet` or `-q`::
+Suppress per-file output, show summary only
+
+`--verbose` or `-v`::
+Show detailed progress information
+
+`--report-format=FORMAT`::
+Generate detailed batch report
++
+Options: `json`, `yaml`
+
+`--report-output=FILE`::
+Save detailed batch report to file
+
+`--manifest=FILE`::
+Generate manifest file mapping original to remediated files
++
+Default: `manifest.json` when using `--fix`
+
+Examples:
+
+[source,bash]
+----
+# Quiet mode - summary only
+$ svg_conform check -d images/ -p metanorma -q
+
+# Generate detailed JSON report
+$ svg_conform check -d images/ -p metanorma \
+  --report-format=json --report-output=full-report.json
+
+# Full workflow with manifest
+$ svg_conform check -d images/ -p metanorma --fix --output-dir=fixed/ \
+  --manifest=file-mapping.json --report-format=json --report-output=report.json
+----
+
+=== Usage modes
+
+==== Mode 1: Single file
+
+Process one SVG file:
+
+[source,bash]
+----
+$ svg_conform check file.svg -p metanorma
+----
+
+Features:
+
+* Table output by default
+* Can specify JSON/YAML format
+* Simple validation or remediation
+* Output to stdout or file
+
+==== Mode 2: Multiple files
+
+Process multiple specified files:
+
+[source,bash]
+----
+$ svg_conform check file1.svg file2.svg file3.svg -p metanorma
+----
+
+Features:
+
+* Batch report with statistics
+* Requires `--output-dir` for remediation
+* Per-file and summary output
+
+==== Mode 3: Directory
+
+Recursively process all SVG files in a directory:
+
+[source,bash]
+----
+$ svg_conform check --directory=images/ -p metanorma
+----
+
+Features:
+
+* Recursive directory scanning
+* Batch report with statistics
+* Optional manifest generation
+* Supports `--in-place` remediation
+
+=== Common workflows
+
+==== Workflow 1: Quality control
+
+Validate all SVGs before deployment:
+
+[source,bash]
+----
+$ svg_conform check -d assets/images/ -p metanorma --quiet
+
+# Exit code 0 = all valid
+# Exit code 1 = validation failures
+----
+
+Use in CI/CD:
+
+[source,bash]
+----
+#!/bin/bash
+if svg_conform check -d docs/images/ -p metanorma -q; then
+  echo "All SVGs valid"
+else
+  echo "SVG validation failed"
+  exit 1
+fi
+----
+
+==== Workflow 2: Interactive remediation
+
+Fix issues with review:
+
+[source,bash]
+----
+# 1. Validate and see issues
+$ svg_conform check file.svg -p metanorma
+
+# 2. Apply fixes to new file
+$ svg_conform check file.svg -p metanorma --fix --fix-output=file-fixed.svg
+
+# 3. Review the fixed file
+$ diff file.svg file-fixed.svg
+
+# 4. Replace original if satisfied
+$ mv file-fixed.svg file.svg
+----
+
+==== Workflow 3: Batch remediation
+
+Fix all non-conforming files in a directory:
+
+[source,bash]
+----
+# 1. Create backup
+$ cp -r images/ images-backup/
+
+# 2. Generate pre-fix report
+$ svg_conform check -d images/ -p metanorma \
+  --report-format=json --report-output=before.json
+
+# 3. Apply fixes to new directory
+$ svg_conform check -d images/ -p metanorma \
+  --fix --output-dir=images-fixed/ --manifest=manifest.json
+
+# 4. Verify fixes
+$ svg_conform check -d images-fixed/ -p metanorma -q
+
+# 5. If satisfied, replace originals
+$ rm -rf images/
+$ mv images-fixed/ images/
+----
+
+==== Workflow 4: In-place batch fix
+
+Fix files in place (destructive):
+
+[source,bash]
+----
+# IMPORTANT: Back up first!
+$ cp -r images/ images-backup/
+
+# Fix all files in place
+$ svg_conform check -d images/ -p metanorma --fix --in-place --force
+
+# Verify
+$ svg_conform check -d images/ -p metanorma -q
+----
+
+==== Workflow 5: Selective remediation
+
+Fix only specific files:
+
+[source,bash]
+----
+# Find invalid files
+$ svg_conform check -d images/ -p metanorma -q > results.txt
+
+# Manually identify problematic files
+# Then fix them individually
+$ svg_conform check images/problematic1.svg -p metanorma -f
+$ svg_conform check images/problematic2.svg -p metanorma -f
+----
+
+=== Exit codes
+
+`0`::
+Success - All files valid or successfully remediated
+
+`1`::
+Failure - Validation errors found or remediation failed
+
+Use exit codes in scripts:
+
+[source,bash]
+----
+if svg_conform check file.svg -p metanorma; then
+  echo "Valid!"
+else
+  echo "Invalid - see errors above"
+  exit 1
+fi
+----
+
+=== Output formats
+
+==== Table format (default)
+
+Human-readable table with error summary:
+
+[source,text]
+----
+SVG Validation Report
+==================================================
+File: file.svg
+Profile: metanorma
+Valid: ✗
+Total Errors: 2
+
+Validation Errors:
+
+• Viewbox is required
+    at svg
+
+• External images are not allowed
+    at image
+----
+
+==== JSON format
+
+Machine-readable JSON using lutaml-model:
+
+[source,json]
+----
+{
+  "filename": "file.svg",
+  "profile": "metanorma",
+  "valid": false,
+  "errors": {
+    "total_count": 2,
+    "issues": [
+      {
+        "requirement_id": "viewbox_required",
+        "message": "Viewbox is required",
+        "element": "svg",
+        "line_number": 1
+      }
+    ]
+  }
+}
+----
+
+==== YAML format
+
+Machine-readable YAML using lutaml-model:
+
+[source,yaml]
+----
+filename: file.svg
+profile: metanorma
+valid: false
+errors:
+  total_count: 2
+  issues:
+  - requirement_id: viewbox_required
+    message: Viewbox is required
+    element: svg
+    line_number: 1
+----
+
+==== Batch report format
+
+For multiple files or directories:
+
+[source,text]
+----
+================================================================================
+BATCH VALIDATION SUMMARY
+================================================================================
+Directory: images/
+Profile: metanorma
+Files processed: 15
+Valid before: 8
+Remediated: 5
+Valid after: 13
+Failed: 2
+Success rate: 86%
+================================================================================
+----
+
+== Command: profiles
+
+List available validation profiles with their descriptions.
+
+=== Basic usage
+
+[source,bash]
+----
+$ svg_conform profiles
+----
+
+Output:
+
+[source,text]
+----
+Available SVG Profiles
+========================================
+
+Profile          Description
+-------          -----------
+base             Minimal SVG validation
+metanorma        Metanorma document requirements
+svg_1_2_rfc      RFC 7996 compliance
+...
+
+Use --verbose for detailed information about each profile
+----
+
+=== Verbose mode
+
+Show detailed information about profiles:
+
+[source,bash]
+----
+$ svg_conform profiles --verbose
+----
+
+Output includes:
+
+* Profile description
+* Number of requirements
+* Number of remediations
+* List of all requirements with descriptions
+* List of all remediations with descriptions
+
+Example output:
+
+[source,text]
+----
+Detailed SVG Validation Profiles
+==================================================
+
+Profile: metanorma
+------------------------------
+Description: Metanorma document requirements
+Requirements: 12
+Remediations: 8
+Requirement Details:
+  • ViewboxRequiredRequirement
+    SVG must have a viewBox attribute
+  • NoExternalImagesRequirement
+    External images must be embedded
+  ...
+Remediation Details:
+  • ViewboxRemediation
+    Add missing viewBox attribute
+  • ImageEmbeddingRemediation
+    Embed external images as data URIs
+  ...
+----
+
+== Command: version
+
+Display version information:
+
+[source,bash]
+----
+$ svg_conform version
+SvgConform 0.2.0
+----
+
+== Troubleshooting
+
+=== Common issues
+
+==== "No SVG files found"
+
+**Problem**: No files to process
+
+**Solutions**:
+
+[source,bash]
+----
+# Verify directory exists
+$ ls -la images/
+
+# Check for SVG files
+$ find images/ -name "*.svg"
+
+# Use absolute path
+$ svg_conform check --directory=/absolute/path/to/images/
+----
+
+==== "Output directory required"
+
+**Problem**: Using `--fix` with multiple files without `--output-dir`
+
+**Solution**:
+
+[source,bash]
+----
+# Specify output directory
+$ svg_conform check *.svg -p metanorma --fix --output-dir=fixed/
+----
+
+==== "--in-place requires --force"
+
+**Problem**: Safety check for destructive operation
+
+**Solution**:
+
+[source,bash]
+----
+# Add --force flag
+$ svg_conform check -d images/ -p metanorma --fix --in-place --force
+----
+
+==== "Profile not found"
+
+**Problem**: Invalid profile name
+
+**Solution**:
+
+[source,bash]
+----
+# List available profiles
+$ svg_conform profiles
+
+# Use correct profile name
+$ svg_conform check file.svg -p metanorma
+----
+
+==== Exit code 1 with valid files
+
+**Problem**: Some profiles have strict requirements
+
+**Solution**:
+
+* Review the error messages
+* Use appropriate profile for your use case
+* Consider custom profile if needed
+
+=== Performance tips
+
+==== Processing large directories
+
+For directories with many files:
+
+[source,bash]
+----
+# Use quiet mode
+$ svg_conform check -d large-dir/ -p metanorma -q
+
+# Process in batches
+$ find images/ -name "*.svg" -print0 | \
+  xargs -0 -n 50 svg_conform check -p metanorma
+----
+
+==== Large SVG files
+
+SvgConform uses SAX parsing for memory safety:
+
+* No file size limits
+* Constant memory usage
+* Safe for files >100MB
+
+=== Getting help
+
+Display command help:
+
+[source,bash]
+----
+# General help
+$ svg_conform help
+
+# Command-specific help
+$ svg_conform help check
+$ svg_conform help profiles
+----
+
+== Advanced usage
+
+=== Custom profiles
+
+Create a custom profile YAML file:
+
+[source,yaml]
+----
+# my-profile.yml
+name: my_custom_profile
+description: Custom validation rules
+
+requirements:
+  - type: viewbox_required
+  - type: no_external_images
+  - type: font_family
+    config:
+      allowed_families:
+        - Arial
+        - Helvetica
+
+remediations:
+  - type: viewbox
+  - type: image_embedding
+----
+
+Use the custom profile:
+
+[source,bash]
+----
+# Not yet supported via CLI - use Ruby API
+$ ruby -e "require 'svg_conform'; \
+  profile = SvgConform::Profile.load_from_file('my-profile.yml'); \
+  validator = SvgConform::Validator.new; \
+  result = validator.validate_file('file.svg', profile: profile); \
+  puts result.valid?"
+----
+
+=== Integration examples
+
+==== Git pre-commit hook
+
+`.git/hooks/pre-commit`:
+
+[source,bash]
+----
+#!/bin/bash
+# Validate SVGs before commit
+
+changed_svgs=$(git diff --cached --name-only --diff-filter=ACM | grep '\.svg$')
+
+if [ -n "$changed_svgs" ]; then
+  echo "Validating SVG files..."
+  echo "$changed_svgs" | xargs svg_conform check -p metanorma -q
+  if [ $? -ne 0 ]; then
+    echo "SVG validation failed. Commit aborted."
+    exit 1
+  fi
+fi
+----
+
+==== CI/CD integration (GitHub Actions)
+
+`.github/workflows/svg-validation.yml`:
+
+[source,yaml]
+----
+name: SVG Validation
+on: [push, pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0
+      - run: gem install svg_conform
+      - run: svg_conform check -d docs/images/ -p metanorma --quiet
+----
+
+==== Makefile integration
+
+`Makefile`:
+
+[source,makefile]
+----
+.PHONY: validate-svg fix-svg
+
+validate-svg:
+	svg_conform check -d images/ -p metanorma --quiet
+
+fix-svg:
+	svg_conform check -d images/ -p metanorma \
+		--fix --output-dir=images-fixed/ \
+		--manifest=manifest.json
+	@echo "Review images-fixed/ before replacing images/"
+----
+
+== Reference
+
+=== All CLI options
+
+[source,text]
+----
+GLOBAL OPTIONS:
+  --help, -h           Show help
+  --version            Show version
+
+CHECK COMMAND:
+  FILES                One or more SVG files
+  --directory, -d      Directory to scan recursively
+  --profile, -p        Profile name (default: svg_1_2_rfc)
+  --format             Output format: table, json, yaml (default: table)
+  --output, -o         Output file
+  --fix, -f            Enable remediation
+  --fix-output         Remediated file output (default: FILE.fixed.svg)
+  --output-dir         Output directory for batch remediation
+  --in-place           Replace original files (requires --force)
+  --force              Confirm destructive operations
+  --report-format      Batch report format: json, yaml
+  --report-output      Batch report output file
+  --manifest           Manifest file path (default: manifest.json)
+  --quiet, -q          Suppress per-file output
+  --verbose, -v        Show detailed progress
+
+PROFILES COMMAND:
+  --verbose, -v        Show detailed profile information
+----
+
+=== Profile compatibility
+
+[cols="1,3"]
+|===
+| Profile | Use Case
+
+| `base`
+| Minimal SVG validation
+
+| `svg_1_2_rfc`
+| IETF RFC 7996 documents (strict)
+
+| `svg_1_2_rfc_with_rdf`
+| IETF RFC 7996 with RDF metadata
+
+| `metanorma`
+| Metanorma document generation
+
+| `lucid`
+| Lucid chart exports
+
+| `no_external_css`
+| Embedded CSS only
+|===
+
+=== Related documentation
+
+* link:../README.adoc[Main README]
+* link:api_reference.adoc[Ruby API Reference]
+* link:profiles.adoc[Profile Documentation]
+* link:requirements.adoc[Requirements Reference]
+* link:remediation.adoc[Remediation Reference]
+
+== Conclusion
+
+The `svg_conform` CLI provides powerful tools for SVG validation and remediation. For more advanced usage, see the link:api_reference.adoc[Ruby API Reference].
+
+For issues or questions, visit: https://github.com/metanorma/svg_conform

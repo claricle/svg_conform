@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "moxml"
+require "nokogiri" if defined?(Nokogiri)
 
 module SvgConform
   # Wrapper around Moxml document for SVG validation
@@ -26,6 +27,40 @@ module SvgConform
 
     def self.from_content(content)
       new(content)
+    end
+
+    # Create Document from an already-parsed node (Nokogiri or Moxml)
+    # Avoids re-parsing when input is already a DOM object
+    def self.from_node(node)
+      doc = allocate
+      doc.instance_variable_set(:@file_path, nil)
+      doc.instance_variable_set(:@xpath_cache, {})
+
+      # Convert node to Moxml document
+      if node.respond_to?(:to_xml) && node.class.name.start_with?("Moxml")
+        # Already a Moxml node, wrap it
+        doc.instance_variable_set(:@content, nil) # Don't store XML string
+        doc.instance_variable_set(:@moxml_document,
+                                  node.is_a?(Moxml::Document) ? node : wrap_moxml_element(node))
+      elsif defined?(Nokogiri) && node.is_a?(Nokogiri::XML::Node)
+        # Nokogiri node - must serialize to convert to Moxml
+        # This is unavoidable due to different DOM implementations
+        xml_string = node.to_xml
+        doc.instance_variable_set(:@content, xml_string)
+        doc.send(:parse_document)
+      else
+        raise ArgumentError,
+              "Invalid input type: #{node.class}. Expected Moxml or Nokogiri DOM node."
+      end
+
+      doc
+    end
+
+    def self.wrap_moxml_element(element)
+      # If it's an element, we need to wrap it in a document
+      # For now, parse its XML representation
+      context = Moxml.new
+      context.parse(element.to_xml)
     end
 
     def root
@@ -55,6 +90,8 @@ module SvgConform
     end
 
     def to_xml
+      # Always generate from current moxml_document state
+      # This ensures modifications are reflected in the output
       @moxml_document.to_xml
     end
 
@@ -81,7 +118,9 @@ module SvgConform
     end
 
     def has_svg_namespace_prefix?
-      @content.include?("xmlns:svg=") || @content.include?("svg:")
+      # Check the current document state, not cached content
+      xml = @moxml_document.to_xml
+      xml.include?("xmlns:svg=") || xml.include?("svg:")
     end
 
     def has_viewbox?
