@@ -32,11 +32,11 @@ module SvgConform
         end
 
         # Second pass: remove unused namespace declarations
-        document.traverse do |node|
-          next unless element?(node)
-
-          changes.concat(remove_unused_namespace_declarations(node,
-                                                              removed_namespaces))
+        # Nokogiri/libxml2 cannot remove namespace declarations via DOM,
+        # so we use string manipulation + reparse
+        if removed_namespaces.any? || disallowed_namespaces.any?
+          changes.concat(remove_namespace_declarations(document,
+                                                       removed_namespaces))
         end
 
         changes
@@ -104,52 +104,43 @@ module SvgConform
         changes
       end
 
-      def remove_unused_namespace_declarations(node, removed_namespaces)
+      def remove_namespace_declarations(document, removed_namespaces)
         changes = []
 
-        # Look for xmlns declarations that correspond to removed namespaces
-        attributes_to_remove = []
+        # Get current XML
+        xml_str = document.to_xml
 
-        if node.respond_to?(:attribute_nodes)
-          node.attribute_nodes.each do |attr|
-            attr_name = attr.name
-            next unless attr_name.start_with?("xmlns:")
+        # Build regex to remove xmlns declarations for disallowed namespaces
+        # Match both removed namespaces (from attributes) and explicitly disallowed ones
+        namespaces_to_remove = removed_namespaces.to_a + disallowed_namespaces
 
-            namespace_uri = attr.value
-            # Also check if the namespace prefix itself was in disallowed_namespaces
-            # since xmlns:lucid="lucid" means the URI is literally "lucid"
-            prefix = attr_name.sub("xmlns:", "")
-            if removed_namespaces.include?(namespace_uri) || disallowed_namespaces.include?(namespace_uri) || disallowed_namespaces.include?(prefix)
-              attributes_to_remove << attr_name
-            end
-          end
-        elsif node.respond_to?(:attributes)
-          attributes = node.attributes
+        namespaces_to_remove.uniq.each do |ns_identifier|
+          # Try to match xmlns:prefix="anything" where prefix matches the identifier
+          # or xmlns:prefix="identifier" where the URI matches
+          pattern = /\s+xmlns:#{Regexp.escape(ns_identifier)}="[^"]*"/
 
-          if attributes.respond_to?(:each_key)
-            attributes.each_key do |name|
-              name_str = name.to_s
-              next unless name_str.start_with?("xmlns:")
-
-              namespace_uri = get_attribute(node, name_str)
-              prefix = name_str.sub("xmlns:", "")
-              if namespace_uri && (removed_namespaces.include?(namespace_uri) || disallowed_namespaces.include?(namespace_uri) || disallowed_namespaces.include?(prefix))
-                attributes_to_remove << name_str
-              end
-            end
+          if xml_str.match?(pattern)
+            xml_str = xml_str.gsub(pattern, "")
+            changes << {
+              type: :namespace_removed,
+              description: "Removed unused namespace declaration 'xmlns:#{ns_identifier}'",
+              node_name: "svg",
+              attribute: "xmlns:#{ns_identifier}",
+            }
           end
         end
 
-        # Remove the xmlns declarations
-        attributes_to_remove.each do |attr_name|
-          if remove_attribute(node, attr_name)
-            changes << {
-              type: :attribute_removed,
-              description: "Removed unused namespace declaration '#{attr_name}'",
-              node_name: node.name,
-              attribute: attr_name,
-            }
-          end
+        # Reparse the document to update the internal DOM
+        # This is necessary because namespace declarations cannot be removed
+        # from the DOM directly in Nokogiri/libxml2
+        if changes.any?
+          context = Moxml.new
+          new_moxml_doc = context.parse(xml_str)
+
+          # Replace the document's internal moxml_document
+          # We need to use instance_variable_set since it's a private instance variable
+          document.instance_variable_set(:@moxml_document, new_moxml_doc)
+          document.clear_cache
         end
 
         changes

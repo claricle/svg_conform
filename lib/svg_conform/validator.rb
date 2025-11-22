@@ -31,25 +31,23 @@ module SvgConform
       end
     end
 
-    # Validate SVG content string
-    def validate(svg_content, profile: :svg_1_2_rfc, **options)
+    # Validate SVG content string or document object
+    # Accepts:
+    # - String (XML content) → uses SAX for efficient parsing
+    # - Moxml::Document or Moxml::Element → serializes once, then SAX validates
+    # - Nokogiri::XML::Document or Nokogiri::XML::Element → serializes once, then SAX validates
+    # - Any adapter document object (Ox, Oga, REXML, LibXML) → serializes once, then SAX validates
+    #
+    # IMPORTANT: Always uses SAX validation to safely handle large SVG files.
+    # DOM validation can hang on large files, so we serialize once and validate with SAX.
+    def validate(input, profile: :svg_1_2_rfc, **options)
       merged_options = @options.merge(options)
-      mode = merged_options[:mode]
 
-      # Default to SAX if not specified
-      mode = :sax if mode.nil?
+      # Normalize input to string, then use SAX validation
+      svg_content = normalize_input_to_string(input)
 
-      case mode
-      when :sax
-        validate_content_sax(svg_content, profile: profile, **merged_options)
-      when :dom
-        validate_content_dom(svg_content, profile: profile, **merged_options)
-      when :auto
-        # For content, we can't check file size, so default to SAX
-        validate_content_sax(svg_content, profile: profile, **merged_options)
-      else
-        validate_content_sax(svg_content, profile: profile, **merged_options)
-      end
+      # Always use SAX mode for safe validation (handles large files)
+      validate_content_sax(svg_content, profile: profile, **merged_options)
     end
 
     # Validate a Document object (DOM only)
@@ -86,6 +84,48 @@ module SvgConform
     end
 
     private
+
+    # Normalize various input types to XML string
+    def normalize_input_to_string(input)
+      case input
+      when String
+        # Already a string, return as-is
+        input
+      else
+        # Try to detect and convert document objects
+        convert_document_to_string(input)
+      end
+    end
+
+    # Convert document object to XML string
+    def convert_document_to_string(input)
+      # Check for Moxml document or element
+      if input.respond_to?(:to_xml)
+        return input.to_xml
+      end
+
+      # Check for Nokogiri document or element
+      if defined?(Nokogiri) && input.is_a?(Nokogiri::XML::Node)
+        return input.to_xml
+      end
+
+      # Check for other adapter documents that respond to to_xml
+      if input.respond_to?(:to_s) && xml_like?(input)
+        return input.to_s
+      end
+
+      # If we can't convert, raise an error
+      raise ArgumentError,
+            "Invalid input type: #{input.class}. " \
+            "Expected String, Moxml document, Nokogiri document, or adapter document object. " \
+            "Input must respond to #to_xml or be a valid XML string."
+    end
+
+    # Check if object looks like an XML document
+    def xml_like?(obj)
+      # Basic heuristic: check if it has XML-like methods
+      obj.respond_to?(:name) && obj.respond_to?(:children)
+    end
 
     def determine_mode(file_path, requested_mode)
       case requested_mode

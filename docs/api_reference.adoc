@@ -1,0 +1,1355 @@
+= SvgConform Ruby API Reference
+:toc: left
+:toclevels: 4
+:sectlinks:
+:sectanchors:
+:source-highlighter: rouge
+
+== Purpose
+
+This document provides comprehensive API documentation for the SvgConform Ruby library.
+
+The API enables programmatic:
+
+* SVG validation against conformance profiles
+* Automatic remediation of common issues
+* Custom profile creation and management
+* Reference manifest generation and analysis
+* Batch processing of SVG files
+
+== Quick start
+
+[source,ruby]
+----
+require 'svg_conform'
+
+# Validate an SVG file
+validator = SvgConform::Validator.new
+result = validator.validate_file('image.svg', profile: :metanorma)
+
+if result.valid?
+  puts "✓ SVG is valid"
+else
+  puts "✗ Found #{result.errors.count} errors"
+  result.errors.each { |e| puts "  - #{e.message}" }
+end
+----
+
+== Core classes
+
+=== SvgConform::Validator
+
+The main entry point for validation operations.
+
+==== Constructor
+
+[source,ruby]
+----
+SvgConform::Validator.new(options = {})
+----
+
+**Parameters**:
+
+* `options` (Hash) - Configuration options
+  ** `:fix` (Boolean) - Enable automatic fixes (default: `false`)
+  ** `:strict` (Boolean) - Strict validation mode (default: `false`)
+  ** `:mode` (Symbol) - Validation mode: `:sax`, `:dom`, or `:auto` (default: `:sax`)
+
+**Returns**: `Validator` instance
+
+**Example**:
+
+[source,ruby]
+----
+validator = SvgConform::Validator.new(mode: :sax)
+----
+
+==== Instance methods
+
+===== validate(input, profile:, **options)
+
+Validate SVG content or document object.
+
+**Parameters**:
+
+* `input` - SVG input (String, Moxml::Document, Moxml::Element, Nokogiri::XML::Document, Nokogiri::XML::Element)
+* `profile` (Symbol or Profile) - Profile to validate against
+* `**options` - Additional options merged with constructor options
+
+**Returns**: `ValidationResult`
+
+**Supported input types**:
+
+* `String` - Raw XML content
+* `Moxml::Document` or `Moxml::Element` - Moxml DOM objects
+* `Nokogiri::XML::Document` or `Nokogiri::XML::Element` - Nokogiri DOM objects
+* Any object responding to `to_xml`
+
+**Example**:
+
+[source,ruby]
+----
+# String input
+result = validator.validate(svg_string, profile: :metanorma)
+
+# Nokogiri element (common in Metanorma integration)
+nokogiri_element = Nokogiri::XML(svg_string).root
+result = validator.validate(nokogiri_element, profile: :metanorma)
+
+# Moxml document
+moxml_doc = Moxml.new.parse(svg_string)
+result = validator.validate(moxml_doc, profile: :metanorma)
+----
+
+===== validate_file(file_path, profile:, **options)
+
+Validate an SVG file.
+
+**Parameters**:
+
+* `file_path` (String) - Path to SVG file
+* `profile` (Symbol or Profile) - Profile to validate against
+* `**options` - Additional options
+
+**Returns**: `ValidationResult`
+
+**Raises**: `ValidationError` if file not found
+
+**Example**:
+
+[source,ruby]
+----
+result = validator.validate_file('image.svg', profile: :svg_1_2_rfc)
+----
+
+===== validate_files(file_paths, profile:, **options)
+
+Validate multiple files.
+
+**Parameters**:
+
+* `file_paths` (Array<String>) - Array of file paths
+* `profile` (Symbol or Profile) - Profile to validate against
+* `**options` - Additional options
+
+**Returns**: `Hash<String, ValidationResult>` - Hash mapping file paths to results
+
+**Example**:
+
+[source,ruby]
+----
+files = ['image1.svg', 'image2.svg', 'image3.svg']
+results = validator.validate_files(files, profile: :metanorma)
+
+results.each do |file, result|
+  puts "#{file}: #{result.valid? ? '✓' : '✗'}"
+end
+----
+
+===== available_profiles
+
+Get list of available profiles.
+
+**Returns**: `Array<Symbol>` - Profile names
+
+**Example**:
+
+[source,ruby]
+----
+profiles = validator.available_profiles
+# => [:base, :svg_1_2_rfc, :metanorma, :lucid, ...]
+----
+
+=== SvgConform::Profile
+
+Represents an SVG validation profile with requirements and remediations.
+
+==== Class methods
+
+===== load_from_file(file_path)
+
+Load a profile from a YAML file.
+
+**Parameters**:
+
+* `file_path` (String) - Path to profile YAML file
+
+**Returns**: `Profile` instance
+
+**Example**:
+
+[source,ruby]
+----
+profile = SvgConform::Profile.load_from_file('config/profiles/custom.yml')
+----
+
+===== save_to_file(profile, file_path)
+
+Save a profile to a YAML file.
+
+**Parameters**:
+
+* `profile` (Profile) - Profile instance to save
+* `file_path` (String) - Output file path
+
+**Example**:
+
+[source,ruby]
+----
+SvgConform::Profile.save_to_file(profile, 'output.yml')
+----
+
+==== Instance methods
+
+===== validate(document)
+
+Validate a document against this profile.
+
+**Parameters**:
+
+* `document` - Document to validate (Document, SaxDocument, or object responding to `to_xml`)
+
+**Returns**: `ValidationResult`
+
+**Example**:
+
+[source,ruby]
+----
+profile = SvgConform::Profiles.get(:metanorma)
+document = SvgConform::Document.from_file('image.svg')
+result = profile.validate(document)
+----
+
+===== apply_remediations(document)
+
+Apply all remediations defined in the profile.
+
+**Parameters**:
+
+* `document` (Document) - Document to remediate
+
+**Returns**: `Array` - Array of changes made
+
+**Example**:
+
+[source,ruby]
+----
+profile = SvgConform::Profiles.get(:metanorma)
+document = SvgConform::Document.from_file('image.svg')
+
+changes = profile.apply_remediations(document)
+puts "Applied #{changes.length} changes"
+
+File.write('fixed.svg', document.to_xml)
+----
+
+===== add_requirement(requirement)
+
+Add a requirement to the profile.
+
+**Parameters**:
+
+* `requirement` (BaseRequirement) - Requirement instance
+
+**Returns**: `self` (for chaining)
+
+**Example**:
+
+[source,ruby]
+----
+profile = SvgConform::Profile.new
+profile.add_requirement(
+  SvgConform::Requirements::ViewboxRequiredRequirement.new
+)
+----
+
+===== remove_requirement(requirement_id)
+
+Remove a requirement by ID.
+
+**Parameters**:
+
+* `requirement_id` (String) - Requirement identifier
+
+**Returns**: `self` (for chaining)
+
+===== has_requirement?(requirement_id)
+
+Check if profile has a specific requirement.
+
+**Parameters**:
+
+* `requirement_id` (String) - Requirement identifier
+
+**Returns**: `Boolean`
+
+===== add_remediation(remediation)
+
+Add a remediation to the profile.
+
+**Parameters**:
+
+* `remediation` (BaseRemediation) - Remediation instance
+
+**Returns**: `self` (for chaining)
+
+===== remove_remediation(remediation_id)
+
+Remove a remediation by ID.
+
+**Parameters**:
+
+* `remediation_id` (String) - Remediation identifier
+
+**Returns**: `self` (for chaining)
+
+===== requirement_count
+
+Get number of requirements in the profile.
+
+**Returns**: `Integer`
+
+===== remediation_count
+
+Get number of remediations in the profile.
+
+**Returns**: `Integer`
+
+==== Attributes
+
+* `name` (String) - Profile name
+* `description` (String) - Profile description
+* `requirements` (Array<BaseRequirement>) - Array of requirements
+* `remediations` (Array<BaseRemediation>) - Array of remediations
+
+=== SvgConform::ValidationResult
+
+Result object returned from validation operations.
+
+==== Instance methods
+
+===== valid?
+
+Check if document is valid.
+
+**Returns**: `Boolean`
+
+===== has_errors?
+
+Check if errors were found.
+
+**Returns**: `Boolean`
+
+===== has_warnings?
+
+Check if warnings were found.
+
+**Returns**: `Boolean`
+
+===== fixable?
+
+Check if issues can be automatically fixed.
+
+**Returns**: `Boolean`
+
+===== error_count
+
+Get number of errors.
+
+**Returns**: `Integer`
+
+===== warning_count
+
+Get number of warnings.
+
+**Returns**: `Integer`
+
+===== failed_requirements
+
+Get requirements that failed validation.
+
+**Returns**: `Array` - Array of failed requirement errors
+
+===== reference_manifest
+
+Get the reference manifest.
+
+**Returns**: `ReferenceManifest` instance
+
+===== available_ids
+
+Convenience accessor for all defined IDs.
+
+**Returns**: `Array<IdDefinition>`
+
+===== internal_references
+
+Get all internal references (fragment identifiers).
+
+**Returns**: `Array<BaseReference>`
+
+===== external_references
+
+Get all external references.
+
+**Returns**: `Array<BaseReference>`
+
+===== has_external_references?
+
+Check if document has external references.
+
+**Returns**: `Boolean`
+
+===== unresolved_internal_references
+
+Get internal references that don't resolve to defined IDs.
+
+**Returns**: `Array<BaseReference>`
+
+===== to_h
+
+Convert result to hash.
+
+**Returns**: `Hash`
+
+===== to_json
+
+Convert result to JSON string.
+
+**Returns**: `String` - JSON representation
+
+==== Attributes
+
+* `document` - The validated document
+* `profile` - The profile used
+* `errors` (Array) - Validation errors
+* `warnings` (Array) - Validation warnings
+* `reference_manifest` (ReferenceManifest) - ID and reference tracking
+
+==== Example
+
+[source,ruby]
+----
+result = validator.validate(svg_content, profile: :metanorma)
+
+puts "Valid: #{result.valid?}"
+puts "Errors: #{result.error_count}"
+puts "IDs: #{result.available_ids.map(&:id_value).join(', ')}"
+
+if result.has_unresolved_references?
+  puts "Unresolved references:"
+  result.unresolved_internal_references.each do |ref|
+    puts "  - #{ref.value} at line #{ref.line_number}"
+  end
+end
+----
+
+=== SvgConform::Document
+
+DOM wrapper for SVG documents using Moxml.
+
+==== Class methods
+
+===== new(content)
+
+Create document from XML string.
+
+**Parameters**:
+
+* `content` (String) - XML content
+
+**Returns**: `Document` instance
+
+**Example**:
+
+[source,ruby]
+----
+document = SvgConform::Document.new(svg_string)
+----
+
+===== from_file(file_path)
+
+Create document from file.
+
+**Parameters**:
+
+* `file_path` (String) - Path to SVG file
+
+**Returns**: `Document` instance
+
+**Example**:
+
+[source,ruby]
+----
+document = SvgConform::Document.from_file('image.svg')
+----
+
+===== from_content(content)
+
+Alias for `new(content)`.
+
+===== from_node(node)
+
+Create document from a DOM node (Nokogiri or Moxml).
+
+**Parameters**:
+
+* `node` - DOM node (Nokogiri::XML::Node or Moxml element)
+
+**Returns**: `Document` instance
+
+**Example**:
+
+[source,ruby]
+----
+nokogiri_element = Nokogiri::XML(svg_string).root
+document = SvgConform::Document.from_node(nokogiri_element)
+----
+
+==== Instance methods
+
+===== root
+
+Get the root element.
+
+**Returns**: Moxml element
+
+===== to_xml
+
+Serialize document to XML string.
+
+**Returns**: `String` - XML content
+
+===== find(xpath)
+
+Find first element matching XPath.
+
+**Parameters**:
+
+* `xpath` (String) - XPath expression
+
+**Returns**: Moxml element or `nil`
+
+===== find_all(xpath)
+
+Find all elements matching XPath.
+
+**Parameters**:
+
+* `xpath` (String) - XPath expression
+
+**Returns**: `Array` - Array of Moxml elements
+
+==== Example
+
+[source,ruby]
+----
+document = SvgConform::Document.from_file('image.svg')
+
+# Access root element
+root = document.root
+puts "Root: #{root.name}"
+
+# Find elements
+rects = document.find_all('//svg:rect')
+puts "Found #{rects.size} rectangles"
+
+# Modify and serialize
+root.set_attribute('width', '500')
+File.write('modified.svg', document.to_xml)
+----
+
+=== SvgConform::RemediationRunner
+
+Runner for applying remediations to SVG files.
+
+==== Constructor
+
+[source,ruby]
+----
+SvgConform::RemediationRunner.new(profile:, options: {})
+----
+
+**Parameters**:
+
+* `profile` (Symbol or Profile) - Profile to use
+* `options` (Hash) - Options
+  ** `:verbose` (Boolean) - Verbose output (default: `false`)
+  ** `:strict` (Boolean) - Strict mode (default: `false`)
+
+**Returns**: `RemediationRunner` instance
+
+==== Instance methods
+
+===== run_remediation(svg_content, filename: nil)
+
+Run remediation on SVG content.
+
+**Parameters**:
+
+* `svg_content` (String) - SVG XML content
+* `filename` (String) - Optional filename for reporting
+
+**Returns**: `RemediationRunResult`
+
+===== run_remediation_file(file_path)
+
+Run remediation on a file.
+
+**Parameters**:
+
+* `file_path` (String) - Path to SVG file
+
+**Returns**: `RemediationRunResult`
+
+**Raises**: Error if file not found
+
+===== run_remediation_batch(file_paths)
+
+Run remediation on multiple files.
+
+**Parameters**:
+
+* `file_paths` (Array<String>) - Array of file paths
+
+**Returns**: `Hash<String, RemediationRunResult>` - Results by file path
+
+===== has_remediations?
+
+Check if profile has remediations.
+
+**Returns**: `Boolean`
+
+===== available_remediations
+
+Get remediations from the profile.
+
+**Returns**: `Array<BaseRemediation>`
+
+==== Example
+
+[source,ruby]
+----
+profile = SvgConform::Profiles.get(:metanorma)
+runner = SvgConform::RemediationRunner.new(profile: profile)
+
+result = runner.run_remediation_file('input.svg')
+
+if result.success?
+  File.write('output.svg', result.remediated_content)
+  puts "✓ Fixed #{result.issues_fixed} issues"
+else
+  puts "✗ Remediation failed: #{result.error.message}"
+end
+----
+
+=== SvgConform::RemediationRunResult
+
+Result of remediation operation.
+
+==== Instance methods
+
+===== success?
+
+Check if remediation was successful (all issues fixed).
+
+**Returns**: `Boolean`
+
+===== error?
+
+Check if an error occurred.
+
+**Returns**: `Boolean`
+
+===== issues_fixed
+
+Get number of issues fixed.
+
+**Returns**: `Integer`
+
+===== remediations_applied
+
+Get number of remediations applied.
+
+**Returns**: `Integer`
+
+===== content_modified?
+
+Check if content was modified.
+
+**Returns**: `Boolean`
+
+===== changes_summary
+
+Get summary of changes.
+
+**Returns**: `String`
+
+===== to_h
+
+Convert to hash.
+
+**Returns**: `Hash`
+
+==== Attributes
+
+* `filename` (String) - Source filename
+* `original_content` (String) - Original SVG content
+* `remediated_content` (String) - Fixed SVG content
+* `initial_validation` (ValidationResult) - Validation before fixes
+* `final_validation` (ValidationResult) - Validation after fixes
+* `error` - Error if occurred
+
+== Profile management
+
+=== SvgConform::Profiles
+
+Module for managing built-in profiles.
+
+==== Module methods
+
+===== get(profile_name)
+
+Get a profile by name.
+
+**Parameters**:
+
+* `profile_name` (Symbol or String) - Profile identifier
+
+**Returns**: `Profile` instance or `nil`
+
+**Example**:
+
+[source,ruby]
+----
+profile = SvgConform::Profiles.get(:metanorma)
+profile = SvgConform::Profiles.get('svg_1_2_rfc')
+----
+
+===== available_profiles
+
+Get list of available profile names.
+
+**Returns**: `Array<Symbol>`
+
+**Example**:
+
+[source,ruby]
+----
+profiles = SvgConform::Profiles.available_profiles
+# => [:base, :svg_1_2_rfc, :metanorma, ...]
+
+profiles.each do |name|
+  profile = SvgConform::Profiles.get(name)
+  puts "#{name}: #{profile.description}"
+end
+----
+
+=== Built-in profiles
+
+[cols="1,3"]
+|===
+| Profile | Description
+
+| `:base`
+| Minimal SVG validation with basic structural checks
+
+| `:svg_1_2_rfc`
+| RFC 7996 compliance for IETF XMLRFC documents (strict)
+
+| `:svg_1_2_rfc_with_rdf`
+| RFC 7996 with RDF/Dublin Core metadata support
+
+| `:metanorma`
+| Metanorma document generation requirements
+
+| `:lucid`
+| Lucid chart export compatibility
+
+| `:no_external_css`
+| Disallow external CSS, require inline styles
+|===
+
+== Requirements
+
+All requirement classes inherit from `SvgConform::Requirements::BaseRequirement`.
+
+=== Common requirement methods
+
+All requirements support:
+
+* `validate_document(document, context)` - Validate a document
+* `id` - Get requirement ID
+* `description` - Get requirement description
+
+=== Available requirements
+
+==== ViewboxRequiredRequirement
+
+Ensures SVG has a `viewBox` attribute.
+
+[source,ruby]
+----
+requirement = SvgConform::Requirements::ViewboxRequiredRequirement.new
+----
+
+==== AllowedElementsRequirement
+
+Validates elements against whitelist.
+
+**Configuration**:
+
+* `allowed_elements` (Array<String>) - Allowed element names
+
+[source,ruby]
+----
+requirement = SvgConform::Requirements::AllowedElementsRequirement.new(
+  config: {
+    'allowed_elements' => ['svg', 'rect', 'circle', 'path']
+  }
+)
+----
+
+==== ColorRestrictionsRequirement
+
+Enforces color format restrictions.
+
+**Configuration**:
+
+* `allowed_formats` (Array<String>) - e.g., `['hex', 'rgb']`
+
+==== FontFamilyRequirement
+
+Restricts font families.
+
+**Configuration**:
+
+* `allowed_families` (Array<String>) - Allowed font names
+
+[source,ruby]
+----
+requirement = SvgConform::Requirements::FontFamilyRequirement.new(
+  config: {
+    'allowed_families' => ['Arial', 'Helvetica', 'sans-serif']
+  }
+)
+----
+
+==== NoExternalImagesRequirement
+
+Disallows external image references.
+
+==== NoExternalFontsRequirement
+
+Disallows external font references.
+
+==== NoExternalCssRequirement
+
+Disallows external CSS stylesheets.
+
+==== NamespaceRequirement
+
+Validates namespace declarations.
+
+**Configuration**:
+
+* `allowed_namespaces` (Array<String>) - Allowed namespace URIs
+
+==== IdReferenceRequirement
+
+Validates that all ID references resolve.
+
+==== InvalidIdReferencesRequirement
+
+Detects invalid or malformed ID references.
+
+==== LinkValidationRequirement
+
+Validates hyperlink targets.
+
+==== StyleRequirement
+
+Validates style attributes and values.
+
+==== StylePromotionRequirement
+
+Checks for presentational attributes that should be styles.
+
+==== ForbiddenContentRequirement
+
+Detects forbidden elements or attributes.
+
+**Configuration**:
+
+* `forbidden_elements` (Array<String>) - Forbidden element names
+* `forbidden_attributes` (Array<String>) - Forbidden attribute names
+
+== Remediations
+
+All remediation classes inherit from `SvgConform::Remediations::BaseRemediation`.
+
+=== Common remediation methods
+
+All remediations support:
+
+* `apply(document, context)` - Apply remediation
+* `should_execute?(failed_requirements)` - Check if should run
+* `id` - Get remediation ID
+
+=== Available remediations
+
+==== ViewboxRemediation
+
+Adds missing `viewBox` attribute (calculated from dimensions).
+
+==== ColorRemediation
+
+Converts colors to allowed formats.
+
+==== FontRemediation
+
+Replaces disallowed fonts with alternatives.
+
+==== FontEmbeddingRemediation
+
+Embeds external fonts as data URIs or inline.
+
+==== ImageEmbeddingRemediation
+
+Embeds external images as data URIs.
+
+==== NoExternalCssRemediation
+
+Inlines external CSS stylesheets.
+
+==== NamespaceRemediation
+
+Fixes namespace declarations.
+
+==== NamespaceAttributeRemediation
+
+Removes unwanted namespace attributes.
+
+==== InvalidIdReferencesRemediation
+
+Fixes or removes invalid ID references.
+
+==== StylePromotionRemediation
+
+Converts presentation attributes to inline styles.
+
+== Reference tracking
+
+=== SvgConform::References::ReferenceManifest
+
+Tracks all IDs and references in an SVG document.
+
+==== Instance methods
+
+===== available_ids
+
+Get all defined IDs.
+
+**Returns**: `Array<IdDefinition>`
+
+===== internal_references
+
+Get all internal references (fragments).
+
+**Returns**: `Array<BaseReference>`
+
+===== external_references
+
+Get all external references.
+
+**Returns**: `Array<BaseReference>`
+
+===== unresolved_internal_references
+
+Get references that don't resolve to defined IDs.
+
+**Returns**: `Array<BaseReference>`
+
+===== statistics
+
+Get reference statistics.
+
+**Returns**: `Hash` with counts
+
+===== to_h
+
+Convert to hash.
+
+**Returns**: `Hash`
+
+==== Example
+
+[source,ruby]
+----
+result = validator.validate(svg_content, profile: :metanorma)
+manifest = result.reference_manifest
+
+puts "IDs defined: #{manifest.available_ids.size}"
+manifest.available_ids.each do |id|
+  puts "  - #{id.id_value} (#{id.element_name})"
+end
+
+puts "Internal refs: #{manifest.internal_references.size}"
+puts "External refs: #{manifest.external_references.size}"
+
+if manifest.unresolved_internal_references.any?
+  puts "Unresolved:"
+  manifest.unresolved_internal_references.each do |ref|
+    puts "  - #{ref.value} at line #{ref.line_number}"
+  end
+end
+----
+
+=== SvgConform::References::IdDefinition
+
+Represents an ID definition.
+
+==== Attributes
+
+* `id_value` (String) - The ID value
+* `element_name` (String) - Element containing the ID
+* `line_number` (Integer) - Line number in source
+* `namespace` (String) - Element namespace
+
+=== SvgConform::References::BaseReference
+
+Represents a reference to an ID.
+
+==== Attributes
+
+* `value` (String) - Reference value (may include fragment)
+* `reference_type` (String) - Type: 'url', 'href', 'fill', 'fragment'
+* `line_number` (Integer) - Line number in source
+* `element_name` (String) - Element containing reference
+* `attribute_name` (String) - Attribute name
+
+==== Methods
+
+* `external?` - Check if reference is external
+* `internal?` - Check if reference is internal (fragment)
+* `fragment` - Get fragment identifier (without `#`)
+
+== Advanced usage
+
+=== Custom profile creation
+
+==== From scratch
+
+[source,ruby]
+----
+profile = SvgConform::Profile.new
+profile.name = 'custom'
+profile.description = 'Custom validation profile'
+
+# Add requirements
+profile.add_requirement(
+  SvgConform::Requirements::ViewboxRequiredRequirement.new
+)
+profile.add_requirement(
+  SvgConform::Requirements::NoExternalImagesRequirement.new
+)
+
+# Add remediations
+profile.add_remediation(
+  SvgConform::Remediations::ViewboxRemediation.new
+)
+profile.add_remediation(
+  SvgConform::Remediations::ImageEmbeddingRemediation.new
+)
+
+# Save to file
+SvgConform::Profile.save_to_file(profile, 'custom-profile.yml')
+----
+
+==== From YAML
+
+[source,yaml]
+----
+# custom-profile.yml
+name: custom
+description: Custom validation profile
+
+requirements:
+  - type: viewbox_required
+  - type: no_external_images
+  - type: font_family
+    config:
+      allowed_families:
+        - Arial
+        - Helvetica
+
+remediations:
+  - type: viewbox
+  - type: image_embedding
+----
+
+[source,ruby]
+----
+profile = SvgConform::Profile.load_from_file('custom-profile.yml')
+----
+
+=== Batch processing pattern
+
+[source,ruby]
+----
+validator = SvgConform::Validator.new
+results = {}
+errors = []
+
+Dir.glob('images/**/*.svg') do |file|
+  begin
+    result = validator.validate_file(file, profile: :metanorma)
+    results[file] = result
+
+    unless result.valid?
+      errors << { file: file, errors: result.errors }
+    end
+  rescue => e
+    errors << { file: file, error: e.message }
+  end
+end
+
+# Summary
+valid_count = results.count { |_, r| r.valid? }
+puts "#{valid_count}/#{results.size} files valid"
+
+# Detailed errors
+if errors.any?
+  puts "\nFiles with errors:"
+  errors.each do |item|
+    puts "#{item[:file]}:"
+    if item[:errors]
+      item[:errors].each { |e| puts "  - #{e.message}" }
+    else
+      puts "  - #{item[:error]}"
+    end
+  end
+end
+----
+
+=== Remediation workflow
+
+[source,ruby]
+----
+profile = SvgConform::Profiles.get(:metanorma)
+runner = SvgConform::RemediationRunner.new(profile: profile)
+
+Dir.glob('input/**/*.svg').each do |input_file|
+  output_file = input_file.sub('input/', 'output/')
+
+  # Ensure output directory exists
+  FileUtils.mkdir_p(File.dirname(output_file))
+
+  # Run remediation
+  result = runner.run_remediation_file(input_file)
+
+  if result.success?
+    File.write(output_file, result.remediated_content)
+    puts "✓ #{input_file} → #{output_file} (#{result.issues_fixed} fixed)"
+  else
+    puts "✗ #{input_file}: #{result.error.message}"
+  end
+end
+----
+
+=== Reference manifest analysis
+
+[source,ruby]
+----
+result = validator.validate(svg_content, profile: :metanorma)
+manifest = result.reference_manifest
+
+# Export manifest
+File.write('manifest.json', manifest.to_json)
+File.write('manifest.yaml', manifest.to_yaml)
+
+# Analyze ID usage
+manifest.available_ids.each do |id_def|
+  # Find references to this ID
+  refs = manifest.internal_references.select do |ref|
+    ref.fragment == id_def.id_value
+  end
+
+  puts "ID '#{id_def.id_value}' referenced #{refs.size} times"
+end
+
+# Check for unused IDs
+manifest.available_ids.each do |id_def|
+  referenced = manifest.internal_references.any? do |ref|
+    ref.fragment == id_def.id_value
+  end
+
+  puts "Unused ID: #{id_def.id_value}" unless referenced
+end
+----
+
+=== Integration with Metanorma
+
+[source,ruby]
+----
+# Metanorma integration example
+class SVGProcessor
+  def initialize
+    @validator = SvgConform::Validator.new
+    @profile = SvgConform::Profiles.get(:metanorma)
+    @runner = SvgConform::RemediationRunner.new(profile: @profile)
+  end
+
+  def process_svg_element(nokogiri_element)
+    # Validate without serializing by user
+    result = @validator.validate(nokogiri_element, profile: :metanorma)
+
+    if result.valid?
+      return { status: :valid, element: nokogiri_element }
+    end
+
+    # Apply fixes
+    remediation = @runner.run_remediation(nokogiri_element.to_xml)
+
+    if remediation.success?
+      # Parse fixed content and return new element
+      fixed_doc = Nokogiri::XML(remediation.remediated_content)
+      return {
+        status: :fixed,
+        element: fixed_doc.root,
+        issues_fixed: remediation.issues_fixed
+      }
+    else
+      return {
+        status: :error,
+        errors: result.errors,
+        element: nokogiri_element
+      }
+    end
+  end
+end
+----
+
+== Error handling
+
+=== Common errors
+
+==== ValidationError
+
+Raised when validation fails due to invalid input.
+
+[source,ruby]
+----
+begin
+  result = validator.validate_file('missing.svg', profile: :metanorma)
+rescue SvgConform::ValidationError => e
+  puts "Validation error: #{e.message}"
+end
+----
+
+==== ProfileError
+
+Raised when profile is not found or invalid.
+
+[source,ruby]
+----
+begin
+  profile = SvgConform::Profiles.get(:nonexistent)
+rescue SvgConform::ProfileError => e
+  puts "Profile error: #{e.message}"
+end
+----
+
+=== Best practices
+
+[source,ruby]
+----
+def safe_validate(file_path, profile)
+  validator = SvgConform::Validator.new
+
+  # Check file exists
+  unless File.exist?(file_path)
+    return { error: "File not found: #{file_path}" }
+  end
+
+  # Validate
+  begin
+    result = validator.validate_file(file_path, profile: profile)
+    {
+      valid: result.valid?,
+      errors: result.errors.map(&:message),
+      warnings: result.warnings.map(&:message)
+    }
+  rescue SvgConform::ValidationError => e
+    { error: "Validation failed: #{e.message}" }
+  rescue => e
+    { error: "Unexpected error: #{e.message}" }
+  end
+end
+----
+
+== Performance considerations
+
+=== SAX vs DOM modes
+
+**SAX mode** (default):
+
+* Memory-efficient, constant memory usage
+* Handles any file size (tested up to 100MB+)
+* Slightly slower for small files (<100KB)
+* Recommended for production
+
+**DOM mode**:
+
+* Fast for small files
+* Can hang or crash on large files (>1MB)
+* Required for remediations
+* Use only for small files
+
+[source,ruby]
+----
+# SAX mode (recommended for validation only)
+validator = SvgConform::Validator.new(mode: :sax)
+
+# Auto mode (SAX for files >1MB, DOM otherwise)
+validator = SvgConform::Validator.new(mode: :auto)
+
+# DOM mode (only for small files)
+validator = SvgConform::Validator.new(mode: :dom)
+----
+
+=== Batch processing optimization
+
+[source,ruby]
+----
+# Efficient batch processing
+validator = SvgConform::Validator.new(mode: :sax)
+profile = SvgConform::Profiles.get(:metanorma) # Cache profile
+
+files.each do |file|
+  result = validator.validate_file(file, profile: profile)
+  # Process result...
+end
+----
+
+== Related documentation
+
+* link:../README.adoc[Main README]
+* link:cli_guide.adoc[CLI Guide]
+* link:profiles.adoc[Profile Documentation]
+* link:requirements.adoc[Requirements Reference]
+* link:remediation.adoc[Remediation Reference]
+* link:reference_manifest.adoc[Reference Manifest Documentation]
+
+== Support
+
+For issues or questions:
+
+* GitHub: https://github.com/metanorma/svg_conform
+* Issues: https://github.com/metanorma/svg_conform/issues
+
+== Conclusion
+
+The SvgConform API provides a comprehensive toolkit for SVG validation and remediation. The object-oriented design makes it easy to extend with custom requirements and remediations, while the built-in profiles handle common use cases.
+
+For CLI usage, see the link:cli_guide.adoc[CLI Guide].
