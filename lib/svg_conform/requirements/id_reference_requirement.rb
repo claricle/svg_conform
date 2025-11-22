@@ -10,6 +10,14 @@ module SvgConform
         true
       end
 
+      # Reset state before each validation run to prevent state leakage
+      def reset_state
+        @collected_ids = Set.new
+        @collected_url_refs = []
+        @collected_href_refs = []
+        @collected_other_refs = []
+      end
+
       def collect_sax_data(element, _context)
         # Initialize collections on first call
         @collected_ids ||= Set.new

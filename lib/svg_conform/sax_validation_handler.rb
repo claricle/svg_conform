@@ -31,6 +31,9 @@ module SvgConform
 
     # SAX Event: Document start
     def start_document
+      # Reset state in requirements that maintain state across validations
+      reset_stateful_requirements
+      
       # Initialize root level counters
       @position_counters.push({})
     end
@@ -159,6 +162,15 @@ module SvgConform
         else
           @immediate_requirements << req
         end
+      end
+    end
+
+    # Reset state in requirements that maintain state
+    def reset_stateful_requirements
+      return unless @profile&.requirements
+
+      @profile.requirements.each do |req|
+        req.reset_state if req.respond_to?(:reset_state)
       end
     end
   end
