@@ -363,8 +363,9 @@ Strongly-typed reference objects with validation scope clearly defined.
 
 Easy to add new reference types without modifying existing code.
 
-== See Also
+== Additional resources
 
-* link:../EXTERNAL_REFERENCE_PROPOSAL.md[External Reference Architecture Proposal]
 * link:requirements.adoc[Requirements Documentation]
+* link:api_reference.adoc[API Reference]
+* link:../README.adoc[Main README]
 * link:../config/profiles/metanorma.yml[Metanorma Profile Configuration]
