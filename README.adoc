@@ -124,6 +124,31 @@ Each remediation action can be linked to a particular requirement to indicate
 their relationship, defined in the profile.
 
 
+=== Two-mode architecture
+
+SvgConform uses two distinct operating modes for optimal performance and functionality:
+
+**SAX Validation Mode** (always used for validation):
+
+* Memory-safe streaming XML parser
+* Constant memory usage regardless of file size
+* Handles files of any size (tested with 100MB+ files)
+* Read-only - cannot modify documents
+
+**DOM Remediation Mode** (only when applying fixes):
+
+* Full document tree loaded in memory
+* XPath queries and tree modification
+* Memory scales with file size
+* Only used when `fix: true` option is specified
+
+This architecture ensures validation is always safe for large files, while modifications
+are only performed when explicitly requested and necessary.
+
+See link:docs/sax_validation_mode.adoc[SAX Validation Mode Guide] for details on
+writing SAX-compatible requirements.
+
+
 === Reporting
 
 SvgConform provides detailed reporting on SVG conformance issues.
@@ -140,7 +165,6 @@ SvgConform aims to deliver accurate results for compatibility with existing SVG
 profile conformance tools.
 
 See <<external_compliance>> for details.
-
 
 
 == Usage
@@ -172,7 +196,9 @@ $ gem install svg_conform
 === Command line usage
 
 Details and examples of command line usage can be found in
-<<command_line_interface>>.
+link:docs/cli_guide.adoc[CLI Guide].
+
+==== Quick start
 
 List available profiles:
 
@@ -202,11 +228,16 @@ Batch process a directory of SVG files:
 $ svg_conform check --directory=images/ --profile=metanorma -f --output-dir=fixed/
 ----
 
+For comprehensive CLI documentation including all options, workflows, and troubleshooting,
+see link:docs/cli_guide.adoc[CLI Guide].
+
 
 === Ruby API usage
 
 Details and examples of Ruby API usage can be found in
-<<ruby_api_reference>>.
+link:docs/api_reference.adoc[API Reference].
+
+==== Quick start
 
 [source,ruby]
 ----
@@ -280,6 +311,9 @@ Benefits:
 - **Safe for large files**: Always uses memory-efficient SAX parsing
 - **Backward compatible**: String input still works as before
 
+For comprehensive API documentation including all classes, methods, advanced usage,
+and integration patterns, see link:docs/api_reference.adoc[API Reference].
+
 
 === Reference manifest
 
@@ -315,521 +349,6 @@ end
 See link:docs/reference_manifest.adoc[Reference Manifest Documentation] for complete details.
 
 
-[[command_line_interface]]
-== Command line interface
-
-The `svg_conform` command-line tool provides validation and remediation capabilities for SVG files.
-
-=== Basic commands
-
-==== List available profiles
-
-[source,bash]
-----
-$ svg_conform profiles
-----
-
-Show detailed information about profiles:
-
-[source,bash]
-----
-$ svg_conform profiles --verbose
-----
-
-==== Validate a single SVG file
-
-[source,bash]
-----
-$ svg_conform check file.svg --profile=metanorma
-----
-
-Options:
-
-* `--profile=PROFILE` or `-p`: Profile to validate against (default: `svg_1_2_rfc`)
-* `--format=FORMAT`: Output format: `table` (default), `json`, or `yaml`
-* `--output=FILE` or `-o`: Save report to file
-
-Example with JSON output:
-
-[source,bash]
-----
-$ svg_conform check file.svg -p metanorma --format=json --output=report.json
-----
-
-==== Fix a single SVG file
-
-Apply automatic remediations to fix conformance issues:
-
-[source,bash]
-----
-$ svg_conform check file.svg --profile=metanorma --fix
-----
-
-Specify custom output file:
-
-[source,bash]
-----
-$ svg_conform check file.svg -p metanorma -f --fix-output=fixed.svg
-----
-
-Options:
-
-* `--fix` or `-f`: Enable automatic remediation
-* `--fix-output=FILE`: Output file for remediated SVG (default: `FILE.fixed.svg`)
-
-==== Process multiple files
-
-Process multiple SVG files at once:
-
-[source,bash]
-----
-$ svg_conform check file1.svg file2.svg file3.svg --profile=metanorma
-----
-
-With remediation, an output directory is required:
-
-[source,bash]
-----
-$ svg_conform check *.svg -p metanorma --fix --output-dir=fixed/
-----
-
-==== Process a directory
-
-Recursively process all SVG files in a directory:
-
-[source,bash]
-----
-$ svg_conform check --directory=images/ --profile=metanorma
-----
-
-With remediation:
-
-[source,bash]
-----
-$ svg_conform check -d images/ -p metanorma --fix --output-dir=fixed/
-----
-
-Replace files in-place (use with caution):
-
-[source,bash]
-----
-$ svg_conform check -d images/ -p metanorma --fix --in-place --force
-----
-
-==== Batch processing options
-
-Additional options for batch processing:
-
-* `--quiet` or `-q`: Suppress per-file output, show summary only
-* `--verbose` or `-v`: Show detailed progress
-* `--report-format=FORMAT`: Generate detailed report in `json` or `yaml`
-* `--report-output=FILE`: Save detailed batch report to file
-* `--manifest=FILE`: Generate manifest mapping original to remediated files (default: `manifest.json`)
-
-Example with detailed reporting:
-
-[source,bash]
-----
-$ svg_conform check -d images/ -p metanorma -f --output-dir=fixed/ \
-  --report-format=json --report-output=batch-report.json \
-  --manifest=file-mapping.json
-----
-
-==== Display version
-
-[source,bash]
-----
-$ svg_conform version
-----
-
-=== Exit codes
-
-* `0`: All files valid or successfully remediated
-* `1`: Validation failures or errors occurred
-
-=== Common workflows
-
-==== Quality control workflow
-
-Check all SVG files before deployment:
-
-[source,bash]
-----
-$ svg_conform check -d assets/images/ -p metanorma --quiet
-----
-
-==== Batch remediation workflow
-
-Fix all non-conforming files:
-
-[source,bash]
-----
-# 1. Validate and identify issues
-$ svg_conform check -d images/ -p metanorma --report-format=json \
-  --report-output=pre-fix-report.json
-
-# 2. Apply fixes
-$ svg_conform check -d images/ -p metanorma --fix --output-dir=fixed/ \
-  --manifest=manifest.json
-
-# 3. Verify fixes
-$ svg_conform check -d fixed/ -p metanorma --report-format=json \
-  --report-output=post-fix-report.json
-----
-
-==== Integration with CI/CD
-
-Validate SVGs in continuous integration:
-
-[source,bash]
-----
-$ svg_conform check -d docs/images/ -p metanorma --quiet
-
-# Exit code 0 = pass, 1 = fail
-----
-
-=== Complete reference
-
-See link:docs/cli_guide.adoc[CLI Guide] for comprehensive documentation including:
-
-* All available profiles and their requirements
-* Detailed option descriptions
-* Advanced usage patterns
-* Troubleshooting common issues
-* Integration examples
-
-
-[[ruby_api_reference]]
-== Ruby API reference
-
-The SvgConform Ruby API provides programmatic access to SVG validation and remediation.
-
-=== Basic validation
-
-==== Using the validator
-
-[source,ruby]
-----
-require 'svg_conform'
-
-validator = SvgConform::Validator.new
-result = validator.validate(svg_content, profile: :metanorma)
-
-puts "Valid: #{result.valid?}"
-puts "Errors: #{result.errors.count}"
-puts "Warnings: #{result.warnings.count}"
-
-# Access error details
-result.errors.each do |error|
-  puts "#{error.requirement_id}: #{error.message}"
-  puts "  Location: #{error.element}" if error.element
-end
-----
-
-==== Loading profiles
-
-Load a profile by name:
-
-[source,ruby]
-----
-profile = SvgConform::Profiles.get(:svg_1_2_rfc)
-----
-
-Available built-in profiles:
-
-* `:base` - Minimal SVG validation
-* `:svg_1_2_rfc` - RFC 7996 compliance (IETF XMLRFC documents)
-* `:svg_1_2_rfc_with_rdf` - RFC 7996 with RDF metadata support
-* `:metanorma` - Metanorma document requirements
-* `:lucid` - Lucid profile
-* `:no_external_css` - Disallow external CSS
-
-Load a custom profile from file:
-
-[source,ruby]
-----
-profile = SvgConform::Profile.load_from_file('path/to/profile.yml')
-----
-
-==== Validating with profiles
-
-[source,ruby]
-----
-profile = SvgConform::Profiles.get(:metanorma)
-document = SvgConform::Document.new(svg_content)
-result = profile.validate(document)
-
-if result.valid?
-  puts "SVG is valid!"
-else
-  puts "Found #{result.errors.count} errors"
-end
-----
-
-=== Applying remediations
-
-==== Basic remediation
-
-[source,ruby]
-----
-profile = SvgConform::Profiles.get(:metanorma)
-document = SvgConform::Document.from_file('input.svg')
-
-# Apply all remediations defined in the profile
-changes = profile.apply_remediations(document)
-
-puts "Applied #{changes.length} remediations"
-
-# Save the remediated SVG
-File.write('output.svg', document.to_xml)
-----
-
-==== Using the remediation runner
-
-For more control over the remediation process:
-
-[source,ruby]
-----
-profile = SvgConform::Profiles.get(:metanorma)
-runner = SvgConform::RemediationRunner.new(profile: profile)
-
-# Run remediation on a file
-result = runner.run_remediation_file('input.svg')
-
-if result.success?
-  File.write('output.svg', result.remediated_content)
-  puts "Fixed #{result.issues_fixed} issues"
-  puts "Final validation: #{result.final_validation.valid?}"
-else
-  puts "Remediation failed: #{result.error.message}"
-end
-----
-
-==== Checking available remediations
-
-[source,ruby]
-----
-profile = SvgConform::Profiles.get(:metanorma)
-
-puts "Profile has #{profile.remediation_count} remediations available"
-
-profile.remediations.each do |remediation|
-  puts "- #{remediation.class.name}"
-end
-----
-
-=== Working with documents
-
-==== Creating documents
-
-From a string:
-
-[source,ruby]
-----
-document = SvgConform::Document.new(svg_string)
-----
-
-From a file:
-
-[source,ruby]
-----
-document = SvgConform::Document.from_file('path/to/file.svg')
-----
-
-From a DOM node (Nokogiri or Moxml):
-
-[source,ruby]
-----
-nokogiri_element = Nokogiri::XML(svg_string).root
-document = SvgConform::Document.from_node(nokogiri_element)
-----
-
-==== Document operations
-
-[source,ruby]
-----
-# Access the underlying DOM
-root = document.root
-elements = document.find_all('//svg:rect')
-
-# Check for specific elements
-has_viewbox = document.root.attribute?('viewBox')
-
-# Modify the document
-document.root.set_attribute('width', '500')
-
-# Serialize to XML
-xml_string = document.to_xml
-----
-
-=== Reference manifest
-
-==== Accessing the manifest
-
-[source,ruby]
-----
-result = validator.validate(svg_content, profile: :metanorma)
-manifest = result.reference_manifest
-
-# Get all defined IDs
-manifest.available_ids.each do |id_def|
-  puts "ID: #{id_def.id_value}"
-  puts "  Element: #{id_def.element_name}"
-  puts "  Line: #{id_def.line_number}"
-end
-----
-
-==== Checking references
-
-[source,ruby]
-----
-# Check for unresolved internal references
-if result.has_unresolved_references?
-  puts "Unresolved references found:"
-  result.unresolved_internal_references.each do |ref|
-    puts "  #{ref.value} at line #{ref.line_number}"
-  end
-end
-
-# Check for external references
-if result.has_external_references?
-  puts "External references:"
-  result.external_references.each do |ref|
-    puts "  #{ref.value} (#{ref.reference_type})"
-  end
-end
-----
-
-==== Reference types
-
-The manifest classifies references by type:
-
-[source,ruby]
-----
-manifest.internal_references.each do |ref|
-  case ref.reference_type
-  when 'url'
-    puts "URL reference: #{ref.value}"
-  when 'fragment'
-    puts "Fragment reference: #{ref.value}"
-  when 'fill'
-    puts "Fill attribute: #{ref.value}"
-  when 'href'
-    puts "Href attribute: #{ref.value}"
-  end
-end
-----
-
-=== Advanced usage
-
-==== Custom validation context
-
-[source,ruby]
-----
-context = SvgConform::ValidationContext.new(
-  document: document,
-  profile: profile
-)
-
-# Run specific requirements
-requirement = SvgConform::Requirements::ViewboxRequiredRequirement.new
-errors = requirement.check(context)
-----
-
-==== Batch processing
-
-[source,ruby]
-----
-validator = SvgConform::Validator.new
-results = {}
-
-Dir.glob('images/**/*.svg').each do |file|
-  result = validator.validate_file(file, profile: :metanorma)
-  results[file] = result
-end
-
-# Summary
-valid_count = results.count { |_, r| r.valid? }
-puts "#{valid_count}/#{results.size} files are valid"
-----
-
-==== Report generation
-
-[source,ruby]
-----
-# Create a conformance report
-report = SvgConform::ConformanceReport.from_svg_conform_result(
-  "file.svg",
-  result,
-  profile: :metanorma
-)
-
-# Export as JSON
-json_output = report.to_json
-File.write('report.json', json_output)
-
-# Export as YAML
-yaml_output = report.to_yaml
-File.write('report.yaml', yaml_output)
-----
-
-=== API classes
-
-==== Core classes
-
-* `SvgConform::Validator` - Main validation interface
-* `SvgConform::Profile` - Profile definition and management
-* `SvgConform::Document` - SVG document wrapper
-* `SvgConform::ValidationResult` - Validation result container
-* `SvgConform::RemediationRunner` - Remediation execution
-
-==== Requirement classes
-
-Located in `SvgConform::Requirements`:
-
-* `AllowedElementsRequirement` - Element whitelist validation
-* `ColorRestrictionsRequirement` - Color format restrictions
-* `FontFamilyRequirement` - Font family restrictions
-* `ForbiddenContentRequirement` - Forbidden element/attribute check
-* `IdReferenceRequirement` - ID reference validation
-* `InvalidIdReferencesRequirement` - Invalid reference detection
-* `LinkValidationRequirement` - Link validation
-* `NamespaceRequirement` - Namespace validation
-* `NamespaceAttributesRequirement` - Namespace attribute check
-* `NoExternalCssRequirement` - External CSS prohibition
-* `NoExternalFontsRequirement` - External font prohibition
-* `NoExternalImagesRequirement` - External image prohibition
-* `StylePromotionRequirement` - Presentation attribute check
-* `StyleRequirement` - Style attribute validation
-* `ViewboxRequiredRequirement` - ViewBox requirement
-
-==== Remediation classes
-
-Located in `SvgConform::Remediations`:
-
-* `ColorRemediation` - Fix color format issues
-* `FontRemediation` - Fix font family issues
-* `FontEmbeddingRemediation` - Embed external fonts
-* `ImageEmbeddingRemediation` - Embed external images
-* `InvalidIdReferencesRemediation` - Fix invalid references
-* `NamespaceRemediation` - Fix namespace issues
-* `NamespaceAttributeRemediation` - Remove namespace attributes
-* `NoExternalCssRemediation` - Convert external CSS
-* `StylePromotionRemediation` - Promote presentation attributes
-* `ViewboxRemediation` - Add missing ViewBox
-
-=== Complete reference
-
-See link:docs/api_reference.adoc[API Reference] for comprehensive documentation including:
-
-* Complete class hierarchy
-* Detailed method signatures
-* Parameter descriptions
-* Return value specifications
-* Integration patterns
-* Advanced examples
-
-
 [[external_compliance]]
 == External compliance
 
@@ -839,6 +358,25 @@ SvgConform provides compatibility with existing SVG validation tools:
 * Profile compatibility modes for different validation tools
 
 See link:docs/compatibility.adoc[Compatibility Documentation] for details.
+
+
+== Documentation
+
+=== User documentation
+
+* link:docs/cli_guide.adoc[CLI Guide] - Comprehensive command-line usage
+* link:docs/api_reference.adoc[API Reference] - Complete Ruby API documentation
+* link:docs/profiles.adoc[Profile Documentation] - Profile system and built-in profiles
+* link:docs/requirements.adoc[Requirements Reference] - All validation requirements
+* link:docs/remediation.adoc[Remediation Reference] - All automatic remediations
+* link:docs/reference_manifest.adoc[Reference Manifest] - ID and reference tracking
+* link:docs/rdf_metadata_support.adoc[RDF Metadata Support] - RDF/Dublin Core configuration
+
+=== Developer documentation
+
+* link:docs/sax_validation_mode.adoc[SAX Validation Mode] - Writing SAX-compatible requirements
+* link:CONTINUATION_PLAN.md[Development Plan] - Project roadmap and tasks
+* link:IMPLEMENTATION_STATUS.md[Implementation Status] - Component status tracking
 
 
 == Development
