@@ -254,11 +254,7 @@ column_number: nil)
           if current.respond_to?(:previous_sibling)
             sibling = current.previous_sibling
             while sibling
-              begin
-                position += 1 if sibling.respond_to?(:name) && sibling.name == current.name
-              rescue NoMethodError
-                # Skip nodes that don't support name properly (e.g., doctype nodes)
-              end
+              position += 1 if sibling.respond_to?(:name) && sibling.name == current.name
               sibling = sibling.previous_sibling if sibling.respond_to?(:previous_sibling)
             end
           end

@@ -29,7 +29,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "lutaml-model", "~> 0.7"
-  spec.add_dependency "moxml", "~> 0.1", ">= 0.1.9"
+  spec.add_dependency "moxml", "~> 0.1", ">= 0.1.10"
   spec.add_dependency "table_tennis"
   spec.add_dependency "thor"
 end
