@@ -40,9 +40,9 @@ RSpec.describe "SvgCheck Compatibility" do
           )
 
           # Compare error counts
-          # Skip full-tiny.svg: comprehensive test file with known 3% discrepancy due to
-          # architectural difference in how forbidden children are validated
-          skip "Comprehensive test file with known 3% discrepancy" if basename == "full-tiny"
+          # Skip full-tiny.svg: comprehensive test file with known 2.91% discrepancy due to
+          # minor differences in color, namespace, and style validation
+          skip "Comprehensive test file with known 2.91% discrepancy" if basename == "full-tiny"
 
           expect(our_report.errors.total_count).to eq(svgcheck_report.errors.total_count),
                                                    "Expected #{svgcheck_report.errors.total_count} errors but got #{our_report.errors.total_count}"

@@ -29,6 +29,12 @@ require_relative "svg_conform/remediation_engine"
 require_relative "svg_conform/remediation_runner"
 require_relative "svg_conform/fixer"
 require_relative "svg_conform/external_checkers"
+require_relative "svg_conform/comparison/svgcheck_patterns"
+require_relative "svg_conform/comparison/normalizer"
+require_relative "svg_conform/comparison/semantic_extractor"
+require_relative "svg_conform/comparison/node_id_cache_pool"
+require_relative "svg_conform/semantic_comparator"
+require_relative "svg_conform/report_comparator"
 
 module SvgConform
   class Error < StandardError; end

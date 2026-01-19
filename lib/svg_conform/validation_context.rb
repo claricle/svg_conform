@@ -1,139 +1,184 @@
 # frozen_string_literal: true
 
-require "set"
+require_relative "validation_issue"
+require_relative "validation_notice"
+require_relative "error_tracker"
+require_relative "node_id_generator"
+require_relative "structural_invalidity_tracker"
+require_relative "references/reference_manifest"
 
 module SvgConform
-  # Context object passed to rules during validation
+  # Context object passed to requirements during validation.
+  #
+  # Coordinates various validation concerns:
+  # - Error tracking via ErrorTracker
+  # - Node identification via NodeIdGenerator
+  # - Structural validation via StructuralInvalidityTracker
+  # - Reference tracking via ReferenceManifest
+  # - Context data storage for cross-requirement communication
   class ValidationContext
-    attr_reader :document, :profile, :errors, :warnings, :fixes,
-                :validity_errors, :reference_manifest
+    attr_reader :document, :profile, :reference_manifest
 
+    # Initialize a new validation context
+    #
+    # @param document [Object] the document being validated
+    # @param profile [Profile] the validation profile being used
     def initialize(document, profile)
       @document = document
       @profile = profile
-      @errors = []
-      @warnings = []
-      @validity_errors = []
-      @infos = []
+      @error_tracker = ErrorTracker.new
+      @node_id_generator = NodeIdGenerator.new(document)
+      @structural_tracker = StructuralInvalidityTracker.new
       @data = {}
-      @structurally_invalid_node_ids = Set.new
-      @node_id_cache = {}
-      @cache_populated = false
       @reference_manifest = References::ReferenceManifest.new(
         source_document: document.file_path,
       )
     end
 
-    # Mark a node as structurally invalid (e.g., invalid parent-child relationship)
-    # Other requirements should skip attribute validation on these nodes
-    # Also marks all descendants as invalid since they'll be removed with the parent
+    # Get all errors from the error tracker
+    # @return [Array<ValidationIssue>] the errors
+    def errors
+      @error_tracker.errors
+    end
+
+    # Get all warnings from the error tracker
+    # @return [Array<ValidationIssue>] the warnings
+    def warnings
+      @error_tracker.warnings
+    end
+
+    # Get all validity errors from the error tracker
+    # @return [Array<ValidationIssue>] the validity errors
+    def validity_errors
+      @error_tracker.validity_errors
+    end
+
+    # Get all infos (notices) from the error tracker
+    # @return [Array<ValidationNotice>] the notices
+    def infos
+      @error_tracker.infos
+    end
+
+    # Get all fixes from the error tracker
+    # @return [Array] the fixes
+    def fixes
+      @error_tracker.fixes
+    end
+
+    # Mark a node as structurally invalid.
+    #
+    # Other requirements should skip attribute validation on these nodes.
+    # Also marks all descendants as invalid since they'll be removed with the parent.
+    #
+    # @param node [Object] the node to mark as structurally invalid
     def mark_node_structurally_invalid(node)
-      node_id = generate_node_id(node)
-      return if node_id.nil? # Safety check
-
-      @structurally_invalid_node_ids.add(node_id)
-
-      # Mark all descendants as invalid too
-      mark_descendants_invalid(node)
+      @structural_tracker.mark_node_invalid(node, @node_id_generator)
     end
 
-    # Mark all descendants of a node as structurally invalid
-    def mark_descendants_invalid(node)
-      # In SAX mode, ElementProxy doesn't have children yet
-      # Children will be validated individually and will check parent validity
-      return unless node.respond_to?(:children) && node.children
-
-      node.children.each do |child|
-        child_id = generate_node_id(child)
-        next if child_id.nil? # Skip if can't generate ID
-
-        @structurally_invalid_node_ids.add(child_id)
-        # Recursively mark descendants
-        mark_descendants_invalid(child)
-      end
-    end
-
-    # Check if a node is structurally invalid
+    # Check if a node is structurally invalid.
+    #
+    # @param node [Object] the node to check
+    # @return [Boolean] true if the node is structurally invalid
     def node_structurally_invalid?(node)
-      node_id = generate_node_id(node)
-      return false if node_id.nil? # Safety check
-
-      @structurally_invalid_node_ids.include?(node_id)
+      @structural_tracker.node_invalid?(node, @node_id_generator)
     end
 
+    # Add an error to the error tracker.
+    #
+    # @param node [Object] the node where the error occurred
+    # @param message [String] the error message
+    # @param rule [Object] the rule that was violated (deprecated)
+    # @param requirement [Object] the requirement that was violated
+    # @param requirement_id [String] the requirement ID
+    # @param severity [Symbol] the severity level
+    # @param fix [Object] an optional fix for the error
+    # @param data [Hash] additional data about the error
+    # @return [ValidationIssue] the created issue
     def add_error(node:, message:, rule: nil, requirement: nil,
-requirement_id: nil, severity: nil, fix: nil, data: {})
-      # Support both old rule system and new requirements system
-      rule_or_requirement = requirement || rule
-
-      error = ValidationIssue.new(
-        type: :error,
-        rule: rule_or_requirement,
+                  requirement_id: nil, severity: nil, fix: nil, data: {})
+      @error_tracker.add_error(
         node: node,
         message: message,
-        fix: fix,
-        data: data,
+        rule: rule,
+        requirement: requirement,
         requirement_id: requirement_id,
         severity: severity,
-      )
-
-      # Handle special severity types
-      if severity == :validity_error
-        @validity_errors << error
-      else
-        @errors << error
-      end
-
-      error
-    end
-
-    def add_warning(rule:, node:, message:, fix: nil)
-      warning = ValidationIssue.new(
-        type: :warning,
-        rule: rule,
-        node: node,
-        message: message,
         fix: fix,
+        data: data,
       )
-      @warnings << warning
-      warning
     end
 
+    # Add a warning to the error tracker.
+    #
+    # @param rule [Object] the rule that generated the warning
+    # @param node [Object] the node where the warning occurred
+    # @param message [String] the warning message
+    # @param fix [Object] an optional fix for the warning
+    # @return [ValidationIssue] the created issue
+    def add_warning(rule:, node:, message:, fix: nil)
+      @error_tracker.add_warning(rule: rule, node: node, message: message, fix: fix)
+    end
+
+    # Add a fix to the error tracker.
+    #
+    # @param fix [Object] the fix object
     def add_fix(fix)
-      @fixes << fix
+      @error_tracker.add_fix(fix)
     end
 
+    # Check if context has any errors.
+    # @return [Boolean] true if there are errors
     def has_errors?
-      !@errors.empty?
+      @error_tracker.has_errors?
     end
 
+    # Check if context has any warnings.
+    # @return [Boolean] true if there are warnings
     def has_warnings?
-      !@warnings.empty?
+      @error_tracker.has_warnings?
     end
 
+    # Check if context has any fixes.
+    # @return [Boolean] true if there are fixes
     def has_fixes?
-      !@fixes.empty?
+      @error_tracker.has_fixes?
     end
 
+    # Get total issue count (errors + warnings).
+    # @return [Integer] the total count
     def issue_count
-      @errors.size + @warnings.size
+      @error_tracker.issue_count
     end
 
+    # Get count of fixable issues.
+    # @return [Integer] the count of fixable issues
     def fixable_count
-      (@errors + @warnings).count(&:fixable?)
+      @error_tracker.fixable_count
     end
 
+    # Store a value in the context data.
+    #
+    # @param key [Symbol] the key to store under
+    # @param value [Object] the value to store
     def set_data(key, value)
       @data[key] = value
     end
 
+    # Retrieve a value from the context data.
+    #
+    # @param key [Symbol] the key to retrieve
+    # @return [Object, nil] the stored value or nil
     def get_data(key)
       @data[key]
     end
 
-    # Register an ID definition
-    def register_id(id_value, element_name:, line_number: nil,
-column_number: nil)
+    # Register an ID definition with the reference manifest.
+    #
+    # @param id_value [String] the ID value
+    # @param element_name [String] the element name
+    # @param line_number [Integer, nil] the line number
+    # @param column_number [Integer, nil] the column number
+    def register_id(id_value, element_name:, line_number: nil, column_number: nil)
       @reference_manifest.register_id(
         id_value,
         element_name: element_name,
@@ -142,416 +187,73 @@ column_number: nil)
       )
     end
 
-    # Register a reference
+    # Register a reference with the reference manifest.
+    #
+    # @param reference [BaseReference] the reference to register
     def register_reference(reference)
       @reference_manifest.register_reference(reference)
     end
 
-    # Check if ID exists in manifest
+    # Check if an ID is defined in the reference manifest.
+    #
+    # @param id_value [String] the ID to check
+    # @return [Boolean] true if the ID is defined
     def id_defined?(id_value)
       @reference_manifest.id_defined?(id_value)
     end
 
-    # Add notice for external references (not errors)
+    # Add a notice for external references (not errors).
+    #
+    # @param node [Object] the node where the notice applies
+    # @param reference [Object] the reference object
+    # @param message [String, nil] optional custom message
+    # @return [ValidationNotice] the created notice
     def add_external_reference_notice(node:, reference:, message: nil)
-      notice = ValidationNotice.new(
-        type: :external_reference,
+      @error_tracker.add_external_reference_notice(
         node: node,
-        message: message || "External reference: #{reference.value}",
-        data: { reference: reference },
+        reference: reference,
+        message: message,
       )
-      @infos << notice
-      notice
     end
 
-    # Generate a unique identifier for a node based on its path
-    # Builds a stable path by walking up the parent chain
-    # OPTIMIZED: Lazy cache population - populate entire cache on first call
+    # Generate a unique identifier for a node based on its path.
+    #
+    # Uses the NodeIdGenerator for path-based identification.
+    #
+    # @param node [Object] the node to generate an ID for
+    # @return [String, nil] the node ID or nil if the node doesn't have a name
     def generate_node_id(node)
-      return nil unless node.respond_to?(:name)
-
-      # Populate cache for ALL nodes on first access
-      unless @cache_populated
-        populate_node_id_cache
-        @cache_populated = true
-      end
-
-      # Try cache lookup first
-      cached_id = @node_id_cache[node]
-      return cached_id if cached_id
-
-      # Fall back to building path if node not in cache
-      # (happens when different traversals create different wrapper objects)
-      build_node_path(node)
+      @node_id_generator.generate_id(node)
     end
 
-    private
-
-    # Populate cache for all nodes using document.traverse with parent tracking
-    def populate_node_id_cache
-      parent_stack = []
-      counter_stack = [{}] # Stack of {element_name => count} hashes
-
-      @document.traverse do |node|
-        next unless node.respond_to?(:name) && node.name
-
-        # Detect parent changes by checking node.parent
-        current_parent = node.respond_to?(:parent) ? node.parent : nil
-
-        # Adjust stack based on actual parent
-        while parent_stack.size.positive? && !parent_stack.last.equal?(current_parent)
-          parent_stack.pop
-          counter_stack.pop
-        end
-
-        # If we have a new parent level, push it
-        if current_parent && (parent_stack.empty? || !parent_stack.last.equal?(current_parent))
-          parent_stack.push(current_parent)
-          counter_stack.push({})
-        end
-
-        # Increment counter at current level
-        current_counters = counter_stack.last || {}
-        current_counters[node.name] ||= 0
-        current_counters[node.name] += 1
-
-        # Build path using original backward logic (for correctness)
-        @node_id_cache[node] = build_node_path(node)
-      end
+    # Get error tracker statistics.
+    # @return [Hash] statistics about tracked issues
+    def error_statistics
+      @error_tracker.statistics
     end
 
-    # Traverse tree, building paths with forward position counters
-    def traverse_with_forward_counting(node, path_parts, sibling_counters)
-      return unless node.respond_to?(:name) && node.name
-
-      # Increment counter for this node name at current level
-      sibling_counters[node.name] ||= 0
-      sibling_counters[node.name] += 1
-      position = sibling_counters[node.name]
-
-      # Build and cache path
-      current_path = path_parts + ["#{node.name}[#{position}]"]
-      @node_id_cache[node] = "/#{current_path.join('/')}"
-
-      # Traverse children with fresh counters
-      if node.respond_to?(:children)
-        child_counters = {}
-        node.children.each do |child|
-          traverse_with_forward_counting(child, current_path, child_counters)
-        end
-      end
-    end
-
-    # Build path-based ID for a node (original logic, unchanged)
-    def build_node_path(node)
-      path_parts = []
-      current = node
-
-      while current
-        if current.respond_to?(:name) && current.name
-          # Count previous siblings of the same type for position (ORIGINAL LOGIC)
-          position = 1
-          if current.respond_to?(:previous_sibling)
-            sibling = current.previous_sibling
-            while sibling
-              position += 1 if sibling.respond_to?(:name) && sibling.name == current.name
-              sibling = sibling.previous_sibling if sibling.respond_to?(:previous_sibling)
-            end
-          end
-
-          path_parts.unshift("#{current.name}[#{position}]")
-        end
-
-        # Stop if we reach the document root (doesn't have parent)
-        break unless current.respond_to?(:parent)
-
-        begin
-          current = current.parent
-        rescue NoMethodError
-          # Parent method failed, we're at root
-          break
-        end
-
-        break unless current
-      end
-
-      "/#{path_parts.join('/')}"
-    end
-  end
-
-  # Base class for validation issues
-  class ValidationIssue
-    attr_reader :type, :rule, :node, :message, :fix, :data,
-                :requirement_id_override, :severity
-
-    def initialize(type:, rule:, node:, message:, fix: nil, data: {},
-requirement_id: nil, severity: nil, violation_type: nil)
-      @type = type
-      @rule = rule
-      @node = node
-      @message = message
-      @fix = fix
-      @data = data
-      @requirement_id_override = requirement_id
-      @severity = severity
-      @violation_type = violation_type || detect_violation_type
-    end
-
-    def requirement_id
-      return @requirement_id_override.to_s if @requirement_id_override
-
-      if @rule.respond_to?(:id)
-        @rule.id.to_s
-      elsif @rule.respond_to?(:class) && @rule.class.respond_to?(:name)
-        # Extract ID from class name for requirements
-        class_name = @rule.class.name.split("::").last
-        class_name.gsub(/Requirement$/, "").downcase.gsub(/([a-z])([A-Z])/,
-                                                          '\1_\2').downcase
-      else
-        "unknown"
-      end
-    end
-
-    def error?
-      @type == :error
-    end
-
-    def warning?
-      @type == :warning
-    end
-
-    def fixable?
-      !@fix.nil?
-    end
-
-    def line
-      @node.respond_to?(:line) ? @node.line : nil
-    end
-
-    def column
-      @node.respond_to?(:column) ? @node.column : nil
-    end
-
-    def element_name
-      @node.respond_to?(:name) ? @node.name : nil
-    end
-
-    def apply_fix
-      return false unless fixable?
-
-      begin
-        if @fix.respond_to?(:call)
-          @fix.call
-        else
-          @fix.apply
-        end
-        true
-      rescue StandardError
-        false
-      end
-    end
-
-    def to_h
+    # Get structural invalidity statistics.
+    # @return [Hash] statistics about structurally invalid nodes
+    def structural_statistics
       {
-        type: @type,
-        rule: rule_id,
-        message: @message,
-        line: line,
-        column: column,
-        element: element_name,
-        fixable: fixable?,
+        structurally_invalid_count: @structural_tracker.count,
+        has_structural_issues: @structural_tracker.any?,
       }
     end
 
-    def violation_type
-      @violation_type
+    # Get reference manifest statistics.
+    # @return [Hash] statistics about references
+    def reference_statistics
+      @reference_manifest.statistics
     end
 
-    def remediable?
-      case @violation_type
-      when :color_violation, :font_violation, :content_violation, :reference_violation,
-           :namespace_violation, :viewbox_violation, :style_violation
-        true
-      when :structural_violation
-        false
-      else
-        # Default to remediable for backward compatibility
-        true
-      end
-    end
-
-    def remediation_type
-      case @violation_type
-      when :color_violation, :font_violation
-        :convert
-      when :content_violation, :reference_violation, :namespace_violation
-        :remove
-      when :viewbox_violation
-        :add
-      when :style_violation
-        :promote
-      else
-        :unknown
-      end
-    end
-
-    def remediation_confidence
-      case @violation_type
-      when :color_violation, :font_violation, :style_violation
-        :automatic
-      when :viewbox_violation, :namespace_violation
-        :safe_structural
-      when :content_violation, :reference_violation
-        :safe_removal
-      else
-        :manual_review
-      end
-    end
-
-    def suggested_action
-      case @violation_type
-      when :color_violation
-        "Convert color to allowed equivalent using CssColor"
-      when :font_violation
-        "Map font family to generic equivalent"
-      when :content_violation
-        "Remove forbidden element or attribute"
-      when :reference_violation
-        "Remove broken reference or containing element"
-      when :namespace_violation
-        "Fix namespace declarations and remove invalid elements/attributes"
-      when :viewbox_violation
-        "Add missing viewBox attribute"
-      when :style_violation
-        "Promote style properties to attributes"
-      when :structural_violation
-        "Manual fix required - document structure issue"
-      else
-        "Apply available remediation"
-      end
-    end
-
-    def affects_content?
-      case @violation_type
-      when :content_violation, :reference_violation
-        true
-      when :color_violation, :font_violation, :style_violation, :viewbox_violation, :namespace_violation
-        false
-      else
-        false
-      end
-    end
-
-    def to_s
-      location = line ? " at line #{line}" : ""
-      location += ":#{column}" if column
-      rule_info = rule_id ? " (#{rule_id})" : ""
-      remediation_info = remediable? ? " [#{remediation_type}]" : " [NOT REMEDIABLE]"
-      "#{@message}#{location}#{rule_info}#{remediation_info}"
-    end
-
-    def to_h
+    # Get overall validation statistics.
+    # @return [Hash] combined statistics
+    def statistics
       {
-        type: @type,
-        rule: rule_id,
-        message: @message,
-        line: line,
-        column: column,
-        element: element_name,
-        fixable: fixable?,
-        remediable: remediable?,
-        violation_type: @violation_type,
-        remediation_type: remediation_type,
-        remediation_confidence: remediation_confidence,
-        suggested_action: suggested_action,
-        affects_content: affects_content?,
-      }
-    end
-
-    private
-
-    def detect_violation_type
-      req_id = requirement_id.downcase
-      msg = @message.downcase
-
-      # First check for structural violations (non-remediable)
-      return :structural_violation if msg.include?("root element must be") ||
-        msg.include?("malformed") ||
-        msg.include?("invalid document") ||
-        msg.include?("required element missing") ||
-        msg.include?("invalid hierarchy")
-
-      # Then check requirement-based violations (remediable)
-      case req_id
-      when /color/
-        :color_violation
-      when /font/
-        :font_violation
-      when /forbidden|content/
-        :content_violation
-      when /reference|id/
-        :reference_violation
-      when /namespace/
-        :namespace_violation
-      when /viewbox/
-        :viewbox_violation
-      when /style/
-        :style_violation
-      else
-        # Check message content for clues
-        return :color_violation if msg.include?("color")
-        return :font_violation if msg.include?("font")
-        return :content_violation if msg.include?("forbidden")
-        return :reference_violation if msg.include?("reference") || msg.include?("href")
-        return :namespace_violation if msg.include?("namespace")
-        return :viewbox_violation if msg.include?("viewbox")
-        return :style_violation if msg.include?("style")
-
-        :unknown_violation
-      end
-    end
-
-    def rule_id
-      return @requirement_id_override if @requirement_id_override
-      return @rule.id if @rule.respond_to?(:id)
-
-      if @rule.respond_to?(:class) && @rule.class.respond_to?(:name)
-        # Extract ID from class name for requirements
-        class_name = @rule.class.name.split("::").last
-        class_name.gsub(/Requirement$/, "").downcase.gsub(/([a-z])([A-Z])/,
-                                                          '\1_\2').downcase
-      else
-        "unknown"
-      end
-    end
-  end
-
-  # New class for non-error notifications
-  class ValidationNotice
-    attr_reader :type, :node, :message, :data
-
-    def initialize(type:, node:, message:, data: {})
-      @type = type
-      @node = node
-      @message = message
-      @data = data
-    end
-
-    def line
-      @node.respond_to?(:line) ? @node.line : nil
-    end
-
-    def column
-      @node.respond_to?(:column) ? @node.column : nil
-    end
-
-    def to_h
-      {
-        type: @type,
-        message: @message,
-        line: line,
-        column: column,
-        data: @data,
+        errors: error_statistics,
+        structural: structural_statistics,
+        references: reference_statistics,
       }
     end
   end

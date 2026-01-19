@@ -117,6 +117,109 @@ module SvgConform
         end
       end
 
+      # Error handling helper methods for consistent error reporting
+
+      # Add an element-level error
+      # @param context [ValidationContext] the validation context
+      # @param element [Object] the element with the error
+      # @param message_template [String] the error message template
+      # @param kwargs [Hash] additional data for the error
+      def add_element_error(context, element, message_template, **kwargs)
+        context.add_error(
+          requirement_id: id,
+          message: format_message(message_template, kwargs),
+          node: element,
+          severity: :error,
+          data: { element: element_name(element), **kwargs },
+        )
+      end
+
+      # Add an attribute-level error
+      # @param context [ValidationContext] the validation context
+      # @param element [Object] the element with the error
+      # @param attribute_name [String] the attribute name with the error
+      # @param message_template [String] the error message template
+      # @param kwargs [Hash] additional data for the error
+      def add_attribute_error(context, element, attribute_name, message_template, **kwargs)
+        context.add_error(
+          requirement_id: id,
+          message: format_message(message_template, kwargs.merge(attribute: attribute_name)),
+          node: element,
+          severity: :error,
+          data: { element: element_name(element), attribute: attribute_name, **kwargs },
+        )
+      end
+
+      # Add a namespace-level error
+      # @param context [ValidationContext] the validation context
+      # @param element [Object] the element with the error
+      # @param message_template [String] the error message template
+      # @param kwargs [Hash] additional data for the error
+      def add_namespace_error(context, element, message_template, **kwargs)
+        context.add_error(
+          requirement_id: id,
+          message: format_message(message_template, kwargs),
+          node: element,
+          severity: :error,
+          data: { element: element_name(element), **kwargs },
+        )
+      end
+
+      # Add a value-level error (for invalid attribute values)
+      # @param context [ValidationContext] the validation context
+      # @param element [Object] the element with the error
+      # @param attribute_name [String] the attribute name with the error
+      # @param value [String] the invalid value
+      # @param message_template [String] the error message template
+      # @param kwargs [Hash] additional data for the error
+      def add_value_error(context, element, attribute_name, value, message_template, **kwargs)
+        context.add_error(
+          requirement_id: id,
+          message: format_message(message_template, kwargs.merge(attribute: attribute_name, value: value)),
+          node: element,
+          severity: :error,
+          data: { element: element_name(element), attribute: attribute_name, value: value, **kwargs },
+        )
+      end
+
+      # Add a warning
+      # @param context [ValidationContext] the validation context
+      # @param element [Object] the element with the warning
+      # @param message_template [String] the warning message template
+      # @param kwargs [Hash] additional data for the warning
+      def add_warning(context, element, message_template, **kwargs)
+        context.add_error(
+          requirement_id: id,
+          message: format_message(message_template, kwargs),
+          node: element,
+          severity: :warning,
+          data: { element: element_name(element), **kwargs },
+        )
+      end
+
+      private
+
+      # Format message with keyword substitution
+      # @param template [String] the message template with %{placeholder} syntax
+      # @param kwargs [Hash] the values to substitute
+      def format_message(template, kwargs)
+        # Convert hash keys to %{key} format for gsub
+        message = template.dup
+        kwargs.each do |key, value|
+          message = message.gsub("%{#{key}}", value.to_s)
+        end
+        message
+      end
+
+      # Get element name from node, handling both ElementProxy and DOM nodes
+      # @param element [Object] the element
+      # @return [String] the element name
+      def element_name(element)
+        element.respond_to?(:name) ? element.name : "unknown"
+      end
+
+      public
+
       def to_s
         "#{@id}: #{@description}"
       end

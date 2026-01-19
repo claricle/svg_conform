@@ -139,6 +139,16 @@ module SvgConform
       context = ValidationContext.allocate
       context.instance_variable_set(:@document, nil)
       context.instance_variable_set(:@profile, @profile)
+
+      # Initialize new tracker classes
+      require_relative "error_tracker"
+      require_relative "node_id_generator"
+      require_relative "structural_invalidity_tracker"
+      context.instance_variable_set(:@error_tracker, ErrorTracker.new)
+      context.instance_variable_set(:@node_id_generator, NodeIdGenerator.new(nil))
+      context.instance_variable_set(:@structural_tracker, StructuralInvalidityTracker.new)
+
+      # Legacy instance variables (kept for backward compatibility)
       context.instance_variable_set(:@errors, [])
       context.instance_variable_set(:@warnings, [])
       context.instance_variable_set(:@validity_errors, [])

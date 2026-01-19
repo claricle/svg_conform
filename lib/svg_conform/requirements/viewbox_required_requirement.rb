@@ -90,13 +90,9 @@ module SvgConform
         viewbox = element.raw_attributes["viewBox"]
 
         if viewbox.nil? || viewbox.empty?
-          context.add_error(
-            requirement_id: id,
-            message: "SVG root element must have a viewBox attribute",
-            node: element,
-            severity: :error,
-            data: { missing_attribute: "viewBox" },
-          )
+          add_attribute_error(context, element, "viewBox",
+                             "SVG root element must have a viewBox attribute",
+                             missing_attribute: "viewBox")
 
           # Add informational message about calculated viewBox if width/height are present
           width = element.raw_attributes["width"]
@@ -104,17 +100,11 @@ module SvgConform
 
           if width && height && valid_number?(width) && valid_number?(height)
             calculated_viewbox = "0 0 #{width.to_f} #{height.to_f}"
-            context.add_error(
-              requirement_id: id,
-              message: "Trying to put in the attribute with value '#{calculated_viewbox}'",
-              node: element,
-              severity: :error,
-              data: {
-                calculated_viewbox: calculated_viewbox,
-                source_width: width,
-                source_height: height,
-              },
-            )
+            add_element_error(context, element,
+                             "Trying to put in the attribute with value '%{calculated}'",
+                             calculated: calculated_viewbox,
+                             source_width: width,
+                             source_height: height)
           end
           return
         end
@@ -123,16 +113,10 @@ module SvgConform
         normalized_viewbox = viewbox.strip.gsub(/[(),]/, " ").squeeze(" ")
         parts = normalized_viewbox.strip.split(/\s+/)
         unless parts.length == 4 && parts.all? { |part| valid_number?(part) }
-          context.add_error(
-            requirement_id: id,
-            message: "viewBox attribute must contain four numeric values (min-x min-y width height)",
-            node: element,
-            severity: :error,
-            data: {
-              viewbox_value: viewbox,
-              parsed_parts: parts,
-            },
-          )
+          add_attribute_error(context, element, "viewBox",
+                             "viewBox attribute must contain four numeric values (min-x min-y width height)",
+                             viewbox_value: viewbox,
+                             parsed_parts: parts)
           return
         end
 
@@ -142,17 +126,11 @@ module SvgConform
 
         return unless width <= 0 || height <= 0
 
-        context.add_error(
-          requirement_id: id,
-          message: "viewBox width and height must be positive values",
-          node: element,
-          severity: :error,
-          data: {
-            viewbox_value: viewbox,
-            width: width,
-            height: height,
-          },
-        )
+        add_attribute_error(context, element, "viewBox",
+                           "viewBox width and height must be positive values",
+                           viewbox_value: viewbox,
+                           width: width,
+                           height: height)
       end
 
       private
