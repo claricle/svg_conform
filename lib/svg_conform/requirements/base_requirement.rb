@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
+require_relative "../node_helpers"
+
 module SvgConform
   module Requirements
     # Base class for all validation requirements
     class BaseRequirement < Lutaml::Model::Serializable
+      include SvgConform::NodeHelpers
+
       attribute :id, :string
       attribute :description, :string
       attribute :type, :string, polymorphic_class: true, default: -> {
@@ -65,48 +69,8 @@ module SvgConform
         true
       end
 
-      # Helper method to check if a node is an element
-      def element?(node)
-        node.respond_to?(:name) && !node.name.nil?
-      end
-
-      # Helper method to check if a node is text
-      def text?(node)
-        node.respond_to?(:text?) && node.text?
-      end
-
-      # Helper method to get attribute value
-      def get_attribute(node, name)
-        return nil unless node.respond_to?(:attribute)
-
-        attr = node.attribute(name)
-        attr&.value
-      end
-
-      # Helper method to set attribute value
-      def set_attribute(node, name, value)
-        return false unless node.respond_to?(:set_attribute)
-
-        node.set_attribute(name, value)
-        true
-      end
-
-      # Helper method to remove attribute
-      def remove_attribute(node, name)
-        return false unless node.respond_to?(:remove_attribute)
-
-        node.remove_attribute(name)
-        true
-      end
-
-      # Helper method to check if attribute exists
-      def has_attribute?(node, name)
-        return false unless node.respond_to?(:attribute)
-
-        !node.attribute(name).nil?
-      end
-
       # Helper method to get all attributes
+      # Note: Other attribute helpers are included via NodeHelpers module
       def get_attributes(node)
         return {} unless node.respond_to?(:attributes)
 
