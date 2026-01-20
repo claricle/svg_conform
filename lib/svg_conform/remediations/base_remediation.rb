@@ -2,11 +2,14 @@
 
 require "lutaml/model"
 require_relative "../remediation_result"
+require_relative "../node_helpers"
 
 module SvgConform
   module Remediations
     # Base class for all remediations using lutaml-model serialization
     class BaseRemediation < Lutaml::Model::Serializable
+      include SvgConform::NodeHelpers
+
       attribute :id, :string
       attribute :description, :string
       attribute :targets, :string, collection: true
@@ -72,46 +75,13 @@ module SvgConform
 
       protected
 
-      def element?(node)
-        node.respond_to?(:name) && node.name
-      end
-
-      def get_attribute(node, attr_name)
-        return nil unless node.respond_to?(:[])
-
-        node[attr_name]
-      end
-
-      def set_attribute(node, attr_name, value)
-        return unless node.respond_to?(:[]=)
-
-        node[attr_name] = value
-      end
-
-      def has_attribute?(node, attr_name)
-        return false unless node.respond_to?(:[])
-
-        !node[attr_name].nil?
-      end
+      # Helper methods for node manipulation included via NodeHelpers module:
+      # element?, text?, get_attribute, set_attribute, has_attribute?, remove_attribute
 
       def find_nodes(document, &)
         nodes = []
         traverse_nodes(document, nodes, &)
         nodes
-      end
-
-      # Helper method to remove attribute
-      def remove_attribute(node, name)
-        if node.respond_to?(:remove_attribute)
-          node.remove_attribute(name)
-          true
-        elsif node.respond_to?(:[]=) && node.respond_to?(:[])
-          # Fallback for different implementations
-          node[name] = nil
-          true
-        else
-          false
-        end
       end
 
       # Helper method to remove node

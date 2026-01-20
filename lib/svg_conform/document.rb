@@ -92,7 +92,28 @@ module SvgConform
     def to_xml
       # Always generate from current moxml_document state
       # This ensures modifications are reflected in the output
-      @moxml_document.to_xml
+      xml = @moxml_document.to_xml
+
+      # Clean up unused namespace declarations if marked by remediations
+      if instance_variable_defined?(:@unused_namespace_prefixes)
+        prefixes = @unused_namespace_prefixes
+        xml = remove_namespace_declarations(xml, prefixes) if prefixes && !prefixes.empty?
+        # Clear the marker after cleanup
+        remove_instance_variable(:@unused_namespace_prefixes)
+      end
+
+      xml
+    end
+
+    def remove_namespace_declarations(xml, prefixes)
+      # Remove xmlns:prefix="uri" declarations from the XML string
+      # This works around Moxml/Nokogiri's inability to remove namespace declarations
+      prefixes.reduce(xml) do |result, prefix|
+        # Match xmlns:prefix="..." with various quote styles and surrounding whitespace
+        # The pattern matches: xmlns:prefix="uri" or xmlns:prefix='uri'
+        # It captures leading whitespace to remove it too
+        result.gsub(%r{\s+xmlns:#{prefix}=["'][^"']*["']}, "")
+      end
     end
 
     def dup

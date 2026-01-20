@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "base_remediation"
+require "set"
 
 module SvgConform
   module Remediations
@@ -105,6 +106,11 @@ module SvgConform
           remove_node(node)
         end
 
+        # Clean up unused namespace declarations
+        # Note: Moxml/Nokogiri don't support removing namespace declarations directly,
+        # so we mark the document for post-processing during serialization
+        cleanup_unused_namespace_declarations(document)
+
         changes
       end
 
@@ -145,6 +151,57 @@ module SvgConform
       def find_namespace_uri_for_attribute(node, prefix)
         # Same logic as find_namespace_uri_for_prefix
         find_namespace_uri_for_prefix(node, prefix)
+      end
+
+      def cleanup_unused_namespace_declarations(document)
+        # Find which namespace prefixes are still in use
+        used_prefixes = find_used_namespace_prefixes(document)
+
+        # Get the root element
+        root = document.respond_to?(:root) ? document.root : document
+        return unless root.respond_to?(:namespace_definitions)
+
+        # Get disallowed namespace prefixes
+        disallowed_prefixes = root.namespace_definitions.filter_map do |ns|
+          prefix = ns.respond_to?(:prefix) ? ns.prefix : nil
+          uri = ns.respond_to?(:uri) ? ns.uri : (ns.respond_to?(:href) ? ns.href : nil)
+          next if prefix.nil? || prefix.empty? # Skip default namespace
+          next if allowed_namespaces.include?(uri) # Keep allowed namespaces
+          next if used_prefixes.include?(prefix) # Keep prefixes still in use
+          prefix
+        end
+
+        # Store the prefixes to remove on the document for later serialization
+        # Try to store on Document wrapper first, fallback to moxml_document
+        target = document.respond_to?(:instance_variable_set) ? document : root.document
+        target.instance_variable_set(:@unused_namespace_prefixes, disallowed_prefixes) if target
+      end
+
+      def find_used_namespace_prefixes(document)
+        used_prefixes = Set.new(["xml"]) # xml prefix is always reserved
+
+        document.traverse do |node|
+          next unless node.respond_to?(:name)
+
+          # Check element name for namespace prefix
+          if node.name.include?(":")
+            prefix = node.name.split(":").first
+            used_prefixes << prefix
+          end
+
+          # Check attributes for namespace prefixes
+          if node.respond_to?(:attributes)
+            node.attributes.each do |attr|
+              attr_name = attr.respond_to?(:name) ? attr.name : attr.to_s
+              if attr_name.include?(":")
+                prefix = attr_name.split(":").first
+                used_prefixes << prefix
+              end
+            end
+          end
+        end
+
+        used_prefixes
       end
     end
   end
