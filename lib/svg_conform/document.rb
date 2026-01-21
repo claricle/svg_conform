@@ -97,7 +97,10 @@ module SvgConform
       # Clean up unused namespace declarations if marked by remediations
       if instance_variable_defined?(:@unused_namespace_prefixes)
         prefixes = @unused_namespace_prefixes
-        xml = remove_namespace_declarations(xml, prefixes) if prefixes && !prefixes.empty?
+        if prefixes && !prefixes.empty?
+          xml = remove_namespace_declarations(xml,
+                                              prefixes)
+        end
         # Clear the marker after cleanup
         remove_instance_variable(:@unused_namespace_prefixes)
       end

@@ -27,48 +27,38 @@ module SvgConform
       def check(node, context)
         return unless element?(node)
 
-        # Check font-family attribute only (not style properties)
-        # Style properties are handled by StylePromotionRequirement to avoid duplication
-        font_family = get_attribute(node, "font-family")
-        return unless font_family
-
-        if svgcheck_compatibility
-          check_font_family_svgcheck_mode(node, context, font_family,
-                                          "font-family")
-        elsif !valid_font_family?(font_family)
-          context.add_error(
-            requirement_id: id,
-            message: "Font family '#{font_family}' is not allowed in this profile",
-            node: node,
-            severity: :error,
-            data: { attribute: "font-family", value: font_family },
-          )
-        end
+        validate_font_family(node, context)
       end
 
       def validate_sax_element(element, context)
-        # Skip if parent is structurally invalid
+        # Skip if parent is structurally invalid (SAX-specific: DOM handles this via should_check_node?)
         return if element.parent && context.node_structurally_invalid?(element.parent)
 
-        # Check font-family attribute only
-        font_family = element.raw_attributes["font-family"]
+        validate_font_family(element, context)
+      end
+
+      private
+
+      # Shared validation logic for both DOM and SAX modes
+      def validate_font_family(node_or_element, context)
+        # Check font-family attribute only (not style properties)
+        # Style properties are handled by StylePromotionRequirement to avoid duplication
+        font_family = get_attribute(node_or_element, "font-family")
         return unless font_family
 
         if svgcheck_compatibility
-          check_font_family_svgcheck_mode(element, context, font_family,
+          check_font_family_svgcheck_mode(node_or_element, context, font_family,
                                           "font-family")
         elsif !valid_font_family?(font_family)
           context.add_error(
             requirement_id: id,
             message: "Font family '#{font_family}' is not allowed in this profile",
-            node: element,
+            node: node_or_element,
             severity: :error,
             data: { attribute: "font-family", value: font_family },
           )
         end
       end
-
-      private
 
       def check_font_family_svgcheck_mode(node, context, font_family_value,
 attribute_name)

@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 require_relative "../node_helpers"
+require_relative "../interfaces/requirement_interface"
 
 module SvgConform
   module Requirements
     # Base class for all validation requirements
     class BaseRequirement < Lutaml::Model::Serializable
       include SvgConform::NodeHelpers
+      include SvgConform::Interfaces::RequirementInterface
 
       attribute :id, :string
       attribute :description, :string
@@ -79,6 +81,20 @@ module SvgConform
         attrs.each_with_object({}) do |attr, hash|
           hash[attr.name] = attr.value
         end
+      end
+
+      # Shared helper for skipping attribute validation on structurally invalid nodes
+      # Used by both DOM and SAX validation
+      def skip_attribute_validation?(node_or_element, context)
+        # For DOM mode, also check if it's an element
+        return true if element?(node_or_element) && context.node_structurally_invalid?(node_or_element)
+
+        # For SAX mode (ElementProxy always has this method)
+        if node_or_element.respond_to?(:path_id)
+          return context.node_structurally_invalid?(node_or_element)
+        end
+
+        false
       end
 
       def to_s

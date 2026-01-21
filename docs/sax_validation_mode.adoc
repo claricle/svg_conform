@@ -1,0 +1,576 @@
+= Writing SAX-Compatible Requirements
+:toc: left
+:toclevels: 4
+:sectlinks:
+:sectanchors:
+:source-highlighter: rouge
+
+== Purpose
+
+This guide explains how to write custom requirements that work with SvgConform's SAX-based validation mode. All requirements must support SAX validation for memory-safe processing of large SVG files.
+
+== Architecture: Two Operating Modes
+
+SvgConform uses two distinct modes:
+
+[cols="1,3,3"]
+|===
+| Mode | Purpose | Characteristics
+
+| **SAX Validation**
+| Validate structure and rules
+| ✅ Constant memory usage +
+✅ Handles any file size +
+✅ Streaming parser +
+❌ Read-only, cannot modify
+
+| **DOM Remediation**
+| Modify and fix documents
+| ✅ Full document tree +
+✅ XPath queries +
+✅ Can modify structure +
+❌ Memory scales with size
+|===
+
+**Key Point**: Requirements run in SAX mode (validation), remediations run in DOM mode (fixes).
+
+== Why SAX for Requirements?
+
+=== Memory Safety
+
+SAX (Simple API for XML) is a streaming parser that processes XML sequentially:
+
+[source,ruby]
+----
+# SAX: Process one element at a time
+start_element("svg", {"width" => "500"})
+start_element("rect", {"fill" => "red"})
+end_element("rect")
+end_element("svg")
+
+# Memory usage: O(1) - constant, regardless of file size
+----
+
+[source,ruby]
+----
+# DOM: Load entire tree into memory
+document = Nokogiri::XML(svg_content)
+# Memory usage: O(n) - grows with file size
+# 100MB file = 100MB+ in memory
+----
+
+=== Real-World Impact
+
+[cols="1,2,2"]
+|===
+| File Size | SAX Performance | DOM Performance
+
+| 10 KB
+| < 10ms
+| < 5ms
+
+| 100 KB
+| 10-50ms
+| 20-100ms
+
+| 1 MB
+| 50-200ms
+| 200-500ms
+
+| 10 MB
+| 500ms-1s
+| **HANGS** (can crash)
+
+| 100 MB
+| 5-10s
+| **CRASHES** (out of memory)
+|===
+
+=== Conclusion
+
+SAX validation ensures the library can handle ANY file size safely. This is critical for:
+
+- CI/CD pipelines processing many files
+- Production systems with unknown file sizes
+- User-facing applications that must not crash
+
+== BaseRequirement API
+
+Every requirement inherits from [`BaseRequirement`](../lib/svg_conform/requirements/base_requirement.rb) and must implement SAX validation methods.
+
+=== Required Methods
+
+==== validate_sax_element(element, context)
+
+Called for each element as it's parsed.
+
+**Parameters**:
+
+* `element` ([`ElementProxy`](../lib/svg_conform/element_proxy.rb)) - Lightweight element representation
+* `context` ([`ValidationContext`](../lib/svg_conform/validation_context.rb)) - Validation state
+
+**ElementProxy Properties**:
+
+[source,ruby]
+----
+element.name           # String: element name (e.g., "rect", "svg")
+element.attributes     # Hash: all attributes {name => value}
+element.parent         # ElementProxy: parent element (or nil for root)
+element.position       # Integer: sibling position (1-based)
+element.path           # Array: XPath-style path ["svg[1]", "g[1]", "rect[2]"]
+element.namespace      # String: element namespace (or nil)
+----
+
+**Example**:
+
+[source,ruby]
+----
+class RectMustHaveWidthRequirement < BaseRequirement
+  def validate_sax_element(element, context)
+    return unless element.name == "rect"
+    
+    unless element.attributes["width"]
+      context.add_error(
+        requirement_id: id,
+        message: "rect elements must have a width attribute",
+        node: element,
+        severity: :error
+      )
+    end
+  end
+end
+----
+
+=== Optional Methods
+
+==== collect_sax_data(element, context)
+
+Called during parsing to collect data for deferred validation.
+
+Use this when you need to validate relationships between elements after seeing the entire document (e.g., ID references).
+
+**Example**:
+
+[source,ruby]
+----
+class NoDuplicateIdsRequirement < BaseRequirement
+  def collect_sax_data(element, context)
+    if id_value = element.attributes["id"]
+      context.data[:ids] ||= []
+      context.data[:ids] << {
+        id: id_value, 
+        element: element.name,
+        line: element.line_number
+      }
+    end
+  end
+  
+  def validate_sax_complete(context)
+    ids = context.data[:ids] || []
+    id_counts = Hash.new(0)
+    
+    ids.each do |entry|
+      id_counts[entry[:id]] += 1
+    end
+    
+    id_counts.each do |id, count|
+      next if count == 1
+      
+      context.add_error(
+        requirement_id: self.id,
+        message: "Duplicate ID '#{id}' found #{count} times",
+        severity: :error
+      )
+    end
+  end
+  
+  def needs_deferred_validation?
+    true
+  end
+end
+----
+
+==== validate_sax_complete(context)
+
+Called after document parsing completes. Use for validation that requires complete document knowledge.
+
+==== needs_deferred_validation?
+
+Return `true` if your requirement uses `validate_sax_complete()`.
+
+[source,ruby]
+----
+def needs_deferred_validation?
+  true  # This requirement needs full document context
+end
+----
+
+== Validation Patterns
+
+=== Pattern 1: Immediate Element Validation
+
+Check each element as it's parsed. Most requirements use this pattern.
+
+[source,ruby]
+----
+class NoScriptElementsRequirement < BaseRequirement
+  def validate_sax_element(element, context)
+    if element.name == "script"
+      context.add_error(
+        requirement_id: id,
+        message: "script elements are not allowed",
+        node: element,
+        severity: :error
+      )
+    end
+  end
+end
+----
+
+=== Pattern 2: Attribute Validation
+
+Validate attributes on specific elements.
+
+[source,ruby]
+----
+class ViewboxRequiredRequirement < BaseRequirement
+  def validate_sax_element(element, context)
+    return unless element.name == "svg"
+    
+    unless element.attributes["viewBox"]
+      context.add_error(
+        requirement_id: id,
+        message: "svg element must have viewBox attribute",
+        node: element,
+        severity: :error
+      )
+    end
+  end
+end
+----
+
+=== Pattern 3: Parent-Child Validation
+
+Check element context using parent reference.
+
+[source,ruby]
+----
+class TextOnlyInTextElementsRequirement < BaseRequirement
+  def validate_sax_element(element, context)
+    return unless element.name == "text"
+    return unless element.parent
+    
+    unless ["text", "tspan", "tref"].include?(element.parent.name)
+      context.add_error(
+        requirement_id: id,
+        message: "text elements must be inside text containers",
+        node: element,
+        severity: :error
+      )
+    end
+  end
+end
+----
+
+=== Pattern 4: Deferred Cross-Reference Validation
+
+Collect data during parsing, validate after complete.
+
+[source,ruby]
+----
+class IdReferenceRequirement < BaseRequirement
+  def collect_sax_data(element, context)
+    # Collect all defined IDs
+    if id_value = element.attributes["id"]
+      context.data[:defined_ids] ||= Set.new
+      context.data[:defined_ids] << id_value
+    end
+    
+    # Collect all ID references
+    %w[href xlink:href fill stroke].each do |attr|
+      if value = element.attributes[attr]
+        if value.start_with?("#")
+          context.data[:id_refs] ||= []
+          context.data[:id_refs] << {
+            ref: value[1..-1],
+            element: element.name,
+            attribute: attr,
+            line: element.line_number
+          }
+        end
+      end
+    end
+  end
+  
+  def validate_sax_complete(context)
+    defined_ids = context.data[:defined_ids] || Set.new
+    id_refs = context.data[:id_refs] || []
+    
+    id_refs.each do |ref_info|
+      unless defined_ids.include?(ref_info[:ref])
+        context.add_error(
+          requirement_id: id,
+          message: "Reference to undefined ID: #{ref_info[:ref]}",
+          severity: :error
+        )
+      end
+    end
+  end
+  
+  def needs_deferred_validation?
+    true
+  end
+end
+----
+
+== Common Pitfalls
+
+=== Pitfall 1: Assuming DOM Availability
+
+[source,ruby]
+----
+# ❌ WRONG: ElementProxy is not a DOM node
+def validate_sax_element(element, context)
+  rects = element.xpath("//rect")  # FAILS: No such method
+end
+
+# ✅ CORRECT: Use element properties
+def validate_sax_element(element, context)
+  if element.name == "rect"
+    # Process this rect
+  end
+end
+----
+
+=== Pitfall 2: Attempting Modification
+
+[source,ruby]
+----
+# ❌ WRONG: SAX is read-only
+def validate_sax_element(element, context)
+  element.attributes["fill"] = "black"  # FAILS: Cannot modify
+end
+
+# ✅ CORRECT: Report error only (fixing happens in remediations)
+def validate_sax_element(element, context)
+  if element.attributes["fill"] == "red"
+    context.add_error(
+      requirement_id: id,
+      message: "Red fill not allowed",
+      node: element
+    )
+  end
+end
+----
+
+=== Pitfall 3: Deep Parent Navigation
+
+[source,ruby]
+----
+# ❌ FRAGILE: Long parent chains break easily
+def validate_sax_element(element, context)
+  if element.parent.parent.parent.name == "svg"
+    # This breaks if nesting changes
+  end
+end
+
+# ✅ BETTER: Use path or collect data
+def validate_sax_element(element, context)
+  # Check if "svg" is in the ancestor path
+  if element.path.any? { |p| p.start_with?("svg[") }
+    # More robust
+  end
+end
+----
+
+=== Pitfall 4: State Between Elements
+
+[source,ruby]
+----
+# ❌ WRONG: Instance variables leak between validations
+def validate_sax_element(element, context)
+  @count ||= 0  # DANGER: Shared across files in batch
+  @count += 1
+end
+
+# ✅ CORRECT: Use context.data for per-document state
+def validate_sax_element(element, context)
+  context.data[:count] ||= 0
+  context.data[:count] += 1
+end
+----
+
+== Complete Example
+
+Here's a complete requirement that uses multiple patterns:
+
+[source,ruby]
+----
+module SvgConform
+  module Requirements
+    class CompleteExampleRequirement < BaseRequirement
+      # Configuration
+      attribute :max_depth, :integer, default: 10
+      attribute :allowed_elements, :string, collection: true
+      
+      # Immediate validation: Check depth
+      def
+
+ validate_sax_element(element, context)
+        depth = element.path.length
+        
+        if depth > max_depth
+          context.add_error(
+            requirement_id: id,
+            message: "Nesting too deep: #{depth} levels (max: #{max_depth})",
+            node: element,
+            severity: :warning
+          )
+        end
+        
+        # Check allowed elements
+        if allowed_elements&.any? && !allowed_elements.include?(element.name)
+          context.add_error(
+            requirement_id: id,
+            message: "Element '#{element.name}' not allowed",
+            node: element,
+            severity: :error
+          )
+        end
+      end
+      
+      # Data collection: Track element counts
+      def collect_sax_data(element, context)
+        context.data[:element_counts] ||= Hash.new(0)
+        context.data[:element_counts][element.name] += 1
+      end
+      
+      # Deferred validation: Report statistics
+      def validate_sax_complete(context)
+        counts = context.data[:element_counts] || {}
+        total = counts.values.sum
+        
+        context.add_info(
+          requirement_id: id,
+          message: "Document has #{total} elements: #{counts.inspect}"
+        )
+      end
+      
+      def needs_deferred_validation?
+        true
+      end
+    end
+  end
+end
+----
+
+== Testing Your Requirement
+
+[source,ruby]
+----
+RSpec.describe CompleteExampleRequirement do
+  let(:requirement) { described_class.new(max_depth: 5) }
+  let(:profile) { SvgConform::Profile.new.tap { |p| p.add_requirement(requirement) } }
+  let(:validator) { SvgConform::Validator.new }
+  
+  it "validates depth" do
+    svg = <<~SVG
+      <svg>
+        <g><g><g><g><g><g>
+          <rect/>
+        </g></g></g></g></g></g>
+      </svg>
+    SVG
+    
+    result = validator.validate(svg, profile: profile)
+    
+    expect(result.valid?).to be false
+    expect(result.errors.first.message).to include("Nesting too deep")
+  end
+end
+----
+
+== Performance Tips
+
+1. **Minimize work per element**: SAX calls your method for EVERY element
+2. **Use early returns**: Skip irrelevant elements quickly
+3. **Collect minimal data**: Only store what you need for deferred validation
+4. **Use Sets for lookups**: `Set#include?` is O(1) vs Array O(n)
+5. **Avoid regex when possible**: String comparison is faster
+
+[source,ruby]
+----
+# ✅ FAST: Early return
+def validate_sax_element(element, context)
+  return unless element.name == "rect"  # Skip 99% of elements
+  # Complex logic only for rect elements
+end
+
+# ✅ FAST: Set for lookups
+ALLOWED = Set.new(%w[svg g rect circle path])
+
+def validate_sax_element(element, context)
+  unless ALLOWED.include?(element.name)
+    # Error
+  end
+end
+----
+
+== Migration from DOM Requirements
+
+If you have an existing DOM-based requirement:
+
+[source,ruby]
+----
+# OLD: DOM-based requirement
+class OldRequirement < BaseRequirement
+  def check(node, context)
+    return unless node.name == "rect"
+    # DOM-specific logic
+  end
+end
+----
+
+Convert to SAX:
+
+[source,ruby]
+----
+# NEW: SAX-compatible requirement
+class NewRequirement < BaseRequirement
+  # Keep original DOM logic for backward compatibility
+  def check(node, context)
+    return unless node.name == "rect"
+    # DOM logic still works for tests
+  end
+  
+  # Add SAX support
+  def validate_sax_element(element, context)
+    return unless element.name == "rect"
+    # SAX logic (usually same logic, different API)
+  end
+end
+----
+
+== Conclusion
+
+Writing SAX-compatible requirements ensures your validation:
+
+- ✅ Works with files of any size
+- ✅ Never hangs or crashes on large files
+- ✅ Integrates seamlessly with SvgConform
+- ✅ Provides consistent performance
+
+Remember:
+
+1. Implement `validate_sax_element()` for immediate checks
+2. Use `collect_sax_data()` + `validate_sax_complete()` for deferred validation
+3. Never assume DOM availability in requirements
+4. Test with large files to verify performance
+
+== Additional Resources
+
+* link:../README.adoc[Main Documentation]
+* link:api_reference.adoc[API Reference]
+* link:requirements.adoc[Built-in Requirements]
+* link:../lib/svg_conform/requirements/base_requirement.rb[BaseRequirement Source]
+* link:../lib/svg_conform/element_proxy.rb[ElementProxy Source]

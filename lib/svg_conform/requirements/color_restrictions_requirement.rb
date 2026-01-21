@@ -26,70 +26,30 @@ module SvgConform
       def check(node, context)
         return unless element?(node)
 
-        # Skip attribute validation for structurally invalid nodes (e.g., wrong parent-child)
-        return if context.node_structurally_invalid?(node)
-
-        # Check color-related attributes
-        color_attributes = %w[fill stroke color stop-color flood-color
-                              lighting-color]
-
-        color_attributes.each do |attr_name|
-          value = get_attribute(node, attr_name)
-          next if value.nil? || value.empty?
-
-          next if valid_color?(value)
-
-          context.add_error(
-            requirement_id: id,
-            message: "Color '#{value}' in attribute '#{attr_name}' is not allowed in this profile",
-            node: node,
-            severity: :error,
-            data: {
-              attribute: attr_name,
-              value: value,
-              element: node.name,
-            },
-          )
-        end
-
-        # Check style attribute for color properties
-        style_value = get_attribute(node, "style")
-        return unless style_value
-
-        styles = parse_style(style_value)
-        color_properties = %w[fill stroke color stop-color flood-color
-                              lighting-color]
-
-        color_properties.each do |prop|
-          value = styles[prop]
-          next if value.nil? || value.empty?
-
-          next if valid_color?(value)
-
-          context.add_error(
-            requirement_id: id,
-            message: "Color '#{value}' in style property '#{prop}' is not allowed in this profile",
-            node: node,
-            severity: :error,
-            data: {
-              attribute: prop,
-              value: value,
-              element: node.name,
-            },
-          )
-        end
+        validate_colors(node, context)
       end
 
       def validate_sax_element(element, context)
+        # ElementProxy always represents an element, so no element? check needed
+        validate_colors(element, context)
+      end
+
+      private
+
+      # Shared validation logic for both DOM and SAX modes
+      def validate_colors(node_or_element, context)
         # Skip attribute validation for structurally invalid nodes
-        return if context.node_structurally_invalid?(element)
+        return if skip_attribute_validation?(node_or_element, context)
+
+        # Get element name
+        element_name = node_or_element.name
 
         # Check color-related attributes
         color_attributes = %w[fill stroke color stop-color flood-color
                               lighting-color]
 
         color_attributes.each do |attr_name|
-          value = element.raw_attributes[attr_name]
+          value = get_attribute(node_or_element, attr_name)
           next if value.nil? || value.empty?
 
           next if valid_color?(value)
@@ -97,18 +57,18 @@ module SvgConform
           context.add_error(
             requirement_id: id,
             message: "Color '#{value}' in attribute '#{attr_name}' is not allowed in this profile",
-            node: element,
+            node: node_or_element,
             severity: :error,
             data: {
               attribute: attr_name,
               value: value,
-              element: element.name,
+              element: element_name,
             },
           )
         end
 
         # Check style attribute for color properties
-        style_value = element.raw_attributes["style"]
+        style_value = get_attribute(node_or_element, "style")
         return unless style_value
 
         styles = parse_style(style_value)
@@ -124,18 +84,16 @@ module SvgConform
           context.add_error(
             requirement_id: id,
             message: "Color '#{value}' in style property '#{prop}' is not allowed in this profile",
-            node: element,
+            node: node_or_element,
             severity: :error,
             data: {
               attribute: prop,
               value: value,
-              element: element.name,
+              element: element_name,
             },
           )
         end
       end
-
-      private
 
       def valid_color?(color)
         # First check if threshold-based validation is enabled
