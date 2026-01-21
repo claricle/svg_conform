@@ -177,7 +177,8 @@ module SvgConform
         # Store the prefixes to remove on the document for later serialization
         # Try to store on Document wrapper first, fallback to moxml_document
         target = document.respond_to?(:instance_variable_set) ? document : root.document
-        target&.instance_variable_set(:@unused_namespace_prefixes, disallowed_prefixes)
+        target&.instance_variable_set(:@unused_namespace_prefixes,
+                                      disallowed_prefixes)
       end
 
       def find_used_namespace_prefixes(document)

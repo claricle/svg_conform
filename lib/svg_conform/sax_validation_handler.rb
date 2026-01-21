@@ -3,6 +3,9 @@
 require "nokogiri"
 require_relative "element_proxy"
 require_relative "validation_context"
+require_relative "validation/error_tracker"
+require_relative "validation/structural_invalidity_tracker"
+require_relative "validation/node_id_manager"
 require_relative "validation_result"
 require_relative "references"
 
@@ -139,14 +142,19 @@ module SvgConform
       context = ValidationContext.allocate
       context.instance_variable_set(:@document, nil)
       context.instance_variable_set(:@profile, @profile)
-      context.instance_variable_set(:@errors, [])
-      context.instance_variable_set(:@warnings, [])
-      context.instance_variable_set(:@validity_errors, [])
-      context.instance_variable_set(:@infos, [])
+      context.instance_variable_set(:@error_tracker, Validation::ErrorTracker.new)
+      context.instance_variable_set(:@fixes, [])
       context.instance_variable_set(:@data, {})
-      context.instance_variable_set(:@structurally_invalid_node_ids, Set.new)
-      context.instance_variable_set(:@node_id_cache, {})
-      context.instance_variable_set(:@cache_populated, true) # Skip population for SAX
+      # Create NodeIdManager without a document (SAX mode)
+      node_id_manager = Validation::NodeIdManager.new(nil)
+      context.instance_variable_set(:@node_id_manager, node_id_manager)
+      # Create StructuralInvalidityTracker with a node ID generator
+      context.instance_variable_set(:@structural_invalidity_tracker,
+                                    Validation::StructuralInvalidityTracker.new(
+                                      node_id_generator: ->(node) {
+                                        node_id_manager.generate_node_id(node)
+                                      },
+                                    ))
       context.instance_variable_set(:@reference_manifest,
                                     References::ReferenceManifest.new(source_document: nil))
       context
