@@ -5,7 +5,7 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in svg_conform.gemspec
 gemspec
 
-gem "canon"
+gem "canon", "~>0.1.10"
 gem "openssl"
 gem "rake"
 gem "rspec"
