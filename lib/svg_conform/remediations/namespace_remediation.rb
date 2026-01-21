@@ -164,17 +164,20 @@ module SvgConform
         # Get disallowed namespace prefixes
         disallowed_prefixes = root.namespace_definitions.filter_map do |ns|
           prefix = ns.respond_to?(:prefix) ? ns.prefix : nil
-          uri = ns.respond_to?(:uri) ? ns.uri : (ns.respond_to?(:href) ? ns.href : nil)
+          # Extract namespace URI from Moxml::Namespace object
+          uri = ns.respond_to?(:uri) ? ns.uri : nil
           next if prefix.nil? || prefix.empty? # Skip default namespace
           next if allowed_namespaces.include?(uri) # Keep allowed namespaces
+
           next if used_prefixes.include?(prefix) # Keep prefixes still in use
+
           prefix
         end
 
         # Store the prefixes to remove on the document for later serialization
         # Try to store on Document wrapper first, fallback to moxml_document
         target = document.respond_to?(:instance_variable_set) ? document : root.document
-        target.instance_variable_set(:@unused_namespace_prefixes, disallowed_prefixes) if target
+        target&.instance_variable_set(:@unused_namespace_prefixes, disallowed_prefixes)
       end
 
       def find_used_namespace_prefixes(document)
