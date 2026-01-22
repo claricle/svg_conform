@@ -114,5 +114,68 @@ RSpec.describe SvgConform::Requirements::AllowedElementsRequirement do
 
       expect(requirement).to be_a(described_class)
     end
+
+    it "accepts allowed_attribute_patterns for wildcard attribute exemption" do
+      requirement = described_class.new(
+        id: "test_patterns",
+        description: "Test with allowed patterns",
+        allowed_attribute_patterns: ["on*", "data-*"],
+      )
+
+      expect(requirement.allowed_attribute_patterns).to eq(["on*", "data-*"])
+    end
+
+    it "allows attributes matching allowed_attribute_patterns" do
+      svg_with_event_handlers = <<~SVG
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+          <polygon points="10,10 90,10 50,90"
+                   onmouseout="handleOut()"
+                   onmouseover="handleOver()"
+                   data-custom="value"/>
+          <rect x="10" y="10" width="20" height="20" onclick="forbidden()"/>
+        </svg>
+      SVG
+
+      document = SvgConform::Document.from_content(svg_with_event_handlers)
+      requirement = described_class.new(
+        id: "test_patterns",
+        description: "Test with allowed patterns",
+        allowed_attribute_patterns: ["on*"], # Allow all event attributes
+        check_attributes: true,
+      )
+
+      context = SvgConform::ValidationContext.new(document, nil)
+      requirement.validate_document(document, context)
+
+      # onmouseout and onmouseover should be allowed (match "on*" pattern)
+      # onclick should also be allowed (matches "on*" pattern)
+      # data-custom should NOT be allowed (not in allowed attributes, not in pattern)
+      expect(context.errors).to be_empty
+    end
+
+    it "warns when allowed_attribute_patterns conflicts with element-specific disallowed attributes" do
+      # Create a requirement with conflicting configuration
+      requirement = described_class.new(
+        id: "test_conflict",
+        description: "Test with conflicting patterns",
+        allowed_attribute_patterns: ["on*"], # Allows all event attributes
+        element_configs: [
+          SvgConform::Requirements::ElementRequirementConfig.new(
+            tag: "polygon",
+            attr: ["points", "!onclick"], # onclick is disallowed on polygon
+          ),
+        ],
+      )
+
+      # Trigger validation by calling check and capture stderr
+      document = SvgConform::Document.from_content(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="10,10 90,10 50,90"/></svg>',
+      )
+      context = SvgConform::ValidationContext.new(document, nil)
+
+      expect { requirement.check(document.root, context) }
+        .to output(/Configuration warning.*onclick.*allowed_attribute_patterns.*Allowed patterns take precedence/m)
+        .to_stderr
+    end
   end
 end

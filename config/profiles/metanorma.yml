@@ -16,6 +16,8 @@ requirements:
     allowed_namespaces:
       - "http://www.w3.org/2000/svg"
       - ""  # Default namespace (no prefix)
+    allowed_attribute_patterns:
+      - "on*"  # Allow event handler attributes (onmouseover, onmouseout, etc.) per issue #57
     element_configs:
       # Direct encoding from svgcheck word_properties.py elements dictionary
       - tag: "svg"
@@ -156,6 +158,7 @@ requirements:
     description: "Validates ID references point to existing elements"
 
   # Forbidden content - no multimedia, scripting, etc.
+  # Note: onmouseover, onmouseout, onfocus, onblur are intentionally allowed per issue #57
   - id: "forbidden_content"
     type: "ForbiddenContentRequirement"
     description: "Prohibits multimedia, scripting content"

@@ -8,20 +8,19 @@ module SvgConform
     # Validates that only allowed SVG elements and their attributes are used
     class AllowedElementsRequirement < BaseRequirement
       attribute :type, :string, default: -> { "AllowedElementsRequirement" }
-      attribute :element_configs, ElementRequirementConfig, collection: true, default: -> {
-        []
-      }
-      attribute :disallowed_elements, :string, collection: true, default: -> {
-        []
-      }
+      attribute :element_configs, ElementRequirementConfig, collection: true,
+                                                            initialize_empty: true
+      attribute :disallowed_elements, :string, collection: true,
+                                               initialize_empty: true
       attribute :check_attributes, :boolean, default: false
       attribute :check_invalid_attributes, :boolean, default: false
+      attribute :allowed_attribute_patterns, :string, collection: true,
+                                                      initialize_empty: true
       attribute :check_parent_child, :boolean, default: false
       attribute :parent_child_rules, :string, default: -> { {} }
       attribute :skip_foreign_namespaces, :boolean, default: false
-      attribute :allowed_namespaces, :string, collection: true, default: -> {
-        []
-      }
+      attribute :allowed_namespaces, :string, collection: true,
+                                              initialize_empty: true
       attribute :allow_rdf_metadata, :boolean, default: false
 
       # RDF-related namespaces (same as in NamespaceRequirement for consistency)
@@ -41,13 +40,51 @@ module SvgConform
         map "disallowed_elements", to: :disallowed_elements
         map "check_attributes", to: :check_attributes
         map "check_invalid_attributes", to: :check_invalid_attributes
+        map "allowed_attribute_patterns", to: :allowed_attribute_patterns
         map "check_parent_child", to: :check_parent_child
         map "skip_foreign_namespaces", to: :skip_foreign_namespaces
         map "allowed_namespaces", to: :allowed_namespaces
         map "allow_rdf_metadata", to: :allow_rdf_metadata
       end
 
+      # Check for configuration conflicts and emit warnings
+      def validate_configuration
+        return if allowed_attribute_patterns.empty? || !element_configs&.any?
+
+        element_configs.each do |element_config|
+          next unless element_config&.attr
+
+          disallowed_attrs = []
+          element_config.attr.each do |attribute|
+            if attribute.start_with?("!")
+              disallowed_attrs << attribute[1..].downcase
+            end
+          end
+
+          next if disallowed_attrs.empty?
+
+          # Check if any disallowed attribute matches an allowed pattern
+          conflicts = disallowed_attrs.select do |disallowed|
+            matches_allowed_pattern?(disallowed)
+          end
+
+          if conflicts.any?
+            warn "Configuration warning in #{id}: " \
+                 "Element '#{element_config.tag}' has disallowed attributes [#{conflicts.join(', ')}] " \
+                 "that match allowed_attribute_patterns [#{allowed_attribute_patterns.join(', ')}]. " \
+                 "Allowed patterns take precedence over element-specific disallowed attributes."
+          end
+        end
+      end
+
       def check(node, context)
+        # Validate configuration once on first use
+        @_config_validated ||= false
+        unless @_config_validated
+          validate_configuration
+          @_config_validated = true
+        end
+
         return unless element?(node)
 
         # Skip foreign namespace elements if configured (let NamespaceRequirement handle them)
@@ -121,6 +158,13 @@ module SvgConform
       end
 
       def validate_sax_element(element, context)
+        # Validate configuration once on first use
+        @_config_validated ||= false
+        unless @_config_validated
+          validate_configuration
+          @_config_validated = true
+        end
+
         # Skip if parent is structurally invalid (matches DOM behavior)
         if element.parent && context.node_structurally_invalid?(element.parent)
           # Mark this element as invalid too since it won't be in final document
@@ -200,6 +244,18 @@ module SvgConform
 
       def disallowed_element?(element_name)
         disallowed_elements&.include?(element_name) || false
+      end
+
+      # Check if an attribute name matches any of the allowed_attribute_patterns
+      def matches_allowed_pattern?(attr_name)
+        allowed_attribute_patterns.any? do |pattern|
+          if pattern.end_with?("*")
+            prefix = pattern[0..-2] # Remove trailing *
+            attr_name.downcase.start_with?(prefix)
+          else
+            attr_name.downcase == pattern
+          end
+        end
       end
 
       def invalid_parent_child?(parent_name, child_name)
@@ -289,6 +345,9 @@ module SvgConform
 
           # Check if matches data-* pattern (wildcard pattern)
           next if attr_name.start_with?("data-")
+
+          # Check if matches allowed attribute patterns (wildcard patterns)
+          next if matches_allowed_pattern?(attr_name)
 
           # Check if explicitly disallowed
           if disallowed_attrs.include?(attr_name)
@@ -436,6 +495,9 @@ module SvgConform
 
           next if attr.namespace
           next if attr_name.start_with?("data-")
+
+          # Check if matches allowed attribute patterns (wildcard patterns)
+          next if matches_allowed_pattern?(attr_name)
 
           # Check if explicitly disallowed
           if disallowed_attrs.include?(attr_name)
