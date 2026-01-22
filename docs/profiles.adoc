@@ -268,9 +268,23 @@ See link:remediation.adoc#namespace-attribute-remediation[NamespaceAttributeReme
 * **Flexible colors**: Any colors allowed (unlike RFC 7996 black/white restriction)
 * **Flexible fonts**: Any font families allowed (unlike RFC 7996 generic-only restriction)
 * **Flexible styles**: Any CSS styles allowed
+* **Event handlers allowed**: Supports event attributes (`on*`) for interactivity
 * **Self-contained resources**: All CSS and fonts must be embedded
 * **Structural compliance**: Proper namespaces and viewBox required
 * **No external dependencies**: External CSS and fonts strictly prohibited
+
+**Event Handler Support**:
+
+The metanorma profile allows SVG event handler attributes (e.g., `onmouseover`, `onmouseout`, `onfocus`, `onblur`) for interactive elements. This is configured using wildcard attribute patterns:
+
+[source,yaml]
+----
+requirements:
+  - type: "AllowedElementsRequirement"
+    id: "allowed_elements"
+    allowed_attribute_patterns:
+      - "on*"  # Allow all event handler attributes
+----
 
 **Requirements**:
 [source,yaml]

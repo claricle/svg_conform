@@ -174,6 +174,62 @@ foreign). Used with `skip_foreign_namespaces`. Default: `[]`.
 namespaces. When `true`, RDF namespace elements are considered valid and
 skipped. Default: `false`.
 
+`allowed_attribute_patterns`:: List of wildcard attribute patterns to exempt from
+validation. Attributes matching any pattern will be allowed regardless of whether
+they appear in element `attributes` lists. Patterns support suffix wildcards (`*`).
+Default: `[]`.
+
+* **Common patterns**:
++
+**`"on*"`**:: Allows all event handler attributes (`onclick`, `onmouseover`, `onmouseout`, etc.)
+**`"data-*"`**:: Allows all `data-` custom attributes
+
+* **Precedence**: When an attribute matches both an allowed pattern and an
+element-specific disallowed attribute (prefixed with `!`), the allowed pattern
+takes precedence and a warning is emitted during validation.
+
+==== Wildcard attribute patterns
+
+.Using allowed_attribute_patterns to exempt event handler attributes
+[example]
+====
+[source,yaml]
+----
+- id: "svg_elements_with_events"
+  type: "AllowedElementsRequirement"
+  description: "Restrict to allowed SVG elements but allow event handlers"
+  allowed_attribute_patterns:
+    - "on*"     # Allow all event handler attributes
+    - "data-*"  # Allow all data-* custom attributes
+  check_attributes: true
+  element_configs:
+    - tag: "polygon"
+      attributes: ["points", "id", "fill"]
+      # !onclick is disallowed, but on* pattern takes precedence with warning
+    - tag: "rect"
+      attributes: ["x", "y", "width", "height"]
+----
+====
+
+With this configuration:
+* Event attributes (`onclick`, `onmouseover`, etc.) are allowed on all elements
+* `data-*` custom attributes are allowed on all elements
+* Other attributes not in element `attributes` lists are still rejected
+
+.Conflict detection warning
+[example]
+====
+When an allowed pattern conflicts with an element-specific disallowed attribute
+(prefixed with `!`), a warning is emitted:
+
+[source,text]
+----
+Configuration warning in svg_elements_with_events: Element 'polygon' has
+disallowed attributes [onclick] that match allowed_attribute_patterns [on*].
+Allowed patterns take precedence over element-specific disallowed attributes.
+----
+====
+
 ==== Configuration
 
 .Example configuration of AllowedElementsRequirement
