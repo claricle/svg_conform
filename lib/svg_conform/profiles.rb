@@ -4,7 +4,6 @@ require_relative "profile"
 
 module SvgConform
   module Profiles
-    PROFILES_DIR = File.expand_path("../../config/profiles", __dir__)
     @@cache = {}
 
     def self.get(profile_id)
@@ -21,7 +20,7 @@ module SvgConform
     def self.available_profiles
       return @@cache.keys.map(&:to_sym) if @@cache.any?
 
-      profile_files = Dir.glob(File.join(PROFILES_DIR, "*.yml"))
+      profile_files = Dir.glob(File.join(Profile::PROFILES_DIR, "*.yml"))
       profile_files.map { |file| File.basename(file, ".yml").to_sym }
     end
 
@@ -40,7 +39,7 @@ module SvgConform
     def self.load_profile(profile_name)
       return @@cache[profile_name] if @@cache[profile_name]
 
-      profile_file = File.join(PROFILES_DIR, "#{profile_name}.yml")
+      profile_file = File.join(Profile::PROFILES_DIR, "#{profile_name}.yml")
 
       unless File.exist?(profile_file)
         raise ProfileError,

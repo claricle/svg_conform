@@ -32,15 +32,20 @@ module SvgConform
       @child_counters = {} # Track child element positions
     end
 
-    # Build full path ID for this element
+    # Build full path ID for this element (memoized for performance)
     def path_id
-      parts = @path + ["#{@name}[#{@position}]"]
-      "/#{parts.join('/')}"
+      @path_id ||= begin
+        parts = @path + ["#{@name}[#{@position}]"]
+        "/#{parts.join('/')}"
+      end
     end
 
-    # Return attributes as array of SaxAttribute objects (for compatibility)
+    # Return attributes as array of SaxAttribute objects (memoized for performance)
+    # Cached to avoid repeated object allocations during SAX parsing
     def attributes
-      @raw_attributes.map { |name, value| SaxAttribute.new(name, value) }
+      @attributes ||= @raw_attributes.map do |name, value|
+        SaxAttribute.new(name, value)
+      end
     end
 
     # Check if this element has a specific attribute
@@ -75,8 +80,8 @@ module SvgConform
         # Boolean check
         has_attribute?(method.to_s.chomp("?"))
       else
-        # Attribute access
-        @attributes[method.to_s] || @attributes[method.to_sym]
+        # Attribute access - use raw_attributes hash, not cached array
+        @raw_attributes[method.to_s] || @raw_attributes[method.to_sym]
       end
     end
 

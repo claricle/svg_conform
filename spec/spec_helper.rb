@@ -16,4 +16,27 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
+
+  # Clear class-level caches before each test to prevent pollution
+  config.before do
+    # Clear AllowedElementsRequirement configuration cache
+    if defined?(SvgConform::Requirements::AllowedElementsRequirement)
+      SvgConform::Requirements::AllowedElementsRequirement.configuration_validation_cache.clear
+    end
+
+    # Clear SaxValidationHandler classification cache
+    if defined?(SvgConform::SaxValidationHandler)
+      SvgConform::SaxValidationHandler.classification_cache.clear
+    end
+
+    # Clear ProfileCompiler compile cache
+    if defined?(SvgConform::ProfileCompiler)
+      SvgConform::ProfileCompiler.compile_cache.clear
+    end
+
+    # Clear Profiles module cache
+    if defined?(SvgConform::Profiles)
+      SvgConform::Profiles.clear_cache!
+    end
+  end
 end

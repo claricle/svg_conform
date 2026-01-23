@@ -7,6 +7,7 @@ require_relative "errors/validation_notice"
 require_relative "validation/error_tracker"
 require_relative "validation/structural_invalidity_tracker"
 require_relative "validation/node_id_manager"
+require_relative "validation/tracker_factory"
 
 module SvgConform
   # Context object passed to requirements during validation
@@ -91,16 +92,16 @@ module SvgConform
     def initialize(document, profile)
       @document = document
       @profile = profile
-      @error_tracker = Validation::ErrorTracker.new
+
+      # Use TrackerFactory to create all tracker instances
+      trackers = Validation::TrackerFactory.create_all_trackers(document)
+      @error_tracker = trackers[:error_tracker]
+      @node_id_manager = trackers[:node_id_manager]
+      @structural_invalidity_tracker = trackers[:structural_invalidity_tracker]
+      @reference_manifest = trackers[:reference_manifest]
+
       @fixes = []
       @data = {}
-      @node_id_manager = Validation::NodeIdManager.new(document)
-      @structural_invalidity_tracker = Validation::StructuralInvalidityTracker.new(
-        node_id_generator: ->(node) { @node_id_manager.generate_node_id(node) },
-      )
-      @reference_manifest = References::ReferenceManifest.new(
-        source_document: document&.file_path,
-      )
     end
 
     # Mark a node as structurally invalid (e.g., invalid parent-child relationship)

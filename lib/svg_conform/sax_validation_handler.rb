@@ -15,6 +15,14 @@ module SvgConform
   class SaxValidationHandler < Nokogiri::XML::SAX::Document
     attr_reader :result, :context
 
+    # Class-level cache for requirement classifications by profile class
+    @classification_cache = {}
+    @classification_cache_mutex = Mutex.new
+
+    class << self
+      attr_reader :classification_cache, :classification_cache_mutex
+    end
+
     def initialize(profile)
       @profile = profile
       @element_stack = [] # Track parent-child hierarchy
@@ -26,10 +34,8 @@ module SvgConform
       # Create validation context (without document reference for SAX)
       @context = create_sax_context
 
-      # Classify requirements into immediate vs deferred
-      @immediate_requirements = []
-      @deferred_requirements = []
-      classify_requirements
+      # Classify requirements into immediate vs deferred (use cache if available)
+      @immediate_requirements, @deferred_requirements = classify_requirements_with_cache
     end
 
     # SAX Event: Document start
@@ -138,26 +144,75 @@ module SvgConform
 
     # Create a SAX-compatible validation context
     def create_sax_context
-      # Create context without triggering DOM operations
+      # Create context using TrackerFactory for cleaner initialization
+      trackers = Validation::TrackerFactory.create_all_trackers(nil)
+
       context = ValidationContext.allocate
       context.instance_variable_set(:@document, nil)
       context.instance_variable_set(:@profile, @profile)
-      context.instance_variable_set(:@error_tracker, Validation::ErrorTracker.new)
+      context.instance_variable_set(:@error_tracker, trackers[:error_tracker])
+      context.instance_variable_set(:@node_id_manager,
+                                    trackers[:node_id_manager])
+      context.instance_variable_set(:@structural_invalidity_tracker,
+                                    trackers[:structural_invalidity_tracker])
+      context.instance_variable_set(:@reference_manifest,
+                                    trackers[:reference_manifest])
       context.instance_variable_set(:@fixes, [])
       context.instance_variable_set(:@data, {})
-      # Create NodeIdManager without a document (SAX mode)
-      node_id_manager = Validation::NodeIdManager.new(nil)
-      context.instance_variable_set(:@node_id_manager, node_id_manager)
-      # Create StructuralInvalidityTracker with a node ID generator
-      context.instance_variable_set(:@structural_invalidity_tracker,
-                                    Validation::StructuralInvalidityTracker.new(
-                                      node_id_generator: ->(node) {
-                                        node_id_manager.generate_node_id(node)
-                                      },
-                                    ))
-      context.instance_variable_set(:@reference_manifest,
-                                    References::ReferenceManifest.new(source_document: nil))
       context
+    end
+
+    # Classify requirements based on validation needs (with caching)
+    def classify_requirements_with_cache
+      profile_key = @profile.class.name
+      profile_requirements = @profile.requirements
+
+      # Check cache first (thread-safe)
+      @immediate_requirements = []
+      @deferred_requirements = []
+
+      classified = self.class.classification_cache_mutex.synchronize do
+        self.class.classification_cache[profile_key]
+      end
+
+      if classified
+        @immediate_requirements = classified[:immediate].map do |req_class|
+          # Find the actual instance from profile requirements
+          profile_requirements.find { |r| r.is_a?(req_class) }
+        end.compact
+        @deferred_requirements = classified[:deferred].map do |req_class|
+          profile_requirements.find { |r| r.is_a?(req_class) }
+        end.compact
+      else
+        # Classify and cache
+        immediate_classes = []
+        deferred_classes = []
+
+        profile_requirements.each do |req|
+          if req.respond_to?(:needs_deferred_validation?) && req.needs_deferred_validation?
+            deferred_classes << req.class
+          else
+            immediate_classes << req.class
+          end
+        end
+
+        # Store in cache
+        self.class.classification_cache_mutex.synchronize do
+          self.class.classification_cache[profile_key] = {
+            immediate: immediate_classes,
+            deferred: deferred_classes,
+          }
+        end
+
+        @immediate_requirements = profile_requirements.select do |req|
+          immediate_classes.include?(req.class)
+        end
+        @deferred_requirements = profile_requirements.select do |req|
+          deferred_classes.include?(req.class)
+        end
+      end
+
+      [@immediate_requirements, @deferred_requirements]
     end
 
     # Classify requirements based on validation needs

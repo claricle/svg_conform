@@ -32,6 +32,32 @@ module SvgConform
         "http://www.w3.org/2000/01/rdf-schema#",
       ].freeze
 
+      # Global properties allowed on any element (from svgcheck word_properties.py)
+      # Defined once at class level to avoid repeated array allocations
+      GLOBAL_PROPERTIES = %w[
+        about base baseprofile d break class content cx cy datatype height href
+        label lang pathlength points preserveaspectratio property r rel resource
+        rev role rotate rx ry space snapshottime transform typeof version width
+        viewbox x x1 x2 y y1 y2 stroke stroke-width stroke-linecap stroke-linejoin
+        stroke-miterlimit stroke-dasharray stroke-dashoffset stroke-opacity
+        vector-effect viewport-fill display viewport-fill-opacity visibility
+        image-rendering color-rendering shape-rendering text-rendering
+        buffered-rendering solid-opacity solid-color color stop-color stop-opacity
+        line-increment text-align display-align font-size font-family font-weight
+        font-style font-variant direction unicode-bidi text-anchor fill fill-rule
+        fill-opacity requiredfeatures requiredformats requiredextensions
+        requiredfonts systemlanguage
+      ].freeze
+
+      # Class-level cache for validated configurations
+      @configuration_validation_cache = {}
+      @configuration_validation_mutex = Mutex.new
+
+      class << self
+        attr_reader :configuration_validation_cache,
+                    :configuration_validation_mutex
+      end
+
       yaml do
         map "id", to: :id
         map "description", to: :description
@@ -47,10 +73,48 @@ module SvgConform
         map "allow_rdf_metadata", to: :allow_rdf_metadata
       end
 
+      def after_initialize
+        build_element_config_index if element_configs&.any?
+      end
+
+      # Ensure element config index is built (lazy initialization)
+      def element_config_index
+        @element_config_index ||= build_element_config_index
+      end
+
+      # Build element configuration index for O(1) lookup
+      def build_element_config_index
+        return {} unless element_configs&.any?
+
+        index = {}
+        element_configs.each do |config|
+          index[config.tag] = config
+          index["*"] = config if config.tag == "*"
+        end
+        index
+      end
+
       # Check for configuration conflicts and emit warnings
+      # Uses class-level cache to skip validation for identical configurations
       def validate_configuration
         return if allowed_attribute_patterns.empty? || !element_configs&.any?
 
+        # Create cache key from configuration
+        config_key = {
+          patterns: allowed_attribute_patterns.sort,
+          element_configs: element_configs.map do |ec|
+            { tag: ec.tag, attr: ec.attr&.sort }
+          end,
+        }.hash
+
+        # Check cache (thread-safe)
+        already_validated = self.class.configuration_validation_mutex.synchronize do
+          self.class.configuration_validation_cache[config_key]
+        end
+
+        return if already_validated
+
+        # Perform validation
         element_configs.each do |element_config|
           next unless element_config&.attr
 
@@ -75,15 +139,16 @@ module SvgConform
                  "Allowed patterns take precedence over element-specific disallowed attributes."
           end
         end
+
+        # Mark as validated (thread-safe)
+        self.class.configuration_validation_mutex.synchronize do
+          self.class.configuration_validation_cache[config_key] = true
+        end
       end
 
       def check(node, context)
-        # Validate configuration once on first use
-        @_config_validated ||= false
-        unless @_config_validated
-          validate_configuration
-          @_config_validated = true
-        end
+        # Validate configuration (uses class-level cache to skip redundant validations)
+        validate_configuration
 
         return unless element?(node)
 
@@ -158,12 +223,8 @@ module SvgConform
       end
 
       def validate_sax_element(element, context)
-        # Validate configuration once on first use
-        @_config_validated ||= false
-        unless @_config_validated
-          validate_configuration
-          @_config_validated = true
-        end
+        # Validate configuration (uses class-level cache to skip redundant validations)
+        validate_configuration
 
         # Skip if parent is structurally invalid (matches DOM behavior)
         if element.parent && context.node_structurally_invalid?(element.parent)
@@ -261,10 +322,8 @@ module SvgConform
       def invalid_parent_child?(parent_name, child_name)
         return false unless element_configs&.any?
 
-        # Find the configuration for the parent element
-        parent_config = element_configs.find do |config|
-          config.tag == parent_name
-        end
+        # Find the configuration for the parent element (O(1) with index)
+        parent_config = element_config_index&.dig(parent_name)
         return false unless parent_config
 
         # If allowed_children is defined and not empty, use it
@@ -296,9 +355,7 @@ module SvgConform
 
         return errors unless element_configs&.any?
 
-        element_config = element_configs.find do |config|
-          config.tag == element_name
-        end
+        element_config = element_config_index&.dig(element_name)
 
         return errors unless element_config&.attr
 
@@ -319,21 +376,8 @@ module SvgConform
         allowed_attrs = (allowed_attrs + common_attrs).uniq
 
         # Add global properties that svgcheck allows on any element (from word_properties.py)
-        global_properties = %w[
-          about base baseprofile d break class content cx cy datatype height href
-          label lang pathlength points preserveaspectratio property r rel resource
-          rev role rotate rx ry space snapshottime transform typeof version width
-          viewbox x x1 x2 y y1 y2 stroke stroke-width stroke-linecap stroke-linejoin
-          stroke-miterlimit stroke-dasharray stroke-dashoffset stroke-opacity
-          vector-effect viewport-fill display viewport-fill-opacity visibility
-          image-rendering color-rendering shape-rendering text-rendering
-          buffered-rendering solid-opacity solid-color color stop-color stop-opacity
-          line-increment text-align display-align font-size font-family font-weight
-          font-style font-variant direction unicode-bidi text-anchor fill fill-rule
-          fill-opacity requiredfeatures requiredformats requiredextensions
-          requiredfonts systemlanguage
-        ]
-        allowed_attrs = (allowed_attrs + global_properties).uniq
+        # GLOBAL_PROPERTIES is defined at class level to avoid repeated allocations
+        allowed_attrs = (allowed_attrs + GLOBAL_PROPERTIES).uniq
 
         node.attributes.each do |attr|
           attr_name = attr.name.downcase
@@ -378,7 +422,7 @@ module SvgConform
         # Check for globally disallowed attributes (using * tag)
         return errors unless element_configs&.any?
 
-        global_config = element_configs.find { |config| config.tag == "*" }
+        global_config = element_config_index&.dig("*")
         return errors unless global_config&.attr
 
         global_disallowed = []
@@ -446,9 +490,7 @@ module SvgConform
 
         return errors unless element_configs&.any?
 
-        element_config = element_configs.find do |config|
-          config.tag == element_name
-        end
+        element_config = element_config_index&.dig(element_name)
         return errors unless element_config&.attr
 
         allowed_attrs = []
@@ -467,22 +509,9 @@ module SvgConform
         common_attrs = %w[id class style xmlns]
         allowed_attrs = (allowed_attrs + common_attrs).uniq
 
-        # Add global properties
-        global_properties = %w[
-          about base baseprofile d break class content cx cy datatype height href
-          label lang pathlength points preserveaspectratio property r rel resource
-          rev role rotate rx ry space snapshottime transform typeof version width
-          viewbox x x1 x2 y y1 y2 stroke stroke-width stroke-linecap stroke-linejoin
-          stroke-miterlimit stroke-dasharray stroke-dashoffset stroke-opacity
-          vector-effect viewport-fill display viewport-fill-opacity visibility
-          image-rendering color-rendering shape-rendering text-rendering
-          buffered-rendering solid-opacity solid-color color stop-color stop-opacity
-          line-increment text-align display-align font-size font-family font-weight
-          font-style font-variant direction unicode-bidi text-anchor fill fill-rule
-          fill-opacity requiredfeatures requiredformats requiredextensions
-          requiredfonts systemlanguage
-        ]
-        allowed_attrs = (allowed_attrs + global_properties).uniq
+        # Add global properties that svgcheck allows on any element (from word_properties.py)
+        # GLOBAL_PROPERTIES is defined at class level to avoid repeated allocations
+        allowed_attrs = (allowed_attrs + GLOBAL_PROPERTIES).uniq
 
         element.attributes.each do |attr|
           attr_name = attr.name.downcase
@@ -527,7 +556,7 @@ module SvgConform
 
         return errors unless element_configs&.any?
 
-        global_config = element_configs.find { |config| config.tag == "*" }
+        global_config = element_config_index&.dig("*")
         return errors unless global_config&.attr
 
         global_disallowed = []

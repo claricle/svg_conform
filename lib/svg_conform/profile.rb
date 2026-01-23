@@ -7,6 +7,8 @@ require_relative "remediations"
 module SvgConform
   # Base class for SVG validation profiles using lutaml-model serialization
   class Profile < Lutaml::Model::Serializable
+    PROFILES_DIR = File.expand_path("../../config/profiles", __dir__)
+
     attribute :name, :string
     attribute :description, :string
     attribute :import, :string
