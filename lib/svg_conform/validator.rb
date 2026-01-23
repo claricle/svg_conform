@@ -64,13 +64,19 @@ module SvgConform
       result
     end
 
-    # Validate multiple files
+    # Validate multiple files efficiently
+    # Loads profile once and reuses across all validations for better performance
     def validate_files(file_paths, profile: :svg_1_2_rfc, **options)
+      merged_options = @options.merge(options)
+
+      # Load profile once to amortize cost across all validations
+      profile_obj = resolve_profile(profile)
+
       results = {}
 
       file_paths.each do |file_path|
         results[file_path] =
-          validate_file(file_path, profile: profile, **options)
+          validate_file_with_profile(file_path, profile_obj, **merged_options)
       rescue StandardError => e
         results[file_path] = create_error_result(file_path, e)
       end
@@ -144,27 +150,42 @@ module SvgConform
 
     def validate_file_sax(file_path, profile:, **options)
       profile_obj = resolve_profile(profile)
-      sax_doc = SvgConform::SaxDocument.from_file(file_path)
-      result = sax_doc.validate_with_profile(profile_obj)
+      validate_file_with_profile(file_path, profile_obj, **options)
+    end
 
-      # If fixing is requested, load DOM and apply remediations directly
-      # Skip re-validation to avoid DOM performance penalty
-      if options[:fix] && result.has_errors?
-        dom_doc = SvgConform::Document.from_file(file_path)
-
-        # Apply remediations directly without re-validating
-        changes = profile_obj.apply_remediations(dom_doc)
-
-        # Write fixed output if specified
-        if options[:fix_output] && changes.any?
-          File.write(options[:fix_output], dom_doc.to_xml)
-        end
-
-        # Return original SAX validation result (errors already detected)
-        # Note: We don't re-validate to avoid DOM performance cost
+    # Validate file using pre-loaded profile object
+    # Used internally by validate_files for efficient batch processing
+    def validate_file_with_profile(file_path, profile_obj, **options)
+      unless File.exist?(file_path)
+        raise ValidationError,
+              "File not found: #{file_path}"
       end
 
-      result
+      mode = determine_mode(file_path, options[:mode])
+
+      case mode
+      when :sax
+        sax_doc = SvgConform::SaxDocument.from_file(file_path)
+        result = sax_doc.validate_with_profile(profile_obj)
+
+        # If fixing is requested, load DOM and apply remediations directly
+        if options[:fix] && result.has_errors?
+          dom_doc = SvgConform::Document.from_file(file_path)
+          changes = profile_obj.apply_remediations(dom_doc)
+
+          # Write fixed output if specified
+          if options[:fix_output] && changes.any?
+            File.write(options[:fix_output], dom_doc.to_xml)
+          end
+        end
+
+        result
+      when :dom
+        document = SvgConform::Document.from_file(file_path)
+        profile_obj.validate(document).tap do |result|
+          result.apply_fixes if options[:fix] && result.fixable?
+        end
+      end
     end
 
     def validate_file_dom(file_path, profile:, **options)

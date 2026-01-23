@@ -1,0 +1,239 @@
+= Performance Optimization Guide
+
+This guide documents the performance optimization patterns used in svg_conform.
+
+== Goals
+
+The performance optimization strategy focuses on:
+
+* Reducing validation time for repeated operations
+* Minimizing memory allocations during SAX parsing
+* Caching expensive operations without introducing complexity
+* Maintaining clean separation of concerns
+
+== Optimization Patterns
+
+=== Memoization
+
+Cache computed values to avoid repeated calculations.
+
+*Example:* `ElementProxy#path_id` uses `@cached_path_id` to store the computed path:
+
+[source,ruby]
+----
+def path_id
+  @cached_path_id ||= begin
+    parts = @path + ["#{@name}[#{@position]}"]
+    "/#{parts.join('/')}"
+  end
+end
+----
+
+*When to use:* When a method is called multiple times with the same result and the computation is expensive.
+
+*When to avoid:* When the result changes between calls, or the computation is trivial.
+
+=== Class-Level Caching with Thread Safety
+
+Use class-level caches with Mutex for thread-safe shared state.
+
+*Example:* Requirement classification cache in `SaxValidationHandler`:
+
+[source,ruby]
+----
+@classification_cache = {}
+@classification_cache_mutex = Mutex.new
+
+def classify_requirements_with_cache
+  profile_key = @profile.class.name
+  classified = self.class.classification_cache_mutex.synchronize do
+    self.class.classification_cache[profile_key]
+  end
+
+  # ... compute and cache if not found
+end
+----
+
+*When to use:* When the cached value is shared across all instances and doesn't change.
+
+*When to avoid:* When the cached value is instance-specific or changes frequently.
+
+=== Frozen Constants
+
+Define immutable data as frozen constants to avoid reallocations.
+
+*Example:* `GLOBAL_PROPERTIES` constant in `AllowedElementsRequirement`:
+
+[source,ruby]
+----
+GLOBAL_PROPERTIES = %w[
+  about base baseprofile d break class content cx cy
+  # ... full list of properties
+].freeze
+----
+
+*When to use:* For lookup tables, configuration data, and other immutable collections.
+
+*When to avoid:* When the data needs to be modified at runtime.
+
+=== Hash Indexes for O(1) Lookups
+
+Pre-build hash indexes for fast lookups instead of linear array searches.
+
+*Example:* Element configuration index in `AllowedElementsRequirement`:
+
+[source,ruby]
+----
+def after_initialize
+  build_element_config_index if element_configs&.any?
+end
+
+def build_element_config_index
+  @element_config_index = {}
+  element_configs.each do |config|
+    @element_config_index[config.tag] = config
+  end
+end
+
+# Usage - O(1) instead of O(n)
+element_config = @element_config_index&.dig(element_name)
+----
+
+*When to use:* When frequently looking up items by key in a collection.
+
+*When to avoid:* When the collection is small or accessed sequentially.
+
+=== Lazy Initialization with `||=`
+
+Use the "or-equals" operator for lazy initialization.
+
+*Example:* Cached attributes array in `ElementProxy`:
+
+[source,ruby]
+----
+def attributes
+  @cached_attributes ||= @raw_attributes.map { |name, value| SaxAttribute.new(name, value) }
+end
+----
+
+*When to use:* When a value is expensive to compute and may not be needed.
+
+*When to avoid:* When `nil` or `false` are valid cached values (use explicit nil check instead).
+
+=== Batch Processing Optimization
+
+Amortize fixed costs across multiple operations.
+
+*Example:* Batch file validation in `Validator`:
+
+[source,ruby]
+----
+def validate_files(file_paths, profile: :svg_1_2_rfc, **options)
+  # Load profile once
+  profile_obj = resolve_profile(profile)
+
+  file_paths.each do |file_path|
+    validate_file_with_profile(file_path, profile_obj, **options)
+  end
+end
+----
+
+*When to use:* When processing multiple items with shared setup costs.
+
+*When to avoid:* When processing single items or when items have different configurations.
+
+=== Factory Pattern for Complex Initialization
+
+Centralize object creation for cleaner initialization.
+
+*Example:* `TrackerFactory` for creating validation trackers:
+
+[source,ruby]
+----
+module Validation
+  module TrackerFactory
+    def self.create_all_trackers(document)
+      node_id_manager = create_node_id_manager(document)
+
+      {
+        error_tracker: create_error_tracker,
+        node_id_manager: node_id_manager,
+        # ... other trackers
+      }
+    end
+  end
+end
+----
+
+*When to use:* When initialization involves multiple related objects or complex logic.
+
+*When to avoid:* For simple object creation that doesn't benefit from centralization.
+
+== Anti-Patterns to Avoid
+
+=== Premature Optimization
+
+Don't optimize without benchmarks. Measure first, then optimize.
+
+=== Global Mutable State
+
+Avoid mutable global state. Use class-level caches with thread-safe access.
+
+=== Over-Abstraction
+
+Don't create abstractions just for the sake of it. Each abstraction should pull its weight.
+
+=== Optimizing Uncommon Paths
+
+Focus on hot paths. Don't optimize code that rarely runs.
+
+=== Sacrificing Readability
+
+Performance gains should not come at the cost of code clarity.
+
+== Performance Metrics
+
+The `benchmark/performance_comparison.rb` script measures:
+
+* Single validation speed (average time per document)
+* Batch validation speed (average time per file)
+* Memory usage per validation
+
+Run benchmarks before and after optimizations to measure impact:
+
+[source,shell]
+----
+ruby benchmark/performance_comparison.rb
+----
+
+== Architecture Considerations
+
+=== SAX vs DOM Validation
+
+svg_conform uses SAX validation by default for better performance:
+
+* *SAX mode*: Constant memory, streaming parser, handles large files
+* *DOM mode*: Loads full document, uses more memory, slower for large files
+
+Always prefer SAX for validation. Only use DOM when applying remediations.
+
+=== Caching Strategy
+
+* *Instance-level cache*: Use for data specific to a validation run
+* *Class-level cache*: Use for data shared across all instances
+* *Thread safety*: Always use Mutex for class-level shared state
+
+== Future Optimization Opportunities
+
+Areas that may benefit from future optimization:
+
+* Parallel batch validation for multi-core systems
+* Compiled profiles with pre-computed lookup tables
+* Streaming remediation to avoid full DOM load
+* Attribute name interning for reduced memory
+
+== Further Reading
+
+* `PERFORMANCE_OPTIMIZATION_PLAN.md` - Detailed optimization plan
+* `CLAUDE.md` - Architecture overview
+* `benchmark/performance_comparison.rb` - Performance benchmarks
