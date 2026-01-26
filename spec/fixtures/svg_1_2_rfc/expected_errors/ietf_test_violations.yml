@@ -1,0 +1,47 @@
+# Expected errors for IETF-test.svg validation against svg_1_2_rfc profile
+# Based on diagnostic results from script/diagnose_dom_mode.rb
+
+description: "IETF-test.svg from metanorma-standoc - contains rgb(0,0,0) colors and style properties that should be promoted"
+
+# Total errors expected: 18
+total_errors: 18
+
+# Errors by requirement
+requirements:
+  color_restrictions:
+    total: 3
+    errors:
+      - message: "Color 'rgb(0,0,0)' in style property 'stroke' is not allowed in this profile"
+        count: 2
+      - message: "Color 'rgb(0,0,0)' in style property 'fill' is not allowed in this profile"
+        count: 1
+
+  style_promotion:
+    total: 15
+    errors:
+      - message: "Style property 'stroke' can be promoted to attribute"
+        count: 4
+      - message: "Style property 'stroke-width' can be promoted to attribute"
+        count: 2
+      - message: "Style property 'fill' can be promoted to attribute"
+        count: 6
+      - message: "Style property 'font-family' can be promoted to attribute"
+        count: 1
+      - message: "Style property 'font-size' can be promoted to attribute"
+        count: 1
+
+# Remediation expectations
+# Note: Remediation promotes styles to attributes (e.g., stroke="black") rather than
+# modifying the style attribute content (e.g., style="stroke:black")
+remediation:
+  before_errors: 18
+  after_errors: 1
+  expected_changes: 18
+  expected_remediations:
+    - color_conversion
+    - style_promotion
+  # After remediation, expect attributes like stroke="black" instead of style="stroke:rgb(0,0,0)"
+  expected_attributes:
+    - stroke: 4  # Promoted from style
+    - stroke-width: 2  # Promoted from style
+    - fill: 6  # Promoted from style (some were already fill="none")
