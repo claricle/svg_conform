@@ -8,6 +8,26 @@ RSpec.describe "SVG 1.2 RFC Profile" do
   let(:svg_1_2_rfc_profile_path) { "config/profiles/svg_1_2_rfc.yml" }
   let(:fixtures_base_dir) { "spec/fixtures" }
 
+  # Helper module for grouping and analyzing errors (namespaced to avoid global pollution)
+  module SpecHelpers
+    def self.group_errors_by_requirement(validation_result)
+      validation_result.errors.each_with_object({}) do |error, hash|
+        req_id = error.requirement_id || "unknown"
+        hash[req_id] ||= []
+        hash[req_id] << error
+      end
+    end
+
+    def self.count_style_properties(style_errors)
+      style_errors.each_with_object({}) do |error, hash|
+        if error.message =~ /Style property '([-\w]+)' can be promoted/
+          hash[$1] ||= 0
+          hash[$1] += 1
+        end
+      end
+    end
+  end
+
   describe "profile loading" do
     it "loads the SVG 1.2 RFC profile successfully" do
       profile = SvgConform::Profile.load_from_file(svg_1_2_rfc_profile_path)
@@ -202,73 +222,70 @@ RSpec.describe "SVG 1.2 RFC Profile" do
     let(:ietf_test_file) do
       "spec/fixtures/svg_1_2_rfc/inputs/ietf_test_violations.svg"
     end
-    let(:expected_errors_file) do
-      "spec/fixtures/svg_1_2_rfc/expected_errors/ietf_test_violations.yml"
+
+    before do
+      skip "IETF-test fixture not found" unless File.exist?(ietf_test_file)
     end
 
     it "validates IETF-test.svg and detects expected violations" do
-      skip "IETF-test fixture not found" unless File.exist?(ietf_test_file)
-
       document = SvgConform::Document.from_file(ietf_test_file)
       profile = SvgConform::Profile.load_from_file(svg_1_2_rfc_profile_path)
-
-      # Validate using DOM mode (required for remediation)
-      result = profile.validate(document)
+      validation_result = profile.validate(document)
+      errors_by_requirement = SpecHelpers.group_errors_by_requirement(validation_result)
 
       # Should detect violations
-      expect(result.valid?).to be false
+      expect(validation_result.valid?).to be false
 
       # Should have exactly 18 errors (3 color + 15 style promotion)
-      expect(result.errors.count).to eq(18)
-
-      # Group errors by requirement
-      errors_by_requirement = {}
-      result.errors.each do |error|
-        req_id = error.requirement_id || "unknown"
-        errors_by_requirement[req_id] ||= []
-        errors_by_requirement[req_id] << error
-      end
+      expect(validation_result.errors.count).to eq(18)
 
       # Check color_restrictions errors
       color_errors = errors_by_requirement["color_restrictions"] || []
       expect(color_errors.count).to eq(3)
 
-      color_stroke_errors = color_errors.select { |e| e.message.include?("stroke") }
-      color_fill_errors = color_errors.select { |e| e.message.include?("fill") }
-      expect(color_stroke_errors.count).to eq(2)
-      expect(color_fill_errors.count).to eq(1)
-
       # Check style_promotion errors
       style_errors = errors_by_requirement["style_promotion"] || []
       expect(style_errors.count).to eq(15)
 
-      # Count specific style properties
-      style_props = {}
-      style_errors.each do |error|
-        if error.message =~ /Style property '([-\w]+)' can be promoted/
-          style_props[$1] ||= 0
-          style_props[$1] += 1
-        end
+      puts "IETF-test.svg validation: #{validation_result.errors.count} errors detected"
+      puts "  Color errors: #{color_errors.count}"
+      puts "  Style promotion errors: #{style_errors.count}"
+    end
+
+    it "validates IETF-test.svg color violations in detail" do
+      document = SvgConform::Document.from_file(ietf_test_file)
+      profile = SvgConform::Profile.load_from_file(svg_1_2_rfc_profile_path)
+      validation_result = profile.validate(document)
+      errors_by_requirement = SpecHelpers.group_errors_by_requirement(validation_result)
+      color_errors = errors_by_requirement["color_restrictions"] || []
+
+      color_stroke_errors = color_errors.select do |e|
+        e.message.include?("stroke")
       end
+      color_fill_errors = color_errors.select { |e| e.message.include?("fill") }
+
+      expect(color_stroke_errors.count).to eq(2)
+      expect(color_fill_errors.count).to eq(1)
+    end
+
+    it "validates IETF-test.svg style promotion violations in detail" do
+      document = SvgConform::Document.from_file(ietf_test_file)
+      profile = SvgConform::Profile.load_from_file(svg_1_2_rfc_profile_path)
+      validation_result = profile.validate(document)
+      errors_by_requirement = SpecHelpers.group_errors_by_requirement(validation_result)
+      style_errors = errors_by_requirement["style_promotion"] || []
+      style_props = SpecHelpers.count_style_properties(style_errors)
 
       expect(style_props["stroke"]).to eq(4)
       expect(style_props["stroke-width"]).to eq(2)
       expect(style_props["fill"]).to eq(6)
       expect(style_props["font-family"]).to eq(1)
       expect(style_props["font-size"]).to eq(1)
-
-      puts "IETF-test.svg validation: #{result.errors.count} errors detected"
-      puts "  Color errors: #{color_errors.count}"
-      puts "  Style promotion errors: #{style_errors.count}"
     end
 
     it "applies remediations to IETF-test.svg and reduces errors" do
-      skip "IETF-test fixture not found" unless File.exist?(ietf_test_file)
-
       document = SvgConform::Document.from_file(ietf_test_file)
       profile = SvgConform::Profile.load_from_file(svg_1_2_rfc_profile_path)
-
-      # Get initial error count
       initial_result = profile.validate(document)
       initial_error_count = initial_result.errors.count
 
@@ -290,8 +307,12 @@ RSpec.describe "SVG 1.2 RFC Profile" do
       expect(final_error_count).to eq(1)
 
       # Verify specific remediations were applied
-      color_changes = changes.select { |c| c[:type] == :attribute_modified || c[:message]&.include?("color") }
-      style_promotion_changes = changes.select { |c| c[:type] == :style_promotion || c[:message]&.include?("promoted") }
+      color_changes = changes.select do |c|
+        c[:type] == :attribute_modified || c[:message]&.include?("color")
+      end
+      style_promotion_changes = changes.select do |c|
+        c[:type] == :style_promotion || c[:message]&.include?("promoted")
+      end
 
       expect(color_changes.count).to be > 0
       expect(style_promotion_changes.count).to be > 0
@@ -303,8 +324,6 @@ RSpec.describe "SVG 1.2 RFC Profile" do
     end
 
     it "produces valid XML after remediation" do
-      skip "IETF-test fixture not found" unless File.exist?(ietf_test_file)
-
       document = SvgConform::Document.from_file(ietf_test_file)
       profile = SvgConform::Profile.load_from_file(svg_1_2_rfc_profile_path)
 
@@ -317,11 +336,6 @@ RSpec.describe "SVG 1.2 RFC Profile" do
 
       # Should maintain root element structure
       expect(document.root.name).to eq("svg")
-
-      # Verify specific remediations in output
-      # Remediation promotes styles to attributes (e.g., stroke="black")
-      # and also has some fill="black" attributes from color conversion
-      xml = document.to_xml
 
       # Check for promoted stroke attributes (from style promotion)
       expect(xml).to include('stroke="black"')
