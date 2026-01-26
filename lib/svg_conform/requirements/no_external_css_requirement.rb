@@ -44,6 +44,10 @@ module SvgConform
         check_style_elements # Only deferred if checking style elements
       end
 
+      def reset_state
+        @collected_style_elements = []
+      end
+
       def collect_sax_data(element, _context)
         # Collect style elements for deferred validation (text content needs to be complete)
         if check_style_elements && element.name == "style"
