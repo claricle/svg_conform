@@ -32,6 +32,12 @@ module SvgConform
         true
       end
 
+      def reset_state
+        @collected_ids = Set.new
+        @use_element_refs = []
+        @other_refs = []
+      end
+
       def collect_sax_data(element, _context)
         # Initialize collections on first call
         @collected_ids ||= Set.new
