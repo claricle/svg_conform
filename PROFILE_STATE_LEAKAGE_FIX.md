@@ -40,26 +40,49 @@ Additionally, some requirements had incomplete `reset_state` methods:
 
 ## Solution
 
+Fixed both issues:
+
+### Fix 1: Correct Classification Cache Key
+
+Changed `lib/svg_conform/sax_validation_handler.rb` to use the profile name instead of class name as the cache key:
+
+```ruby
+# Before (INCORRECT):
+profile_key = @profile.class.name  # Always "SvgConform::Profile"
+
+# After (CORRECT):
+profile_key = @profile.name || @profile.object_id.to_s  # e.g., "metanorma", "svg_1_2_rfc"
+```
+
+This ensures each profile has its own cached classification of requirements.
+
+### Fix 2: Complete State Reset in Requirements
+
 Fixed the `reset_state` method in all affected requirement classes to properly reset ALL stateful instance variables:
 
 ### Files Modified
 
-1. **lib/svg_conform/requirements/invalid_id_references_requirement.rb**
+1. **lib/svg_conform/sax_validation_handler.rb**
+   - Fixed classification cache key to use `@profile.name` instead of `@profile.class.name`
+   - This was the PRIMARY fix that resolved the state leakage issue
+
+2. **lib/svg_conform/requirements/invalid_id_references_requirement.rb**
    - Added complete `reset_state` method that resets all three state variables:
      - `@collected_ids`
      - `@use_element_refs`
      - `@other_refs`
 
-2. **lib/svg_conform/requirements/no_external_css_requirement.rb**
+3. **lib/svg_conform/requirements/no_external_css_requirement.rb**
    - Added `reset_state` method to reset:
      - `@collected_style_elements`
 
-3. **spec/svg_conform_spec.rb**
+4. **spec/svg_conform_spec.rb**
    - Added comprehensive test suite for profile switching without state leakage
    - Tests cover:
      - Switching between different profiles
      - Multiple sequential validations with the same profile
      - Interleaved profile validations
+     - Real-world SVG that violates one profile but not another
 
 ## Verification
 
