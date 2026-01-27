@@ -22,9 +22,17 @@ module SvgConform
         map "allowed_protocols", to: :allowed_protocols
       end
 
+      class State
+        attr_accessor :collected_styles
+
+        def initialize
+          @collected_styles = []
+        end
+      end
+
       def initialize(*args)
         super
-        @collected_style_elements = []
+        # No instance state - validation state stored in context
       end
 
       def check(node, context)
@@ -44,28 +52,23 @@ module SvgConform
         check_style_elements # Only deferred if checking style elements
       end
 
-      def reset_state
-        @collected_style_elements = []
-      end
-
-      def collect_sax_data(element, _context)
+      def collect_sax_data(element, context)
+        state = context.state_for(self)
         # Collect style elements for deferred validation (text content needs to be complete)
         if check_style_elements && element.name == "style"
-          @collected_style_elements << element
+          state.collected_styles << element
         end
       end
 
       def validate_sax_complete(context)
-        # Guard against nil collection
-        return unless @collected_style_elements
+        state = context.state_for(self)
+        collected_style_elements = state.collected_styles
+        return unless collected_style_elements
 
         # Validate collected style elements
-        @collected_style_elements.each do |element|
+        collected_style_elements.each do |element|
           check_style_element(element, context)
         end
-
-        # Reset for next validation
-        @collected_style_elements = []
       end
 
       def should_check_node?(node, context = nil)

@@ -24,11 +24,6 @@ RSpec.configure do |config|
       SvgConform::Requirements::AllowedElementsRequirement.configuration_validation_cache.clear
     end
 
-    # Clear SaxValidationHandler classification cache
-    if defined?(SvgConform::SaxValidationHandler)
-      SvgConform::SaxValidationHandler.classification_cache.clear
-    end
-
     # Clear ProfileCompiler compile cache
     if defined?(SvgConform::ProfileCompiler)
       SvgConform::ProfileCompiler.compile_cache.clear

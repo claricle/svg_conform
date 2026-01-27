@@ -49,20 +49,24 @@ RSpec.describe SvgConform do
 
       # First validation with metanorma profile
       profile_meta = SvgConform::Profiles.get("metanorma")
-      result_meta1 = validator.validate(svg_with_invalid_ref, profile: profile_meta)
+      result_meta1 = validator.validate(svg_with_invalid_ref,
+                                        profile: profile_meta)
       first_meta_count = result_meta1.errors.count
 
       # Validation with svg_1_2_rfc profile
       profile_rfc = SvgConform::Profiles.get("svg_1_2_rfc")
-      result_rfc1 = validator.validate(svg_with_invalid_ref, profile: profile_rfc)
+      result_rfc1 = validator.validate(svg_with_invalid_ref,
+                                       profile: profile_rfc)
       first_rfc_count = result_rfc1.errors.count
 
       # Second validation with metanorma profile (should match first)
-      result_meta2 = validator.validate(svg_with_invalid_ref, profile: profile_meta)
+      result_meta2 = validator.validate(svg_with_invalid_ref,
+                                        profile: profile_meta)
       second_meta_count = result_meta2.errors.count
 
       # Second validation with svg_1_2_rfc profile (should match first)
-      result_rfc2 = validator.validate(svg_with_invalid_ref, profile: profile_rfc)
+      result_rfc2 = validator.validate(svg_with_invalid_ref,
+                                       profile: profile_rfc)
       second_rfc_count = result_rfc2.errors.count
 
       # Verify consistency - no state leakage between profiles
@@ -98,11 +102,21 @@ RSpec.describe SvgConform do
 
       # Interleave validations
       results = []
-      results << [:meta, validator.validate(svg_with_invalid_ref, profile: profile_meta).errors.count]
-      results << [:rfc, validator.validate(svg_with_invalid_ref, profile: profile_rfc).errors.count]
-      results << [:meta, validator.validate(svg_with_invalid_ref, profile: profile_meta).errors.count]
-      results << [:rfc, validator.validate(svg_with_invalid_ref, profile: profile_rfc).errors.count]
-      results << [:meta, validator.validate(svg_with_invalid_ref, profile: profile_meta).errors.count]
+      results << [:meta,
+                  validator.validate(svg_with_invalid_ref,
+                                     profile: profile_meta).errors.count]
+      results << [:rfc,
+                  validator.validate(svg_with_invalid_ref,
+                                     profile: profile_rfc).errors.count]
+      results << [:meta,
+                  validator.validate(svg_with_invalid_ref,
+                                     profile: profile_meta).errors.count]
+      results << [:rfc,
+                  validator.validate(svg_with_invalid_ref,
+                                     profile: profile_rfc).errors.count]
+      results << [:meta,
+                  validator.validate(svg_with_invalid_ref,
+                                     profile: profile_meta).errors.count]
 
       # Extract counts by profile
       meta_counts = results.select { |type, _| type == :meta }.map(&:last)
@@ -162,7 +176,8 @@ RSpec.describe SvgConform do
 
       # Profiles should return different results
       expect(meta_errors).to eq(0), "metanorma profile should allow this SVG"
-      expect(rfc_errors).to be > 0, "svg_1_2_rfc profile should detect violations"
+      expect(rfc_errors).to be > 0,
+                            "svg_1_2_rfc profile should detect violations"
 
       # Verify consistency when repeating
       result_rfc2 = validator.validate(svg_with_styles, profile: profile_rfc)
