@@ -23,37 +23,43 @@ module SvgConform
 
       def initialize(*args)
         super
-        @collected_ids = Set.new
-        @use_element_refs = [] # [element, ref_id, href]
-        @other_refs = [] # [element, ref_id, attr_name, value]
+        # No instance state - validation state stored in context
+      end
+
+      # State class for tracking ID references during SAX parsing
+      class State
+        attr_accessor :collected_ids, :use_element_refs, :other_refs,
+                      :existing_ids
+
+        def initialize
+          @collected_ids = Set.new
+          @use_element_refs = []
+          @other_refs = []
+          @existing_ids = nil
+        end
       end
 
       def needs_deferred_validation?
         true
       end
 
-      def reset_state
-        @collected_ids = Set.new
-        @use_element_refs = []
-        @other_refs = []
-      end
-
-      def collect_sax_data(element, _context)
-        # Initialize collections on first call
-        @collected_ids ||= Set.new
-        @use_element_refs ||= []
-        @other_refs ||= []
+      def collect_sax_data(element, context)
+        state = context.state_for(self)
 
         # Collect IDs
         id_attr = element.raw_attributes["id"]
-        @collected_ids.add(id_attr) if id_attr && !id_attr.empty?
+        if id_attr && !id_attr.empty?
+          state.collected_ids.add(id_attr)
+        end
 
         # Collect use element references
         if check_use_elements && element.name == "use"
           href = element.raw_attributes["xlink:href"] || element.raw_attributes["href"]
           if href&.start_with?("#")
             ref_id = href[1..]
-            @use_element_refs << [element, ref_id, href] unless ref_id.empty?
+            unless ref_id.empty?
+              state.use_element_refs << [element, ref_id, href]
+            end
           end
         end
 
@@ -67,7 +73,7 @@ module SvgConform
             next unless attr_value&.match?(/^url\(#(.+)\)$/)
 
             ref_id = Regexp.last_match(1)
-            @other_refs << [element, ref_id, attr_name, attr_value]
+            state.other_refs << [element, ref_id, attr_name, attr_value]
           end
 
           # Check style attribute
@@ -78,19 +84,23 @@ module SvgConform
               next unless value&.match?(/^url\(#(.+)\)$/)
 
               ref_id = Regexp.last_match(1)
-              @other_refs << [element, ref_id, "style:#{property}", value]
+              state.other_refs << [element, ref_id, "style:#{property}", value]
             end
           end
         end
       end
 
       def validate_sax_complete(context)
-        # Guard against nil collections
-        return unless @use_element_refs && @other_refs && @collected_ids
+        state = context.state_for(self)
+        collected_ids = state.collected_ids
+        use_element_refs = state.use_element_refs
+        other_refs = state.other_refs
+
+        return unless collected_ids && use_element_refs && other_refs
 
         # Validate use element references
-        @use_element_refs.each do |element, ref_id, href|
-          next if @collected_ids.include?(ref_id)
+        use_element_refs.each do |element, ref_id, href|
+          next if collected_ids.include?(ref_id)
 
           context.add_error(
             requirement_id: id,
@@ -102,8 +112,8 @@ module SvgConform
         end
 
         # Validate other references if enabled
-        @other_refs.each do |element, ref_id, attr_name, value|
-          next if @collected_ids.include?(ref_id)
+        other_refs.each do |element, ref_id, attr_name, value|
+          next if collected_ids.include?(ref_id)
 
           message = if attr_name.start_with?("style:")
                       property = attr_name.split(":", 2)[1]
@@ -125,7 +135,8 @@ module SvgConform
       def validate_document(document, context)
         # Collect all existing IDs in the document
         existing_ids = collect_existing_ids(document)
-        context.set_data(:existing_ids, existing_ids)
+        state = context.state_for(self)
+        state.existing_ids = existing_ids
 
         # Check for invalid references
         super(document, context)
@@ -158,13 +169,14 @@ module SvgConform
       end
 
       def check_use_element(node, context)
+        state = context.state_for(self)
         href = get_attribute(node, "xlink:href") || get_attribute(node, "href")
         return unless href&.start_with?("#")
 
         id_ref = href[1..] # Remove # prefix
         return if id_ref.empty?
 
-        existing_ids = context.get_data(:existing_ids)
+        existing_ids = state.existing_ids
         return if existing_ids.include?(id_ref)
 
         context.add_error(
@@ -176,13 +188,15 @@ module SvgConform
       end
 
       def check_other_id_references(node, context)
+        state = context.state_for(self)
+
         # Check other attributes that reference IDs
         id_reference_attributes = %w[
           clip-path mask filter marker-start marker-mid marker-end
           fill stroke
         ]
 
-        existing_ids = context.get_data(:existing_ids)
+        existing_ids = state.existing_ids
 
         id_reference_attributes.each do |attr_name|
           attr_value = get_attribute(node, attr_name)

@@ -23,18 +23,56 @@ module SvgConform
   # - StructuralInvalidityTracker: tracks structurally invalid nodes
   # - NodeIdManager: handles node ID generation for both SAX and DOM modes
   # - ReferenceManifest: tracks ID definitions and references
+  # - State Registry: manages requirement-specific state for deferred validation
   #
-  # == Usage
+  # == Validation modes
   #
-  # In DOM validation (remediation mode):
+  # === DOM validation (remediation mode)
+  #
   #   context = ValidationContext.new(document, profile)
   #   requirement.validate_document(document, context)
   #
-  # In SAX validation (streaming mode):
+  # === SAX validation (streaming mode)
+  #
   #   context = ValidationContext.new(nil, profile)
   #   requirement.validate_sax_element(element, context)
   #
-  # == Error Reporting
+  # == State management for deferred validation
+  #
+  # Requirements that need deferred validation (collecting data during SAX parsing
+  # and validating at document end) use requirement-specific State classes:
+  #
+  #   class MyRequirement < BaseRequirement
+  #     class State
+  #       attr_accessor :collected_items
+  #
+  #       def initialize
+  #         @collected_items = []
+  #       end
+  #     end
+  #
+  #     def collect_sax_data(element, context)
+  #       state = context.state_for(self)
+  #       state.collected_items << extract_from(element)
+  #     end
+  #
+  #     def validate_sax_complete(context)
+  #       state = context.state_for(self)
+  #       # Validate state.collected_items
+  #     end
+  #   end
+  #
+  # The +state_for+ method:
+  # - Returns a State instance specific to the requirement class
+  # - Creates the State instance on first access (lazy initialization)
+  # - Maintains one State instance per requirement class per validation
+  # - Prevents state pollution when reusing profiles across validations
+  #
+  # Each validation gets a fresh ValidationContext with a fresh state registry,
+  # ensuring that reusing the same Profile for multiple validations doesn't leak
+  # state between validations.
+  #
+  # == Error reporting
   #
   #   context.add_error(
   #     requirement_id: id,
@@ -44,13 +82,13 @@ module SvgConform
   #     fix: -> { remove_element(node) }
   #   )
   #
-  # == Node ID Tracking
+  # == Node ID tracking
   #
   # The context generates unique node IDs for tracking:
   # - SAX mode: uses pre-computed path_id from ElementProxy
   # - DOM mode: uses DocumentAnalyzer with forward-counting algorithm
   #
-  # == Structural Invalidity
+  # == Structural invalidity
   #
   # Requirements can mark nodes as structurally invalid (e.g., invalid
   # parent-child relationships). Other requirements should skip
@@ -58,7 +96,6 @@ module SvgConform
   #
   #   context.mark_node_structurally_invalid(node)
   #   context.node_structurally_invalid?(node) # => true
-  #
   class ValidationContext
     # The document being validated (nil in SAX mode)
     attr_reader :document
@@ -101,7 +138,13 @@ module SvgConform
       @reference_manifest = trackers[:reference_manifest]
 
       @fixes = []
-      @data = {}
+      @state_registry = {} # Maps requirement class => state instance
+    end
+
+    # Get or create state for a requirement
+    # Each requirement gets its own state instance, preventing state pollution
+    def state_for(requirement)
+      @state_registry[requirement.class] ||= requirement.class::State.new
     end
 
     # Mark a node as structurally invalid (e.g., invalid parent-child relationship)
@@ -162,14 +205,6 @@ requirement_id: nil, severity: nil, fix: nil, data: {})
 
     def fixable_count
       (@error_tracker.errors + @error_tracker.warnings).count(&:fixable?)
-    end
-
-    def set_data(key, value)
-      @data[key] = value
-    end
-
-    def get_data(key)
-      @data[key]
     end
 
     # Register an ID definition

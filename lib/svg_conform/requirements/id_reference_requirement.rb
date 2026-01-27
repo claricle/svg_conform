@@ -6,28 +6,29 @@ require "set"
 module SvgConform
   module Requirements
     class IdReferenceRequirement < BaseRequirement
+      # Nested State class - requirement owns its state structure
+      class State
+        attr_accessor :collected_ids, :url_refs, :href_refs, :other_refs
+
+        def initialize
+          @collected_ids = Set.new
+          @url_refs = []
+          @href_refs = []
+          @other_refs = []
+        end
+      end
+
       def needs_deferred_validation?
         true
       end
 
-      # Reset state before each validation run to prevent state leakage
-      def reset_state
-        @collected_ids = Set.new
-        @collected_url_refs = []
-        @collected_href_refs = []
-        @collected_other_refs = []
-      end
-
-      def collect_sax_data(element, _context)
-        # Initialize collections on first call
-        @collected_ids ||= Set.new
-        @collected_url_refs ||= []
-        @collected_href_refs ||= []
-        @collected_other_refs ||= []
-
+      def collect_sax_data(element, context)
+        state = context.state_for(self)
         # Collect IDs
         id_value = element.raw_attributes["id"]
-        @collected_ids.add(id_value) if id_value && !id_value.empty?
+        if id_value && !id_value.empty?
+          state.collected_ids.add(id_value)
+        end
 
         # Collect url() references
         url_attributes = %w[fill stroke marker-start marker-mid marker-end
@@ -38,7 +39,7 @@ module SvgConform
 
           url_refs = extract_url_references(attr_value)
           url_refs.each do |ref_id|
-            @collected_url_refs << [element, ref_id, attr_name]
+            state.url_refs << [element, ref_id, attr_name]
           end
         end
 
@@ -47,7 +48,7 @@ module SvgConform
         if style_attr
           url_refs = extract_url_references(style_attr)
           url_refs.each do |ref_id|
-            @collected_url_refs << [element, ref_id, "style"]
+            state.url_refs << [element, ref_id, "style"]
           end
         end
 
@@ -55,7 +56,7 @@ module SvgConform
         href_value = element.raw_attributes["href"] || element.raw_attributes["xlink:href"]
         if href_value&.start_with?("#")
           ref_id = href_value[1..] # Remove #
-          @collected_href_refs << [element, ref_id]
+          state.href_refs << [element, ref_id]
         end
 
         # Collect other ID references
@@ -69,18 +70,18 @@ module SvgConform
           ref_ids.each do |ref_id|
             next if ref_id.empty?
 
-            @collected_other_refs << [element, ref_id, attr_name]
+            state.other_refs << [element, ref_id, attr_name]
           end
         end
       end
 
       def validate_sax_complete(context)
-        # Guard against nil collections (if collect_sax_data was never called)
-        return unless @collected_url_refs && @collected_href_refs && @collected_other_refs && @collected_ids
+        state = context.state_for(self)
+        return unless state.url_refs && state.href_refs && state.other_refs && state.collected_ids
 
         # Validate all collected references
-        @collected_url_refs.each do |element, ref_id, attr_name|
-          next if @collected_ids.include?(ref_id)
+        state.url_refs.each do |element, ref_id, attr_name|
+          next if state.collected_ids.include?(ref_id)
 
           message = if attr_name == "style"
                       "Reference to undefined ID '#{ref_id}' in style attribute"
@@ -95,8 +96,8 @@ module SvgConform
           )
         end
 
-        @collected_href_refs.each do |element, ref_id|
-          next if @collected_ids.include?(ref_id)
+        state.href_refs.each do |element, ref_id|
+          next if state.collected_ids.include?(ref_id)
 
           context.add_error(
             node: element,
@@ -105,8 +106,8 @@ module SvgConform
           )
         end
 
-        @collected_other_refs.each do |element, ref_id, attr_name|
-          next if @collected_ids.include?(ref_id)
+        state.other_refs.each do |element, ref_id, attr_name|
+          next if state.collected_ids.include?(ref_id)
 
           context.add_error(
             node: element,

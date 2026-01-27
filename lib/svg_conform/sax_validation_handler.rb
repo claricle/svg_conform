@@ -8,20 +8,38 @@ require_relative "validation/structural_invalidity_tracker"
 require_relative "validation/node_id_manager"
 require_relative "validation_result"
 require_relative "references"
+require_relative "classification_cache"
 
 module SvgConform
   # SAX event handler for streaming SVG validation
   # Processes XML events and dispatches to requirements
+  #
+  # == Requirement classification
+  #
+  # The handler classifies requirements into two categories:
+  #
+  # 1. Immediate validation requirements (14) - validate during parsing
+  #    - These requirements implement +validate_sax_element+ and validate
+  #      each element as it is encountered
+  #    - No state is maintained between elements
+  #
+  # 2. Deferred validation requirements (3) - collect data, validate at end
+  #    - These requirements implement +collect_sax_data+ and +validate_sax_complete+
+  #    - State is stored in requirement-specific State classes via +context.state_for+
+  #    - Validation happens after parsing is complete, when all data is available
+  #
+  # == State management
+  #
+  # Each handler instance has its own cache and fresh requirement instances,
+  # ensuring no state leakage between validations.
+  #
+  # Profile reuse for multiple validations:
+  # - Profile is created once with requirement instances (configuration from YAML)
+  # - Each validation creates a fresh SaxValidationHandler with fresh ValidationContext
+  # - ValidationContext creates fresh State instances for deferred requirements
+  # - No state pollution occurs across validations
   class SaxValidationHandler < Nokogiri::XML::SAX::Document
     attr_reader :result, :context
-
-    # Class-level cache for requirement classifications by profile class
-    @classification_cache = {}
-    @classification_cache_mutex = Mutex.new
-
-    class << self
-      attr_reader :classification_cache, :classification_cache_mutex
-    end
 
     def initialize(profile)
       @profile = profile
@@ -31,18 +49,23 @@ module SvgConform
       @parse_errors = []
       @result = nil # Will be set in end_document
 
+      # Create instance-level cache (no shared state between handlers)
+      @classification_cache = ClassificationCache.new
+
+      # Use profile requirements directly (config is stateless)
+      # Validation state lives in context, not in requirements
+      @requirements = @profile.requirements || []
+
       # Create validation context (without document reference for SAX)
       @context = create_sax_context
 
-      # Classify requirements into immediate vs deferred (use cache if available)
+      # Classify requirements into immediate vs deferred (use instance cache)
       @immediate_requirements, @deferred_requirements = classify_requirements_with_cache
     end
 
     # SAX Event: Document start
     def start_document
-      # Reset state in requirements that maintain state across validations
-      reset_stateful_requirements
-
+      # No need to reset state - each validation has fresh requirement instances
       # Initialize root level counters
       @position_counters.push({})
     end
@@ -158,38 +181,21 @@ module SvgConform
       context.instance_variable_set(:@reference_manifest,
                                     trackers[:reference_manifest])
       context.instance_variable_set(:@fixes, [])
-      context.instance_variable_set(:@data, {})
+      context.instance_variable_set(:@state_registry, {})
       context
     end
 
-    # Classify requirements based on validation needs (with caching)
+    # Classify requirements based on validation needs (with instance-level caching)
     def classify_requirements_with_cache
-      # Use profile name instead of class name since all profiles are instances of Profile class
       profile_key = @profile.name || @profile.object_id.to_s
-      profile_requirements = @profile.requirements
 
-      # Check cache first (thread-safe)
-      @immediate_requirements = []
-      @deferred_requirements = []
-
-      classified = self.class.classification_cache_mutex.synchronize do
-        self.class.classification_cache[profile_key]
-      end
-
-      if classified
-        @immediate_requirements = classified[:immediate].map do |req_class|
-          # Find the actual instance from profile requirements
-          profile_requirements.find { |r| r.is_a?(req_class) }
-        end.compact
-        @deferred_requirements = classified[:deferred].map do |req_class|
-          profile_requirements.find { |r| r.is_a?(req_class) }
-        end.compact
-      else
-        # Classify and cache
+      # Use instance-level cache (no mutexes needed - per-handler isolation)
+      @classification_cache.fetch(profile_key) do
+        # Classify by requirement classes
         immediate_classes = []
         deferred_classes = []
 
-        profile_requirements.each do |req|
+        @requirements.each do |req|
           if req.respond_to?(:needs_deferred_validation?) && req.needs_deferred_validation?
             deferred_classes << req.class
           else
@@ -197,45 +203,22 @@ module SvgConform
           end
         end
 
-        # Store in cache
-        self.class.classification_cache_mutex.synchronize do
-          self.class.classification_cache[profile_key] = {
-            immediate: immediate_classes,
-            deferred: deferred_classes,
-          }
-        end
-
-        @immediate_requirements = profile_requirements.select do |req|
-          immediate_classes.include?(req.class)
-        end
-        @deferred_requirements = profile_requirements.select do |req|
-          deferred_classes.include?(req.class)
-        end
+        # Cache the classification by class
+        { immediate: immediate_classes, deferred: deferred_classes }
       end
 
-      [@immediate_requirements, @deferred_requirements]
-    end
+      # Map back to actual requirement instances from @requirements
+      classified = @classification_cache.fetch(profile_key) { {} }
 
-    # Classify requirements based on validation needs
-    def classify_requirements
-      return unless @profile&.requirements
-
-      @profile.requirements.each do |req|
-        if req.respond_to?(:needs_deferred_validation?) && req.needs_deferred_validation?
-          @deferred_requirements << req
-        else
-          @immediate_requirements << req
-        end
+      immediate = classified[:immediate].flat_map do |req_class|
+        @requirements.select { |r| r.is_a?(req_class) }
       end
-    end
 
-    # Reset state in requirements that maintain state
-    def reset_stateful_requirements
-      return unless @profile&.requirements
-
-      @profile.requirements.each do |req|
-        req.reset_state if req.respond_to?(:reset_state)
+      deferred = classified[:deferred].flat_map do |req_class|
+        @requirements.select { |r| r.is_a?(req_class) }
       end
+
+      [immediate, deferred]
     end
   end
 end
