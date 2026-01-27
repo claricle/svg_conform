@@ -114,5 +114,60 @@ RSpec.describe SvgConform do
       expect(rfc_counts.uniq.size).to eq(1),
                                       "svg_1_2_rfc validations should be consistent: #{rfc_counts.inspect}"
     end
+
+    it "returns different error counts for profiles with different requirements" do
+      # Real-world SVG with style attributes that violate svg_1_2_rfc but not metanorma
+      svg_with_styles = <<~SVG
+        <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" preserveAspectRatio="xMidYMid" version="1.1" viewBox="0 0 28000 21000">
+          <g class="Drawing" id="Straight_Connector_42">
+            <g>
+              <g style="stroke:rgb(0,0,0);stroke-width:88;fill:none">
+                <path d="M 4264,13886 L 4264,17273" style="fill:none" />
+          </g></g></g>
+          <g class="Drawing" id="Straight_Connector_33">
+            <g>
+              <g style="stroke:rgb(0,0,0);stroke-width:88;fill:none">
+                <path d="M 20355,10711 L 20351,13886" style="fill:none" />
+          </g></g></g>
+            <g class="Drawing">
+              <g>
+                <g style="stroke:none;fill:none">
+                  <rect height="3490" width="25184" x="1512" y="340" />
+                </g>
+              <g style="font-family:Arial embedded;font-size:1552px;font-weight:400">
+                <g style="stroke:none;fill:rgb(0,0,0)">
+                  <text>
+                    <tspan x="4733 5855 6718 7582 8446 8877 9741 10605 11036 12074 12853 13716 14580 15443 15960 16307 17171 17602 18724 19071 19935 20799 21315 22179 " y="2482">
+                      Updated Scenario Diagram
+                    </tspan>
+                  </text>
+                </g>
+              </g>
+              </g>
+            </g>
+        </svg>
+      SVG
+
+      validator = SvgConform::Validator.new(mode: :sax)
+
+      # Validate with metanorma (should have 0 errors - more permissive)
+      profile_meta = SvgConform::Profiles.get("metanorma")
+      result_meta = validator.validate(svg_with_styles, profile: profile_meta)
+      meta_errors = result_meta.errors.count
+
+      # Validate with svg_1_2_rfc (should have errors - stricter requirements)
+      profile_rfc = SvgConform::Profiles.get("svg_1_2_rfc")
+      result_rfc = validator.validate(svg_with_styles, profile: profile_rfc)
+      rfc_errors = result_rfc.errors.count
+
+      # Profiles should return different results
+      expect(meta_errors).to eq(0), "metanorma profile should allow this SVG"
+      expect(rfc_errors).to be > 0, "svg_1_2_rfc profile should detect violations"
+
+      # Verify consistency when repeating
+      result_rfc2 = validator.validate(svg_with_styles, profile: profile_rfc)
+      expect(result_rfc2.errors.count).to eq(rfc_errors),
+                                          "svg_1_2_rfc should return same error count on repeat (no state leakage)"
+    end
   end
 end
