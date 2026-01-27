@@ -164,7 +164,8 @@ module SvgConform
 
     # Classify requirements based on validation needs (with caching)
     def classify_requirements_with_cache
-      profile_key = @profile.class.name
+      # Use profile name instead of class name since all profiles are instances of Profile class
+      profile_key = @profile.name || @profile.object_id.to_s
       profile_requirements = @profile.requirements
 
       # Check cache first (thread-safe)
