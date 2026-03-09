@@ -101,7 +101,7 @@ module SvgConform
       puts Paint["Unknown command: #{method_name}", :red]
       puts
       help
-      exit 1
+      abort
     end
   end
 end

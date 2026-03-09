@@ -18,7 +18,7 @@ module SvgConform
 
         unless File.exist?(validation_file)
           puts Paint["Error: File '#{validation_file}' not found", :red]
-          exit 1
+          abort
         end
 
         begin
@@ -30,7 +30,7 @@ module SvgConform
               puts Paint["Expected: #{svgcheck_report_path}",
                          :dim]
             end
-            exit 1
+            abort
           end
 
           # Load svgcheck report using the new external checker parser
@@ -55,7 +55,7 @@ module SvgConform
                                      File.basename(@file))
         rescue StandardError => e
           puts Paint["Error: #{e.message}", :red]
-          exit 1
+          abort
         end
       end
 

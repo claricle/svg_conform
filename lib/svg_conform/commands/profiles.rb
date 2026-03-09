@@ -22,7 +22,7 @@ module SvgConform
         end
       rescue StandardError => e
         puts Paint["Error: #{e.message}", :red]
-        exit 1
+        abort
       end
 
       private

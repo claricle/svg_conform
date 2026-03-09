@@ -20,7 +20,7 @@ module SvgConform
 
         if files_to_process.empty?
           puts Paint["Error: No SVG files found", :red]
-          exit 1
+          abort
         end
 
         # Single file mode vs batch mode
@@ -39,19 +39,19 @@ module SvgConform
           dir = @options[:directory]
           unless Dir.exist?(dir)
             puts Paint["Error: Directory '#{dir}' not found", :red]
-            exit 1
+            abort
           end
           Dir.glob(File.join(dir, "**/*.svg")).sort
         elsif @files.empty?
           puts Paint["Error: No files or directory specified", :red]
-          exit 1
+          abort
           []
         else
           # File mode: validate each file exists
           @files.each do |file|
             unless File.exist?(file)
               puts Paint["Error: File '#{file}' not found", :red]
-              exit 1
+              abort
             end
           end
           @files
@@ -91,7 +91,7 @@ module SvgConform
           exit(report.valid? ? 0 : 1)
         rescue StandardError => e
           puts Paint["Error: #{e.message}", :red]
-          exit 1
+          abort
         end
       end
 
@@ -277,13 +277,13 @@ module SvgConform
         if files.length > 1 && !@options[:output_dir]
           puts Paint["Error: --output-dir required for multiple files with --fix",
                      :red]
-          exit 1
+          abort
         end
 
         # In-place requires force
         if @options[:in_place] && !@options[:force]
           puts Paint["Error: --in-place requires --force flag for safety", :red]
-          exit 1
+          abort
         end
       end
 
