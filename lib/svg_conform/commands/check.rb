@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "thor"
 require "paint"
 require "table_tennis"
 require "fileutils"
@@ -9,6 +10,12 @@ module SvgConform
   module Commands
     # Check command for validating SVG files (single or batch)
     class Check
+      # User-facing errors should be Thor::Error for nice CLI display
+      class CheckError < Thor::Error; end
+      class FileNotFoundError < CheckError; end
+      class DirectoryNotFoundError < CheckError; end
+      class NoFilesFoundError < CheckError; end
+
       def initialize(files, options)
         @files = Array(files)
         @options = options
@@ -19,8 +26,7 @@ module SvgConform
         files_to_process = determine_files
 
         if files_to_process.empty?
-          puts Paint["Error: No SVG files found", :red]
-          exit 1
+          raise NoFilesFoundError, "No SVG files found"
         end
 
         # Single file mode vs batch mode
@@ -38,20 +44,17 @@ module SvgConform
           # Directory mode: recursive scan
           dir = @options[:directory]
           unless Dir.exist?(dir)
-            puts Paint["Error: Directory '#{dir}' not found", :red]
-            exit 1
+            raise DirectoryNotFoundError, "Directory '#{dir}' not found"
           end
-          Dir.glob(File.join(dir, "**/*.svg")).sort
+
+          Dir.glob(File.join(dir, "**/*.svg"))
         elsif @files.empty?
-          puts Paint["Error: No files or directory specified", :red]
-          exit 1
-          []
+          raise NoFilesFoundError, "No files or directory specified"
         else
           # File mode: validate each file exists
           @files.each do |file|
             unless File.exist?(file)
-              puts Paint["Error: File '#{file}' not found", :red]
-              exit 1
+              raise FileNotFoundError, "File '#{file}' not found"
             end
           end
           @files
@@ -61,38 +64,33 @@ module SvgConform
       def process_single_file(file)
         @file = file
 
-        begin
-          # Validate the file
-          validator = SvgConform::Validator.new
-          result = validator.validate_file(@file,
-                                           profile: @options[:profile].to_sym)
+        # Validate the file
+        validator = SvgConform::Validator.new
+        result = validator.validate_file(@file,
+                                         profile: @options[:profile].to_sym)
 
-          # Generate report
-          report = SvgConform::ConformanceReport.from_svg_conform_result(
-            File.basename(@file),
-            result,
-            profile: @options[:profile].to_sym,
-          )
+        # Generate report
+        report = SvgConform::ConformanceReport.from_svg_conform_result(
+          File.basename(@file),
+          result,
+          profile: @options[:profile].to_sym,
+        )
 
-          # Output based on format
-          case @options[:format]
-          when "yaml"
-            output_yaml(report)
-          when "json"
-            output_json(report)
-          else
-            output_table(report)
-          end
-
-          # Create remediated file if requested
-          create_remediated_file(result) if @options[:fix]
-
-          # Exit with appropriate code
-          exit(report.valid? ? 0 : 1)
-        rescue StandardError => e
-          puts Paint["Error: #{e.message}", :red]
-          exit 1
+        # Output based on format
+        case @options[:format]
+        when "yaml"
+          output_yaml(report)
+        when "json"
+          output_json(report)
+        else
+          output_table(report)
         end
+
+        # Create remediated file if requested
+        create_remediated_file(result) if @options[:fix]
+
+        # Exit with appropriate code based on validation result
+        exit(report.valid? ? 0 : 1)
       end
 
       def output_table(report)
@@ -275,15 +273,13 @@ module SvgConform
 
         # Multiple files require output-dir
         if files.length > 1 && !@options[:output_dir]
-          puts Paint["Error: --output-dir required for multiple files with --fix",
-                     :red]
-          exit 1
+          raise CheckError,
+                "--output-dir required for multiple files with --fix"
         end
 
         # In-place requires force
         if @options[:in_place] && !@options[:force]
-          puts Paint["Error: --in-place requires --force flag for safety", :red]
-          exit 1
+          raise CheckError, "--in-place requires --force flag for safety"
         end
       end
 
