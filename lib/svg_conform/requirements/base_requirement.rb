@@ -96,7 +96,7 @@ module SvgConform
       attribute :id, :string
       attribute :description, :string
       attribute :type, :string, polymorphic_class: true, default: -> {
-        self.class.name.split("::").last
+        self.class.name&.split("::")&.last
       }
 
       yaml do
@@ -161,8 +161,8 @@ module SvgConform
 
         attrs = node.attributes || []
         # Convert array of Moxml::Attribute objects to hash
-        attrs.each_with_object({}) do |attr, hash|
-          hash[attr.name] = attr.value
+        attrs.to_h do |attr|
+          [attr.name, attr.value]
         end
       end
 
