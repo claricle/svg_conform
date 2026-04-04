@@ -1,11 +1,14 @@
 # frozen_string_literal: true
 
+require "thor"
 require_relative "../compatibility/compatibility_analyzer"
 
 module SvgConform
   module Commands
     # Command for comparing SvgConform with svgcheck compatibility
     class SvgcheckCompatibility
+      class CompatibilityError < Thor::Error; end
+
       def initialize(options = {})
         @options = options
       end
@@ -29,14 +32,16 @@ module SvgConform
 
       def validate_options
         mode = @options[:mode] || @options["mode"] || "check"
-        raise "Invalid mode: #{mode}. Must be 'check' or 'repair'" unless %w[
-          check repair
-        ].include?(mode)
+        unless %w[check repair].include?(mode)
+          raise CompatibilityError,
+                "Invalid mode: #{mode}. Must be 'check' or 'repair'"
+        end
 
         file = @options[:file] || @options["file"]
-        return unless file && !file.match?(/\.(svg|xml)$/i)
-
-        raise "File must have .svg or .xml extension: #{file}"
+        if file && !file.match?(/\.(svg|xml)$/i)
+          raise CompatibilityError,
+                "File must have .svg or .xml extension: #{file}"
+        end
       end
     end
   end
