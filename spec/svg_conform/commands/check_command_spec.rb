@@ -83,8 +83,8 @@ RSpec.describe SvgConform::Commands::Check do
 
       expect do
         command.execute
-      end.to output(/Error: File 'nonexistent.svg' not found/).to_stdout
-        .and raise_error(SystemExit)
+      end.to raise_error(SvgConform::Commands::Check::FileNotFoundError,
+                         /nonexistent.svg/)
     end
   end
 end

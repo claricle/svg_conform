@@ -11,6 +11,16 @@ require_relative "commands/profiles"
 module SvgConform
   # Thor-based CLI for SvgConform with svgcheck-like functionality
   class Cli < Thor
+    # Exit with non-zero status when a command raises an error
+    def self.exit_on_failure?
+      true
+    end
+
+    # Use strict mode to catch unknown options at parse time rather than runtime
+    def self.check_unknown_options?(*)
+      true
+    end
+
     def initialize(*args)
       super
     end
@@ -95,13 +105,10 @@ module SvgConform
       puts "SvgConform #{SvgConform::VERSION}"
     end
 
-    private
-
-    def method_missing(method_name, *_args)
-      puts Paint["Unknown command: #{method_name}", :red]
-      puts
-      help
-      exit 1
+    # Let Thor handle unknown commands - it raises Thor::UndefinedCommandError
+    # which provides helpful suggestions (e.g., "Did you mean?")
+    def self.handle_unknown_command?(*)
+      false
     end
   end
 end

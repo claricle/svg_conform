@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "thor"
 require "paint"
 require "table_tennis"
 
@@ -7,6 +8,8 @@ module SvgConform
   module Commands
     # Profiles command for listing available validation profiles
     class Profiles
+      class ProfilesError < Thor::Error; end
+
       def initialize(options)
         @options = options
         # Paint doesn't need initialization like Pastel
@@ -20,9 +23,6 @@ module SvgConform
         else
           display_profile_list(profiles)
         end
-      rescue StandardError => e
-        puts Paint["Error: #{e.message}", :red]
-        exit 1
       end
 
       private
