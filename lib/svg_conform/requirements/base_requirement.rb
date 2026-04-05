@@ -96,7 +96,7 @@ module SvgConform
       attribute :id, :string
       attribute :description, :string
       attribute :type, :string, polymorphic_class: true, default: -> {
-        self.class.name.split("::").last
+        self.class.name&.split("::")&.last
       }
 
       yaml do
