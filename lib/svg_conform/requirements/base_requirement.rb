@@ -161,8 +161,8 @@ module SvgConform
 
         attrs = node.attributes || []
         # Convert array of Moxml::Attribute objects to hash
-        attrs.each_with_object({}) do |attr, hash|
-          hash[attr.name] = attr.value
+        attrs.to_h do |attr|
+          [attr.name, attr.value]
         end
       end
 
