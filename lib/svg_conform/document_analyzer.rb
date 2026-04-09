@@ -19,8 +19,10 @@ module SvgConform
     def get_node_id(node)
       return nil unless node.respond_to?(:name) && node.name
 
-      # Return cached ID or compute on-demand
-      @cache[node.object_id] ||= compute_and_cache_path(node)
+      # Use native.object_id as cache key since wrapper object_id changes
+      # across traverses but underlying Nokogiri node identity is stable
+      native_id = node.native.object_id
+      @cache[native_id] ||= compute_and_cache_path(node)
     end
 
     private
@@ -63,7 +65,7 @@ module SvgConform
         end.compact
         path_parts << "#{node.name}[#{position}]"
 
-        @cache[node.object_id] = "/#{path_parts.join('/')}"
+        @cache[node.native.object_id] = "/#{path_parts.join('/')}"
       end
     end
 
@@ -104,12 +106,15 @@ module SvgConform
       return 1 unless parent.respond_to?(:children)
 
       # Count this node's position among siblings with same name
+      # Use native.object_id comparison since wrapper objects differ
+      # across traverses but underlying Nokogiri nodes are stable
       position = 0
+      native_id = node.native.object_id
       parent.children.each do |child|
         next unless child.respond_to?(:name) && child.name == node.name
 
         position += 1
-        break if child.equal?(node)
+        break if child.native.object_id == native_id
       end
 
       position

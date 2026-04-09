@@ -223,6 +223,37 @@ Always prefer SAX for validation. Only use DOM when applying remediations.
 * *Class-level cache*: Use for data shared across all instances
 * *Thread safety*: Always use Mutex for class-level shared state
 
+=== Cache Key Stability for XML Node Identity
+
+When caching node-related data across traversals, ensure cache keys use stable node identity.
+
+*Problem:* Moxml wraps underlying parser nodes (Nokogiri/Oga) in new wrapper objects on each traversal. Using `wrapper.object_id` as a cache key causes cache misses since the wrapper object changes between traverses.
+
+*Solution:* Use `node.native.object_id` as the cache key since the underlying parser node identity is stable:
+
+[source,ruby]
+----
+# Wrong - wrapper object_id changes across traverses
+@cache[node.object_id] = value
+
+# Correct - native node identity is stable
+@cache[node.native.object_id] = value
+----
+
+*Example:* `DocumentAnalyzer` uses this pattern for node ID caching:
+
+[source,ruby]
+----
+def get_node_id(node)
+  native_id = node.native.object_id
+  @cache[native_id] ||= compute_and_cache_path(node)
+end
+----
+
+*When to use:* When caching data associated with XML nodes that may be accessed via different wrapper instances.
+
+*Why it works:* The underlying Nokogiri/Oga/other parser nodes maintain stable Ruby object identity across wrapper re-creation.
+
 == Future Optimization Opportunities
 
 Areas that may benefit from future optimization:
