@@ -299,9 +299,11 @@ requirements:
   - link_validation      # ASCII-only links
   - no_external_css      # External CSS prohibited
   - no_external_fonts    # External fonts prohibited
+  - no_external_images   # External images prohibited
+  - text_as_path         # Warn on outlined text (quality check)
 ----
 
-See link:requirements.adoc#allowed-elements-requirement[AllowedElementsRequirement], link:requirements.adoc#namespace-requirement[NamespaceRequirement], link:requirements.adoc#namespace-attributes-requirement[NamespaceAttributesRequirement], link:requirements.adoc#viewbox-required-requirement[ViewboxRequiredRequirement], link:requirements.adoc#forbidden-content-requirement[ForbiddenContentRequirement], link:requirements.adoc#id-reference-requirement[IdReferenceRequirement], link:requirements.adoc#link-validation-requirement[LinkValidationRequirement], link:requirements.adoc#no-external-css-requirement[NoExternalCssRequirement], and link:requirements.adoc#no-external-fonts-requirement[NoExternalFontsRequirement] for detailed requirement information.
+See link:requirements.adoc#allowed-elements-requirement[AllowedElementsRequirement], link:requirements.adoc#namespace-requirement[NamespaceRequirement], link:requirements.adoc#namespace-attributes-requirement[NamespaceAttributesRequirement], link:requirements.adoc#viewbox-required-requirement[ViewboxRequiredRequirement], link:requirements.adoc#forbidden-content-requirement[ForbiddenContentRequirement], link:requirements.adoc#id-reference-requirement[IdReferenceRequirement], link:requirements.adoc#link-validation-requirement[LinkValidationRequirement], link:requirements.adoc#no-external-css-requirement[NoExternalCssRequirement], link:requirements.adoc#no-external-fonts-requirement[NoExternalFontsRequirement], link:requirements.adoc#no-external-images-requirement[NoExternalImagesRequirement], and link:requirements.adoc#text-as-path-requirement[TextAsPathRequirement] for detailed requirement information.
 
 **Remediations**:
 [source,yaml]

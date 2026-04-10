@@ -33,6 +33,7 @@ SvgConform is distributed as a Ruby gem.
 * **100% SVGCheck compatibility**: Perfect error report matching with Python svgcheck tool
 * **Configurable RDF metadata support**: Choose strict or permissive RDF/Dublin Core handling
 * **Generic namespace handling**: Configuration-driven foreign namespace validation
+* **Text-as-path detection**: Warns when text is rendered as outlined path glyphs (quality check)
 
 
 == Concepts

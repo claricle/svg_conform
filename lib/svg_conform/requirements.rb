@@ -18,6 +18,7 @@ require_relative "requirements/style_promotion_requirement"
 require_relative "requirements/no_external_css_requirement"
 require_relative "requirements/no_external_fonts_requirement"
 require_relative "requirements/no_external_images_requirement"
+require_relative "requirements/text_as_path_requirement"
 
 module SvgConform
   module Requirements
@@ -38,6 +39,7 @@ module SvgConform
         StyleRequirement,
         LinkValidationRequirement,
         IdReferenceRequirement,
+        TextAsPathRequirement,
       ]
     end
 

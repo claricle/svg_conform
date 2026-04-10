@@ -866,6 +866,129 @@ attributes
 * link:remediation.adoc#image-embedding-remediation[ImageEmbeddingRemediation]
 
 
+[[text-as-path-requirement]]
+=== Text as path requirement
+
+==== General
+
+Detects SVG files where text is rendered as outlined path glyphs (outlined fonts)
+instead of native `<text>` elements.
+
+Implemented as `TextAsPathRequirement`.
+
+This is a quality check (severity: warning), not a schema violation. There is no
+remediation since outlined text cannot be auto-converted to `<text>` elements.
+
+==== Why detect text-as-path?
+
+SVG files with text-as-path are problematic because:
+
+* **Unsearchable**: Text cannot be indexed or copied
+* **Large file size**: Glyph outlines are much larger than text elements
+* **Poor rendering**: Many graphics viewers render outlined text poorly
+* **Accessibility issues**: Screen readers cannot extract text content
+
+Detection is based on heuristics since determining if a path represents text is
+not definitive:
+
+* No `<text>` element present
+* No `<image>` element present (to avoid false positives on embedded raster images)
+* Contains bezier curves (C/c/Q/q commands) in path `d` attributes
+* Longest single path `d` string exceeds minimum threshold
+
+==== Configuration options
+
+`min_d_length`:: Minimum length of path `d` attribute to consider (triggers on
+long paths that are more likely to be outlined text). Default: `500`.
+
+`min_bezier`:: Minimum number of bezier curve commands (C/c/Q/q) to consider.
+Default: `5`.
+
+==== Configuration
+
+.Example configuration of TextAsPathRequirement
+[example]
+====
+[source,yaml]
+----
+- id: "text_as_path"
+  type: "TextAsPathRequirement"
+  description: "Detect outlined text (warning, not auto-remediable)"
+  min_d_length: 500
+  min_bezier: 5
+----
+====
+
+==== Example from metanorma profile
+
+[example]
+====
+[source,yaml]
+----
+- id: "text_as_path"
+  type: "TextAsPathRequirement"
+  description: "Detects text rendered as outlined paths"
+  min_d_length: 500
+  min_bezier: 5
+----
+====
+
+The metanorma profile includes this quality check to warn about outlined text
+that should be converted to native `<text>` elements for better accessibility
+and smaller file size.
+
+==== How detection works
+
+The requirement uses deferred SAX validation to:
+
+1. **Collect data** during parsing: tracks presence of `<text>` and `<image>`
+   elements, and all path `d` attribute values
+2. **Analyze** at document end: calculates longest `d` length and total bezier
+   curve count across all paths
+3. **Report** if all conditions met:
+   * No `<text>` or `<image>` elements found
+   * Longest `d` length >= `min_d_length`
+   * Total bezier curves >= `min_bezier`
+
+==== Customization
+
+To adjust detection sensitivity:
+
+* **Lower thresholds** (more sensitive): Catch more potential text-as-path cases
+* **Raise thresholds** (less sensitive): Only flag obvious cases
+
+[source,yaml]
+----
+# Sensitive detection - catch more cases
+- id: "text_as_path_sensitive"
+  type: "TextAsPathRequirement"
+  min_d_length: 300
+  min_bezier: 3
+
+# Conservative detection - only obvious cases
+- id: "text_as_path_conservative"
+  type: "TextAsPathRequirement"
+  min_d_length: 1000
+  min_bezier: 10
+----
+
+==== Features
+
+* Quality check (warning severity, not an error)
+* No automatic remediation possible - manual conversion required
+* Deferred SAX validation for memory-safe processing
+* Configurable thresholds for sensitivity tuning
+* Integrates with quality score system
+
+==== Limitations
+
+* Cannot definitively identify path-as-text, only provides warnings based on
+  heuristics
+* May produce false positives on complex graphics with many bezier curves
+* May produce false negatives on short outlined text
+* No automatic conversion possible (requires manual editing in vector editor)
+
+
 [[id-reference-requirement]]
 === ID reference requirement
 

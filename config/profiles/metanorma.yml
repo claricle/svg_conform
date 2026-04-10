@@ -187,6 +187,13 @@ requirements:
     check_image_elements: true
     check_style_images: true
 
+  # Text-as-path detection - warns when text is rendered as outlined paths
+  - id: "text_as_path"
+    type: "TextAsPathRequirement"
+    description: "Detects text rendered as outlined paths instead of native <text> elements"
+    min_d_length: 500
+    min_bezier: 5
+
 remediations:
   # ViewBox auto-generation
   - id: "viewbox_generation"
