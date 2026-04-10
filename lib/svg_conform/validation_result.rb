@@ -150,7 +150,7 @@ module SvgConform
     def to_text
       lines = []
       lines << "SVG Conformance Report"
-      lines << "=" * 22
+      lines << ("=" * 22)
       lines << ""
       lines << "File: #{@document.file_path || 'inline'}"
       lines << "Profile: #{@profile.name} (#{@profile.description})"

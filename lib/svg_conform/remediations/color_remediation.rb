@@ -129,9 +129,7 @@ module SvgConform
 
           # Check for case-insensitive hex color matches
           if color.match?(/^#[0-9a-fA-F]{6}$/)
-            hex_allowed = allowed_colors.select do |c|
-              c.match?(/^#[0-9a-fA-F]{6}$/)
-            end
+            hex_allowed = allowed_colors.grep(/^#[0-9a-fA-F]{6}$/)
             return hex_allowed.any? do |allowed|
               allowed.downcase == color.downcase
             end

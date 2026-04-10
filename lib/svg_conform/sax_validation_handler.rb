@@ -72,7 +72,7 @@ module SvgConform
 
     # SAX Event: Element start tag
     def start_element(name, attributes = [])
-      attrs = Hash[attributes]
+      attrs = attributes.to_h
 
       # Calculate position among siblings at current level
       current_counters = @position_counters.last || {}
@@ -211,11 +211,11 @@ module SvgConform
       classified = @classification_cache.fetch(profile_key) { {} }
 
       immediate = classified[:immediate].flat_map do |req_class|
-        @requirements.select { |r| r.is_a?(req_class) }
+        @requirements.grep(req_class)
       end
 
       deferred = classified[:deferred].flat_map do |req_class|
-        @requirements.select { |r| r.is_a?(req_class) }
+        @requirements.grep(req_class)
       end
 
       [immediate, deferred]

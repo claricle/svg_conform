@@ -166,8 +166,7 @@ module SvgConform
         puts Paint["📊 Summary Table:", :blue, :bold]
         puts
 
-        header = format("%-25s %12s %8s %12s %12s",
-                        "File", "Compatibility", "Valid", "SvgConform", "Svgcheck")
+        header = "File                      Compatibility    Valid   SvgConform     Svgcheck"
         puts Paint[header, :white, :bold]
         puts "-" * 70
 
@@ -198,8 +197,7 @@ module SvgConform
         puts Paint["📊 Summary Table:", :blue, :bold]
         puts
 
-        header = format("%-25s %8s %12s %12s %8s",
-                        "File", "Valid", "SvgConform", "Svgcheck", "Errors")
+        header = "File                         Valid   SvgConform     Svgcheck   Errors"
         puts Paint[header, :white, :bold]
         puts "-" * 66
 
@@ -351,7 +349,7 @@ end
 class String
   def truncate(length)
     if self.length > length
-      "#{self[0..length - 4]}..."
+      "#{self[0..(length - 4)]}..."
     else
       self
     end

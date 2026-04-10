@@ -229,7 +229,7 @@ RSpec.describe "SvgCheck Compatibility" do
           expect(our_report.errors.total_count).to eq(
             svgcheck_report.errors.total_count,
           ), "Expected #{svgcheck_report.errors.total_count} errors but " \
-           "got #{our_report.errors.total_count}"
+             "got #{our_report.errors.total_count}"
         end
       end
     end
@@ -270,25 +270,17 @@ RSpec.describe "SvgCheck Compatibility" do
             identical_files += 1
             real_world_identical += 1 if is_real_world
           end
-        rescue StandardError => e
-          puts "Error processing #{basename}: #{e.message}"
+        rescue StandardError
         end
       end
 
-      puts "\n#{'=' * 60}"
-      puts "SVGCHECK COMPATIBILITY SUMMARY"
-      puts "=" * 60
-      puts "Total files processed: #{total_files}"
-      puts "Identical error counts: #{identical_files}/#{total_files}"
       if total_files > 0
-        compat_pct = (identical_files.to_f / total_files * 100).round(1)
-        puts "Compatibility: #{compat_pct}%"
+        (identical_files.to_f / total_files * 100).round(1)
+
       end
       if real_world_files > 0
-        puts "\nReal-world files: #{real_world_identical}/#{real_world_files}" \
-             " (100.0%)"
+
       end
-      puts "=" * 60
 
       # Require 100% compatibility on real-world files
       # (excluding comprehensive test files)

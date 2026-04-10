@@ -158,8 +158,9 @@ module SvgConform
             allowed_values = [allowed_values] if allowed_values.is_a?(String)
 
             # Separate literal values from type references (those starting with '<')
-            literal_values = allowed_values.reject { |v| v.start_with?("<") }
-            type_references = allowed_values.select { |v| v.start_with?("<") }
+            type_references, literal_values = allowed_values.partition do |v|
+              v.start_with?("<")
+            end
 
             # Check literal values first (case-insensitive)
             return false if literal_values.map(&:downcase).include?(value.downcase)

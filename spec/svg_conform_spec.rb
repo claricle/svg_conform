@@ -119,8 +119,8 @@ RSpec.describe SvgConform do
                                      profile: profile_meta).errors.count]
 
       # Extract counts by profile
-      meta_counts = results.select { |type, _| type == :meta }.map(&:last)
-      rfc_counts = results.select { |type, _| type == :rfc }.map(&:last)
+      meta_counts = results.select { |k, _| k == :meta }.map(&:last)
+      rfc_counts = results.select { |k, _| k == :rfc }.map(&:last)
 
       # Each profile should produce consistent results
       expect(meta_counts.uniq.size).to eq(1),

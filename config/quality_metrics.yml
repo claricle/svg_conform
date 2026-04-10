@@ -1,0 +1,212 @@
+# SVG Quality Metrics Configuration
+#
+# This file defines the quality scoring system for SVG files.
+# Customize these values to adjust how quality scores are calculated.
+#
+# The configuration supports:
+# - Severity level definitions for different violation types
+# - Remediation classification (remediable vs non-remediable errors)
+# - Quality score formula weights
+# - Quality level score thresholds
+# - Size category thresholds
+# - Complexity index calculation
+# - Feature detection patterns
+
+# ============================================================================
+# Severity Level Definitions
+# ============================================================================
+# Each severity level defines which violation types fall into it,
+# the default weight per error, and the maximum penalty for that level.
+#
+# Scores are calculated as: error_count * weight, capped at max_penalty
+
+severity_levels:
+  critical:
+    description: "Breaks document validity or breaks links (broken references, structural issues)"
+    violation_types:
+      - :reference_violation  # Broken ID references (xlink:href to missing IDs)
+      - :structural_violation  # Root element wrong, malformed XML, invalid document
+    default_weight: 5
+    max_penalty: 20
+
+  high:
+    description: "Breaks rendering or poses security risks"
+    violation_types:
+      - :viewbox_violation  # Missing or malformed viewBox
+      - :namespace_violation  # Invalid or disallowed namespaces
+      - :content_violation  # Forbidden elements (script, iframe, etc.)
+    default_weight: 3
+    max_penalty: 15
+
+  medium:
+    description: "Visual or formatting issues"
+    violation_types:
+      - :color_violation  # Non-standard colors
+      - :font_violation  # Non-standard fonts
+    default_weight: 1
+    max_penalty: 10
+
+  low:
+    description: "Informational - style promotion opportunities"
+    violation_types:
+      - :style_violation  # CSS properties that could be promoted to attributes
+    default_weight: 0
+    max_penalty: 0
+
+# ============================================================================
+# Remediation Classification
+# ============================================================================
+# Defines which violation types can be automatically fixed vs require human
+# intervention.
+
+# Violation types that can be auto-fixed
+remediable_types:
+  - :color_violation
+  - :font_violation
+  - :content_violation
+  - :reference_violation
+  - :namespace_violation
+  - :viewbox_violation
+  - :style_violation
+
+# Violation types that require manual intervention
+non_remediable_types:
+  - :structural_violation
+
+# ============================================================================
+# Quality Score Formula
+# ============================================================================
+# Weights used in the quality score calculation (0-100 scale)
+#
+# Formula:
+#   base_score = 100
+#   base_score -= (error_density * error_density_weight).clamp(0, error_density_max_penalty)
+#   base_score -= non_remediable_count * non_remediable_weight
+#   base_score -= critical_count * critical_weight
+#   base_score -= high_count * high_weight
+#   base_score += valid_structure_bonus if error_count == 0
+
+quality_formula:
+  # Error density penalty (errors per KB)
+  error_density_weight: 8
+  error_density_max_penalty: 40
+
+  # Per-error penalties
+  non_remediable_weight: 6
+  non_remediable_max_penalty: 30
+
+  critical_weight: 5
+  critical_max_penalty: 20
+
+  high_weight: 3
+  high_max_penalty: 15
+
+  # Bonus for error-free files
+  valid_structure_bonus: 10
+
+# ============================================================================
+# Quality Level Thresholds
+# ============================================================================
+# Score ranges for each quality level
+
+quality_levels:
+  excellent:
+    min_score: 90
+    max_score: 100
+    description: "No errors or minor style issues only"
+
+  good:
+    min_score: 70
+    max_score: 89
+    description: "Few easily fixable issues"
+
+  fair:
+    min_score: 50
+    max_score: 69
+    description: "Multiple remediable issues"
+
+  poor:
+    min_score: 30
+    max_score: 49
+    description: "Some non-remediable issues or many errors"
+
+  critical:
+    min_score: 0
+    max_score: 29
+    description: "Major structural problems or many critical errors"
+
+# ============================================================================
+# Size Category Thresholds
+# ============================================================================
+# File size thresholds in KB
+
+size_categories:
+  tiny: 5      # < 5 KB
+  small: 20     # 5-20 KB
+  medium: 100   # 20-100 KB
+  large: 500    # 100-500 KB
+  # > 500 KB = huge
+
+# ============================================================================
+# Complexity Index Calculation
+# ============================================================================
+# Complexity is scored on a 1-10 scale based on element count, nesting depth,
+# and use of advanced SVG features.
+
+complexity:
+  # Base multiplier for element count
+  base_element_multiplier: 0.5
+
+  # Weight for maximum nesting depth
+  depth_weight: 0.1
+
+  # Bonuses for using advanced features
+  feature_bonuses:
+    has_masks: 1.0
+    has_clip_paths: 0.5
+    has_base64: 1.5
+    has_foreign_ns: 0.5
+    has_external_refs: 0.5
+
+  # Maximum complexity score
+  max_index: 10
+
+# ============================================================================
+# Feature Detection Patterns
+# ============================================================================
+# Regex patterns for detecting SVG features in raw content.
+# Used for quick feature flags before full parsing.
+
+feature_patterns:
+  # Base64 encoded images
+  base64: "(?:data:image|ImageUri).*base64.*"
+
+  # Foreign namespaces (anything not svg/xlink)
+  foreign_ns: 'xmlns:(?!svg|xlink)'
+
+  # Mask elements
+  masks: "<[\\s]*mask[\\s\\S]*?>"
+
+  # Clip path elements
+  clip_paths: "<[\\s]*clipPath[\\s\\S]*?>"
+
+  # External references (http/https URLs in href/xlink:href)
+  external_refs: "(?:xlink:)?href.*https?://"
+
+# ============================================================================
+# Content Health Thresholds
+# ============================================================================
+# Rules for determining content health status
+
+content_health:
+  # Minor issues: few low/medium errors only
+  minor_issues_max_errors: 10
+  minor_issues_max_severity: medium
+
+  # Moderate issues: more errors OR any high-severity
+  moderate_issues_max_errors: 50
+  moderate_issues_any_high: true
+
+  # Severe issues: many errors OR any critical
+  severe_issues_min_errors: 50
+  severe_issues_any_critical: true

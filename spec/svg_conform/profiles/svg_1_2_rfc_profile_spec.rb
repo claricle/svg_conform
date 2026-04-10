@@ -128,7 +128,7 @@ RSpec.describe "SVG 1.2 RFC Profile" do
             expect(validation_result.valid?).to be false
             expect(validation_result.errors.count).to be > 0
 
-            puts "Found #{validation_result.errors.count} violations in #{fixture_name}"
+            
           end
 
           it "applies available remediations successfully" do
@@ -214,7 +214,7 @@ RSpec.describe "SVG 1.2 RFC Profile" do
       final_result = profile.validate(document)
       expect(final_result.errors.count).to be < initial_result.errors.count
 
-      puts "Comprehensive test: #{initial_result.errors.count} → #{final_result.errors.count} violations"
+      
     end
   end
 
@@ -247,9 +247,9 @@ RSpec.describe "SVG 1.2 RFC Profile" do
       style_errors = errors_by_requirement["style_promotion"] || []
       expect(style_errors.count).to eq(15)
 
-      puts "IETF-test.svg validation: #{validation_result.errors.count} errors detected"
-      puts "  Color errors: #{color_errors.count}"
-      puts "  Style promotion errors: #{style_errors.count}"
+      
+      
+      
     end
 
     it "validates IETF-test.svg color violations in detail" do
@@ -317,10 +317,10 @@ RSpec.describe "SVG 1.2 RFC Profile" do
       expect(color_changes.count).to be > 0
       expect(style_promotion_changes.count).to be > 0
 
-      puts "IETF-test.svg remediation: #{initial_error_count} → #{final_error_count} errors"
-      puts "  Total changes: #{changes.count}"
-      puts "    - Color conversion: #{color_changes.count}"
-      puts "    - Style promotion: #{style_promotion_changes.count}"
+      
+      
+      
+      
     end
 
     it "produces valid XML after remediation" do

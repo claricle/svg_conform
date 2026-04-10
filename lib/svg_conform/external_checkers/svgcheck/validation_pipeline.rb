@@ -171,8 +171,8 @@ output_dir: "spec/fixtures/svgcheck")
           if comparison[:semantic] && comparison[:semantic][:issues].any?
             comparison[:semantic][:issues].each do |semantic_issue|
               issues << "Semantic mismatch: #{semantic_issue[:semantic_key]} " \
-                       "(svg_conform: #{semantic_issue[:svg_conform_count]}, " \
-                       "svgcheck: #{semantic_issue[:svgcheck_count]})"
+                        "(svg_conform: #{semantic_issue[:svg_conform_count]}, " \
+                        "svgcheck: #{semantic_issue[:svgcheck_count]})"
             end
           end
 
@@ -197,7 +197,7 @@ output_dir: "spec/fixtures/svgcheck")
               category: "generation",
               priority: "high",
               message: "#{pipeline_results[:failed_generations]} files failed svgcheck output generation. " \
-                      "Check svgcheck installation and test file accessibility.",
+                       "Check svgcheck installation and test file accessibility.",
             }
           end
 
@@ -207,7 +207,7 @@ output_dir: "spec/fixtures/svgcheck")
               category: "compatibility",
               priority: "high",
               message: "#{pipeline_results[:failed_comparisons]} files show compatibility issues. " \
-                      "Review profile configuration and requirement mappings.",
+                       "Review profile configuration and requirement mappings.",
             }
           end
 
@@ -218,7 +218,7 @@ output_dir: "spec/fixtures/svgcheck")
               category: "profile",
               priority: "medium",
               message: "Compatibility score is #{compatibility_score}%. " \
-                      "Consider reviewing svg_1_2_rfc profile configuration against svgcheck source.",
+                       "Consider reviewing svg_1_2_rfc profile configuration against svgcheck source.",
             }
           end
 

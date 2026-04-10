@@ -38,7 +38,6 @@ RSpec.describe SvgConform::Requirements::FontFamilyRequirement do
         requirement.validate_document(document, context)
 
         expect(context.errors).not_to be_empty
-        puts "Found #{context.errors.count} font family violations in #{fixture_name}"
 
         context.errors.each do |error|
           expect(error.requirement_id).to eq("font_family")

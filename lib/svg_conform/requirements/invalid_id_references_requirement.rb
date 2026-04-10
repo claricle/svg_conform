@@ -139,7 +139,7 @@ module SvgConform
         state.existing_ids = existing_ids
 
         # Check for invalid references
-        super(document, context)
+        super
       end
 
       def check(node, context)
