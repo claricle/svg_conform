@@ -1,0 +1,526 @@
+= Image Quality Metric
+
+SvgConform provides a quality metric system for analyzing and scoring SVG files
+across multiple dimensions including conformance, complexity, and content health.
+
+The quality reports are fully object-oriented: the same report object supports
+`to_yaml` serialization, `to_json` serialization, and colorful terminal rendering
+with emojis.
+
+== Overview
+
+The quality metric system provides:
+
+* **Quality Score (0-100)**: Composite score reflecting overall SVG health
+* **Quality Level**: Categorical rating (EXCELLENT, GOOD, FAIR, POOR, CRITICAL)
+* **Error Breakdown**: Counts by severity and remediability
+* **Complexity Index**: 1-10 scale based on element count and features
+* **Content Health**: Status indicating severity of issues
+* **Feature Flags**: Detection of advanced SVG features
+
+== Quality Score Formula
+
+The quality score (0-100) is calculated as:
+
+[source,ruby]
+----
+base_score = 100
+
+# Penalize error density (errors per KB) - up to 40 points
+error_density = error_count / (file_size_kb)
+base_score -= (error_density * 8).clamp(0, 40)
+
+# Penalize non-remediable errors - up to 30 points
+base_score -= non_remediable_count * 6
+
+# Penalize critical errors - up to 20 points
+base_score -= critical_count * 5
+
+# Penalize high-severity errors - up to 15 points
+base_score -= high_count * 3
+
+# Bonus for error-free files
+base_score += 10 if error_count == 0
+
+base_score.clamp(0, 100)
+----
+
+== Error Taxonomy
+
+=== Violation Types
+
+[cols="1,3,3"]
+|===
+|Violation Type |Description |Example
+
+|:color_violation
+|Colors not permitted by profile
+|`#ff00ff` in fill attribute
+
+|:font_violation
+|Font families not permitted
+|`Arial`, `Times New Roman`
+
+|:content_violation
+|Forbidden elements/attributes
+|`<script>`, `onclick` attribute
+
+|:reference_violation
+|Broken ID references
+|`use element references non-existent ID: 'missing-anchor'`
+
+|:namespace_violation
+|Invalid namespace declarations
+|Disallowed namespace URIs
+
+|:viewbox_violation
+|Missing/malformed viewBox
+|Missing viewBox on root svg
+
+|:style_violation
+|CSS properties that could be promoted
+|`fill` in style instead of attribute
+
+|:structural_violation
+|Document structure problems
+|Root element must be 'svg', malformed XML
+|===
+
+=== Remediable vs Non-Remediable
+
+**REMEDIABLE** (auto-fixable):
+* color_violation
+* font_violation
+* content_violation
+* reference_violation
+* namespace_violation
+* viewbox_violation
+* style_violation
+
+**NON-REMEDIABLE** (requires human intervention):
+* structural_violation
+
+=== Severity Levels
+
+[cols="1,2,3"]
+|===
+|Severity |Impact |Violation Types
+
+|Critical
+|Breaks document validity or links
+|reference_violation, structural_violation
+
+|High
+|Breaks rendering or security
+|viewbox_violation, namespace_violation, content_violation (script)
+
+|Medium
+|Visual or formatting issues
+|color_violation, font_violation
+
+|Low
+|Informational
+|style_violation
+|===
+
+== Quality Levels
+
+[cols="2,1,3"]
+|===
+|Level |Score Range |Description
+
+|EXCELLENT
+|90-100
+|No errors or minor style issues only
+
+|GOOD
+|70-89
+|Few easily fixable issues
+
+|FAIR
+|50-69
+|Multiple remediable issues
+
+|POOR
+|30-49
+|Some non-remediable issues or many errors
+
+|CRITICAL
+|0-29
+|Major structural problems or many critical errors
+|===
+
+== Ruby API
+
+=== Single File Analysis
+
+[source,ruby]
+----
+require 'svg_conform'
+
+# Create analyzer and analyze a file
+analyzer = SvgConform::ImageQualityAnalyzer.new
+report = analyzer.analyze('image.svg')
+
+# Access report attributes
+report.file_path             # => "image.svg"
+report.quality_score         # => 85 (0-100)
+report.quality_level         # => :good
+report.error_count           # => 5
+report.remediable_errors     # => 4
+report.non_remediable_errors # => 1
+report.critical_errors       # => 0
+report.high_errors           # => 1
+report.medium_errors         # => 3
+report.low_errors            # => 1
+report.element_count         # => 42
+report.file_size_kb          # => 12.5
+report.complexity_index      # => 3.5 (1-10)
+report.content_health        # => :minor_issues
+report.size_category         # => :small
+report.has_base64            # => false
+report.has_masks             # => true
+----
+
+=== Multiple Output Formats
+
+The same report object supports three output formats:
+
+[source,ruby]
+----
+# Colorful terminal output with emojis
+puts report.render
+# =>
+# 📊 SVG Quality Report: image.svg
+#
+#   ✨ Quality: 85 (GOOD)
+#   🔶 Content Health: moderate_issues
+#
+#   📁 File: 12.5 KB (small)
+#   📐 Elements: 42
+#   🔢 Complexity: 3.5/10
+#
+# Errors: 5
+#   🔧 Remediable: 4
+#   ⚠️  Non-remediable: 1
+#
+#   Breakdown:
+#     ● High: 1
+#     ● Medium: 3
+#     ● Low: 1
+#
+#   ✨ Features: Masks, External Refs
+
+# YAML serialization (machine-readable)
+puts report.to_yaml
+# =>
+# ---
+# file_path: image.svg
+# quality_score: 85
+# quality_level: :good
+# ...
+
+# JSON serialization
+puts report.to_json
+----
+
+=== Batch Analysis
+
+[source,ruby]
+----
+# Analyze all SVGs in a directory
+batch = analyzer.analyze_batch('./svgs')
+
+# Batch report attributes
+batch.total_files            # => 150
+batch.successful             # => 148
+batch.failed                 # => 2
+batch.avg_quality_score      # => 72.5
+batch.quality_distribution   # => { "excellent" => 20, "good" => 80, ... }
+batch.avg_error_count        # => 8.3
+batch.total_errors           # => 1245
+batch.remediable_errors      # => 1100
+batch.non_remediable_errors  # => 145
+batch.reports                # => Array of SvgQualityReport objects
+
+# Batch terminal output with distribution chart
+puts batch.render
+# =>
+# 📊 SVG Quality Batch Report
+#
+#   📁 Total Files: 150
+#   ✅ Successful: 148
+#   ❌ Failed: 2
+#
+# Quality Distribution
+#
+#   ✨ EXCELLENT  ████████████░░░░░░░░░░░░░░░░░░░░░    25 (16.7%)
+#   👍 GOOD       ████████████████████████████████░░   85 (56.7%)
+#   ⚠️ FAIR       ██████████░░░░░░░░░░░░░░░░░░░░░░░░   30 (20.0%)
+#   😟 POOR       ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   8 (5.3%)
+#   💥 CRITICAL   ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   2 (1.3%)
+#
+# Summary
+#
+#   📈 Average Quality Score: 74.2/100
+#   📊 Average Errors/File: 6.8
+#
+#   🔧 Total Remediable: 892
+#   ⚠️  Total Non-remediable: 38
+
+# Full YAML with all individual reports
+puts batch.to_yaml
+
+# Full JSON
+puts batch.to_json
+----
+
+=== Legacy Hash API (Backwards Compatible)
+
+The original hash-based API is preserved for backwards compatibility:
+
+[source,ruby]
+----
+# analyze_file returns a Hash instead of SvgQualityReport
+result = analyzer.analyze_file('image.svg')
+
+puts result[:quality_score]  # => 85
+puts result[:quality_level]  # => :good
+----
+
+=== Custom Configuration
+
+[source,ruby]
+----
+# Load custom configuration from YAML
+config = SvgConform::QualityMetrics::Configuration.from_yaml('custom_metrics.yml')
+
+# Or create from a Hash
+config = SvgConform::QualityMetrics::Configuration.from_hash({
+  quality_levels: { excellent: { min_score: 95 } }
+})
+
+analyzer = SvgConform::ImageQualityAnalyzer.new(config: config)
+----
+
+=== Filtering and Processing Reports
+
+[source,ruby]
+----
+batch = analyzer.analyze_batch('./svgs')
+
+# Filter by quality level
+poor_files = batch.reports.select { |r| r.quality_level == :poor }
+critical_files = batch.reports.select { |r| r.quality_level == :critical }
+
+# Files needing attention (poor or critical)
+needs_attention = batch.reports.select do |r|
+  r.quality_level == :poor || r.quality_level == :critical
+end
+
+# Calculate custom statistics
+avg_complexity = batch.reports.map(&:complexity_index).sum / batch.total_files
+
+# Find files with external refs (potential security concerns)
+external_refs = batch.reports.select(&:has_external_refs)
+----
+
+== Command Line
+
+[source,bash]
+----
+# Analyze a single file (colorful terminal output)
+svg_quality analyze image.svg
+
+# Output as YAML
+svg_quality analyze image.svg --format yaml
+
+# Output as JSON
+svg_quality analyze image.svg --format json
+
+# Analyze a directory with progress
+svg_quality batch ./svgs --progress
+
+# Summary only (no individual reports)
+svg_quality batch ./svgs --summary-only
+
+# Generate CSV report
+svg_quality batch ./svgs --output report.csv --format csv
+
+# Show summary for file or directory
+svg_quality summary ./svgs
+
+# Use custom configuration
+svg_quality batch ./svgs --config custom_metrics.yml
+
+# Custom file pattern
+svg_quality batch ./svgs --pattern "**/fig*.svg"
+----
+
+=== CLI Options
+
+[cols="1,2,1"]
+|===
+|Option |Description |Default
+
+|`--format`
+|Output format: terminal, yaml, json, csv
+|terminal
+
+|`--profile`
+|Validation profile to use
+|svg_1_2_rfc
+
+|`--config`
+|Path to custom quality metrics YAML config
+|Built-in defaults
+
+|`--pattern`
+|Glob pattern for matching SVG files
+|**/*.svg
+
+|`--output`
+|Output file path (default: stdout)
+|None
+
+|`--progress`
+|Show progress during batch processing
+|false
+
+|`--summary-only`
+|Show only summary, not individual reports
+|false
+|===
+
+== Configuration
+
+The quality metric system is highly configurable via YAML. See
+`config/quality_metrics.yml` for the default configuration.
+
+=== Configuration Schema
+
+[source,yaml]
+----
+# Severity level definitions
+severity_levels:
+  critical:
+    violation_types:
+      - :reference_violation
+      - :structural_violation
+    default_weight: 5
+    max_penalty: 20
+
+# Remediation classification
+remediable_types:
+  - :color_violation
+  - :font_violation
+  # ...
+
+# Quality score formula weights
+quality_formula:
+  error_density_weight: 8
+  error_density_max_penalty: 40
+  # ...
+
+# Quality level thresholds
+quality_levels:
+  excellent:
+    min_score: 90
+    max_score: 100
+
+# Feature detection patterns
+feature_patterns:
+  base64: "(?:data:image|ImageUri).*base64.*"
+  foreign_ns: 'xmlns:(?!svg|xlink)'
+  masks: "<[\\s]*mask[\\s\\S]*?>"
+  # ...
+----
+
+== Output Fields
+
+The report objects contain the following fields:
+
+[cols="2,1,3"]
+|===
+|Field |Type |Description
+
+|file_path
+|String
+|Path to the SVG file
+
+|quality_score
+|Integer
+|Overall quality score (0-100)
+
+|quality_level
+|Symbol
+|:excellent, :good, :fair, :poor, or :critical
+
+|error_count
+|Integer
+|Total number of validation errors
+
+|remediable_errors
+|Integer
+|Errors that can be auto-fixed
+
+|non_remediable_errors
+|Integer
+|Errors requiring manual intervention
+
+|critical_errors
+|Integer
+|Critical severity error count
+
+|high_errors
+|Integer
+|High severity error count
+
+|medium_errors
+|Integer
+|Medium severity error count
+
+|low_errors
+|Integer
+|Low severity error count
+
+|element_count
+|Integer
+|Total elements in the SVG
+
+|file_size_kb
+|Float
+|File size in kilobytes
+
+|complexity_index
+|Float
+|Complexity score (1-10)
+
+|content_health
+|Symbol
+|:good, :minor_issues, :moderate_issues, :severe_issues
+
+|size_category
+|Symbol
+|:tiny, :small, :medium, :large, :huge
+
+|has_base64
+|Boolean
+|Contains base64 encoded images
+
+|has_foreign_ns
+|Boolean
+|Contains foreign namespaces
+
+|has_masks
+|Boolean
+|Uses mask elements
+
+|has_clip_paths
+|Boolean
+|Uses clipPath elements
+
+|has_external_refs
+|Boolean
+|Has external (http/https) references
+|===

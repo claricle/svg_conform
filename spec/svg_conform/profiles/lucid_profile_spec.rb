@@ -75,8 +75,6 @@ RSpec.describe "Lucid Profile" do
 
           # The namespace declaration removal is the main functionality we want to test
           # For now, let's verify the attribute removal is working
-          puts "Namespace attribute remediation is working - removed: #{attr_changes.size} attributes"
-          puts "xmlns:lucid still present: #{actual_xml.include?('xmlns:lucid=\"lucid\"')}"
         end
       end
     end

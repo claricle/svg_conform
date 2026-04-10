@@ -360,6 +360,168 @@ SvgConform provides compatibility with existing SVG validation tools:
 See link:docs/compatibility.adoc[Compatibility Documentation] for details.
 
 
+[[image_quality]]
+== Image quality metric
+
+SvgConform provides a quality metric system for analyzing and scoring SVG files
+across multiple dimensions:
+
+* **Quality Score (0-100)**: Composite score based on error density, severity, and remediability
+* **Quality Level**: EXCELLENT, GOOD, FAIR, POOR, or CRITICAL
+* **Error Breakdown**: Counts by severity (critical, high, medium, low) and remediability
+* **Complexity Index**: 1-10 scale based on element count and advanced features
+* **Feature Detection**: Base64 images, foreign namespaces, masks, clip paths, external refs
+
+Reports are fully object-oriented: the same report object supports `to_yaml`, `to_json`,
+and colorful terminal rendering.
+
+[IMPORTANT]
+.Quality depends on validation profile
+====
+The quality score is calculated based on validation errors, which depend on the
+chosen profile. Different profiles have different rules, so the same SVG file
+may receive different quality scores under different profiles.
+
+Example: `colors.svg` scores 60 (FAIR) under `svg_1_2_rfc` but 100 (EXCELLENT)
+under `metanorma` because the profiles have different color restrictions.
+====
+
+[source,bash]
+----
+# Integrated into main CLI (svg_conform quality analyze)
+svg_conform quality analyze image.svg
+
+# Output as YAML
+svg_conform quality analyze image.svg -- --format yaml
+
+# Batch analyze a directory
+svg_conform quality batch ./svgs -- --output quality_report.csv
+
+# With different profile (affects quality score!)
+svg_conform quality analyze image.svg -- --profile metanorma
+----
+
+[source,ruby]
+----
+# Single file analysis - returns SvgQualityReport object
+analyzer = SvgConform::ImageQualityAnalyzer.new
+report = analyzer.analyze('image.svg')
+
+# Three output formats from the same object
+puts report.render      # Colorful terminal output
+puts report.to_yaml    # YAML serialization
+puts report.to_json    # JSON serialization
+
+# Access attributes directly
+puts "Quality: #{report.quality_score} (#{report.quality_level})"
+puts "Errors: #{report.error_count} (#{report.remediable_errors} remediable)"
+puts "Complexity: #{report.complexity_index}/10"
+
+# Batch analysis - returns SvgQualityBatchReport object
+batch = analyzer.analyze_batch('./svgs')
+puts batch.render        # Summary with distribution chart
+puts batch.to_yaml      # Full YAML with all reports
+
+# Filter and process reports
+poor_files = batch.reports.select { |r| r.quality_level == :poor }
+----
+
+For detailed documentation including custom configuration and CLI options, see
+link:docs/image_quality.adoc[Image Quality Metric Documentation].
+
+=== CLI output examples
+
+.Single file analysis with default profile (svg_1_2_rfc)
+[source,text]
+----
+$ svg_conform quality analyze spec/fixtures/svgcheck/inputs/colors.svg
+
+📊 SVG Quality Report: colors.svg
+
+  ⚠️ Quality: 60 (FAIR)
+  🔶 Content Health: moderate_issues
+
+  📁 File: 1.41 KB (small)
+  📐 Elements: 17
+  🔢 Complexity: 1.0/10
+
+Errors: 12
+  🔧 Remediable: 12
+  ⚠️  Non-remediable: 0
+
+  Breakdown:
+    ● Medium: 12
+----
+
+.Same file with metanorma profile (no color restrictions)
+[source,text]
+----
+$ svg_conform quality analyze spec/fixtures/svgcheck/inputs/colors.svg -- --profile metanorma
+
+📊 SVG Quality Report: colors.svg
+
+  ✨ Quality: 100 (EXCELLENT)
+  ✅ Content Health: good
+
+  📁 File: 1.41 KB (small)
+  📐 Elements: 17
+  🔢 Complexity: 1.0/10
+
+Errors: 0
+  🔧 Remediable: 0
+  ⚠️  Non-remediable: 0
+----
+
+.Single file analysis (YAML output)
+[source,yaml]
+----
+$ svg_conform quality analyze spec/fixtures/svgcheck/inputs/colors.svg -- --format yaml
+
+---
+file_path: spec/fixtures/svgcheck/inputs/colors.svg
+quality_score: 60
+quality_level: :fair
+error_count: 12
+remediable_errors: 12
+...
+----
+
+.Single file analysis (JSON output)
+[source,json]
+----
+$ svg_conform quality analyze spec/fixtures/svgcheck/inputs/colors.svg -- --format json
+
+{"file_path":"spec/fixtures/svgcheck/inputs/colors.svg","quality_score":60,...}
+----
+
+.Batch summary (terminal output with distribution chart)
+[source,text]
+----
+$ svg_conform quality batch spec/fixtures/svgcheck/inputs -- --summary-only
+
+📊 SVG Quality Batch Report
+
+  📁 Total Files: 19
+  ✅ Successful: 19
+
+Quality Distribution
+
+  ✨ EXCELLENT  ██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    2 (10.5%)
+  👍 GOOD       ██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    2 (10.5%)
+  ⚠️ FAIR       ████████████████████████████████████████   13 (68.4%)
+  😟 POOR       ██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    2 (10.5%)
+  💥 CRITICAL   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    0 (0.0%)
+
+Summary
+
+  📈 Average Quality Score: 61.6/100
+  📊 Average Errors/File: 204.3
+
+  🔧 Total Remediable: 3872
+  ⚠️  Total Non-remediable: 10
+----
+
+
 == Documentation
 
 === User documentation
@@ -371,6 +533,7 @@ See link:docs/compatibility.adoc[Compatibility Documentation] for details.
 * link:docs/remediation.adoc[Remediation Reference] - All automatic remediations
 * link:docs/reference_manifest.adoc[Reference Manifest] - ID and reference tracking
 * link:docs/rdf_metadata_support.adoc[RDF Metadata Support] - RDF/Dublin Core configuration
+* link:docs/image_quality.adoc[Image Quality Metric] - Quality scoring and analysis
 
 === Developer documentation
 

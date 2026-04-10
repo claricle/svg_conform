@@ -36,7 +36,6 @@ RSpec.describe SvgConform::Requirements::NoExternalCssRequirement do
         requirement.validate_document(document, context)
 
         expect(context.errors).not_to be_empty
-        puts "Found #{context.errors.count} no external css violations in #{fixture_name}"
 
         context.errors.each do |error|
           expect(error.requirement_id).to eq("no_external_css")

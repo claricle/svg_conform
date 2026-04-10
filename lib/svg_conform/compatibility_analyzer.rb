@@ -80,7 +80,7 @@ module SvgConform
 
       report = []
       report << "SVG Conform vs SVGCheck Compatibility Analysis"
-      report << "=" * 50
+      report << ("=" * 50)
       report << ""
 
       # Summary statistics
@@ -98,7 +98,7 @@ module SvgConform
       # Detailed analysis for each file
       @results.each do |basename, result|
         report << "File: #{basename}"
-        report << "-" * 30
+        report << ("-" * 30)
 
         # Validation comparison
         svgcheck_valid = result[:svgcheck][:valid]
@@ -142,7 +142,7 @@ module SvgConform
 
       # Pattern analysis
       report << "Common Patterns:"
-      report << "-" * 20
+      report << ("-" * 20)
 
       # Find common error types
       all_svgcheck_errors = @results.values.flat_map do |r|

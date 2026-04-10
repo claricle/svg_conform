@@ -35,7 +35,6 @@ RSpec.describe SvgConform::Requirements::NamespaceRequirement do
         requirement.validate_document(document, result)
 
         expect(context.errors).not_to be_empty
-        puts "Found #{context.errors.count} namespace violations in #{fixture_name}"
 
         context.errors.each do |error|
           expect(error.requirement_id).to eq("namespace")

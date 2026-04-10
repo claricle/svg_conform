@@ -20,6 +20,7 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
   spec.metadata["bug_tracker_uri"] = "#{spec.homepage}/issues"
+  spec.metadata["rubygems_mfa_required"] = "true"
 
   spec.files = all_files_in_git
     .reject { |f| f.match(%r{\A(?:test|features|bin|\.)/}) }
@@ -28,8 +29,9 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "lutaml-model", "~> 0.7"
+  spec.add_dependency "lutaml-model", "~> 0.8.0"
   spec.add_dependency "moxml", "~> 0.1", ">= 0.1.10"
+  spec.add_dependency "rainbow"
   spec.add_dependency "table_tennis"
   spec.add_dependency "thor"
 end

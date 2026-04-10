@@ -71,11 +71,7 @@ module SvgConform
         return nil unless value
 
         # Try to convert to float (matching svgcheck's maybefloat function)
-        begin
-          Float(value)
-        rescue ArgumentError, TypeError
-          nil
-        end
+        Float(value, exception: false)
       end
 
       def fix_malformed_viewbox(svg_element, malformed_value)
@@ -85,16 +81,16 @@ module SvgConform
         cleaned_value = malformed_value.gsub(/[()]/, "").strip
 
         # Split by spaces or commas and extract numeric values
-        numbers = cleaned_value.split(/[\s,]+/).map do |part|
+        numbers = cleaned_value.split(/[\s,]+/).filter_map do |part|
           part.gsub(/[^\d.-]/, "") # Remove non-numeric characters except . and -
-        end.compact.reject(&:empty?)
+        end.reject(&:empty?)
 
         # Try to convert to valid numbers
-        valid_numbers = numbers.map do |num_str|
+        valid_numbers = numbers.filter_map do |num_str|
           Float(num_str)
         rescue ArgumentError
           nil
-        end.compact
+        end
 
         # If we have 4 valid numbers, create proper viewBox
         if valid_numbers.length == 4

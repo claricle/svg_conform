@@ -77,4 +77,27 @@ module SvgConform
   def self.validate(svg_content, profile: :svg_1_2_rfc, **options)
     validator.validate(svg_content, profile: profile, **options)
   end
+
+  # Image quality analysis
+  autoload :ImageQualityAnalyzer, "svg_conform/image_quality_analyzer"
+  autoload :SvgQualityReport, "svg_conform/quality_report"
+  autoload :SvgQualityBatchReport, "svg_conform/quality_report"
+
+  # Quality metrics sub-system
+  module QualityMetrics
+    autoload :Configuration, "svg_conform/quality_metrics/configuration"
+    autoload :ErrorAnalyzer, "svg_conform/quality_metrics/error_analyzer"
+    autoload :FeatureDetector, "svg_conform/quality_metrics/feature_detector"
+    autoload :ComplexityCalculator,
+             "svg_conform/quality_metrics/complexity_calculator"
+    autoload :QualityCalculator,
+             "svg_conform/quality_metrics/quality_calculator"
+    autoload :ErrorBreakdown, "svg_conform/quality_metrics/error_breakdown"
+    autoload :FeatureFlags, "svg_conform/quality_metrics/feature_flags"
+    autoload :QualityScore, "svg_conform/quality_metrics/quality_score"
+    autoload :ComplexityMetrics, "svg_conform/quality_metrics/complexity_metrics"
+    autoload :QualityResult, "svg_conform/quality_metrics/quality_result"
+    autoload :QualityReportFormatter,
+             "svg_conform/quality_metrics/quality_report_formatter"
+  end
 end

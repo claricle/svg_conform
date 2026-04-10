@@ -110,7 +110,7 @@ namespace :fixtures do
 
     # List generated files
     puts "\nGenerated files:"
-    Dir.glob("#{reports_dir}/*").sort.each do |f|
+    Dir.glob("#{reports_dir}/*").each do |f|
       puts "  - #{File.basename(f)}"
     end
 

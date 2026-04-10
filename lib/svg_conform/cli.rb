@@ -7,6 +7,7 @@ require "paint"
 require_relative "commands/check"
 require_relative "commands/svgcheck"
 require_relative "commands/profiles"
+require_relative "commands/quality"
 
 module SvgConform
   # Thor-based CLI for SvgConform with svgcheck-like functionality
@@ -88,6 +89,10 @@ module SvgConform
     desc "svgcheck SUBCOMMAND",
          "Svgcheck-related commands (compare, compatibility, generate)"
     subcommand "svgcheck", Commands::Svgcheck
+
+    desc "quality SUBCOMMAND",
+         "SVG image quality analysis (analyze, batch, summary)"
+    subcommand "quality", Commands::QualityCLI
 
     desc "profiles", "List available validation profiles"
     long_desc <<~DESC

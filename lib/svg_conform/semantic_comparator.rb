@@ -462,7 +462,7 @@ repair_mode = false, _mixed_mode = false)
 
       # Prioritize semantic matching over requirement categorization
       # Validity: 20%, Semantic Issues: 60%, Coverage: 20%
-      (validity_score * 0.2 + semantic_score * 0.6 + coverage_score * 0.2).round(3)
+      ((validity_score * 0.2) + (semantic_score * 0.6) + (coverage_score * 0.2)).round(3)
     end
 
     # Calculate compatibility score for mixed mode scenarios
@@ -546,7 +546,7 @@ repair_mode = false, _mixed_mode = false)
       # Enhanced mixed mode scoring with higher weight on complementary validation
       # Semantic Overlap: 25%, Complementary Validation: 50%, Remediation Success: 25%
       # This better rewards comprehensive validation coverage
-      (semantic_overlap_score * 0.25 + complementary_score * 0.5 + remediation_success_bonus * 0.25).round(3)
+      ((semantic_overlap_score * 0.25) + (complementary_score * 0.5) + (remediation_success_bonus * 0.25)).round(3)
     end
 
     # Parse SVG safely
@@ -753,7 +753,7 @@ repair_mode = false, _mixed_mode = false)
       content_score = features1[:content] == features2[:content] ? 1.0 : 0.0
 
       # Weighted average
-      (structure_score * 0.4 + namespace_score * 0.3 + content_score * 0.3).round(3)
+      ((structure_score * 0.4) + (namespace_score * 0.3) + (content_score * 0.3)).round(3)
     end
 
     # Utility methods for normalization
