@@ -94,6 +94,126 @@ RSpec.describe SvgConform::Requirements::AllowedElementsRequirement do
     end
   end
 
+  describe "clip-path and mask global properties" do
+    let(:base_requirement) do
+      described_class.new(
+        id: "test_global_props",
+        description: "Test global properties",
+        check_attributes: true,
+      )
+    end
+
+    it "allows clip-path attribute on any element" do
+      svg = <<~SVG
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+          <defs>
+            <clipPath id="clip1">
+              <rect x="0" y="0" width="50" height="50"/>
+            </clipPath>
+          </defs>
+          <g clip-path="url(#clip1)">
+            <rect x="10" y="10" width="30" height="30" fill="red"/>
+          </g>
+        </svg>
+      SVG
+
+      document = SvgConform::Document.from_content(svg)
+      context = SvgConform::ValidationContext.new(document, nil)
+      base_requirement.validate_document(document, context)
+
+      # clip-path should be allowed - no attribute errors
+      clip_path_errors = context.errors.select { |e| e.message.include?("clip-path") }
+      expect(clip_path_errors).to be_empty
+    end
+
+    it "allows mask attribute on any element" do
+      svg = <<~SVG
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+          <defs>
+            <mask id="mask1">
+              <rect x="0" y="0" width="50" height="50" fill="white"/>
+            </mask>
+          </defs>
+          <g mask="url(#mask1)">
+            <rect x="10" y="10" width="30" height="30" fill="red"/>
+          </g>
+        </svg>
+      SVG
+
+      document = SvgConform::Document.from_content(svg)
+      context = SvgConform::ValidationContext.new(document, nil)
+      base_requirement.validate_document(document, context)
+
+      # mask should be allowed - no attribute errors
+      mask_errors = context.errors.select { |e| e.message.include?("mask") }
+      expect(mask_errors).to be_empty
+    end
+
+    it "allows both clip-path and mask on same element" do
+      svg = <<~SVG
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+          <defs>
+            <clipPath id="clip1">
+              <rect x="0" y="0" width="50" height="50"/>
+            </clipPath>
+            <mask id="mask1">
+              <rect x="0" y="0" width="50" height="50" fill="white"/>
+            </mask>
+          </defs>
+          <g clip-path="url(#clip1)" mask="url(#mask1)">
+            <rect x="10" y="10" width="30" height="30" fill="red"/>
+          </g>
+        </svg>
+      SVG
+
+      document = SvgConform::Document.from_content(svg)
+      context = SvgConform::ValidationContext.new(document, nil)
+      base_requirement.validate_document(document, context)
+
+      expect(context.errors).to be_empty
+    end
+
+    it "allows clip-path on svg root element" do
+      svg = <<~SVG
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" clip-path="url(#rootClip)">
+          <defs>
+            <clipPath id="rootClip">
+              <rect x="0" y="0" width="100" height="100"/>
+            </clipPath>
+          </defs>
+          <rect x="10" y="10" width="80" height="80" fill="red"/>
+        </svg>
+      SVG
+
+      document = SvgConform::Document.from_content(svg)
+      context = SvgConform::ValidationContext.new(document, nil)
+      base_requirement.validate_document(document, context)
+
+      clip_path_errors = context.errors.select { |e| e.message.include?("clip-path") }
+      expect(clip_path_errors).to be_empty
+    end
+
+    it "allows mask on rect element" do
+      svg = <<~SVG
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+          <defs>
+            <mask id="mask1">
+              <rect x="0" y="0" width="100" height="100" fill="white"/>
+            </mask>
+          </defs>
+          <rect x="10" y="10" width="80" height="80" fill="red" mask="url(#mask1)"/>
+        </svg>
+      SVG
+
+      document = SvgConform::Document.from_content(svg)
+      context = SvgConform::ValidationContext.new(document, nil)
+      base_requirement.validate_document(document, context)
+
+      mask_errors = context.errors.select { |e| e.message.include?("mask") }
+      expect(mask_errors).to be_empty
+    end
+  end
+
   describe "configuration" do
     it "accepts custom allowed elements list" do
       requirement = described_class.new(

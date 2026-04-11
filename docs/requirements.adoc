@@ -308,6 +308,61 @@ hardcoding
 * Structural invalidity tracking: Invalid elements marked to skip descendant
 validation
 * Zero hardcoding: All element and namespace handling configuration-driven
+* Clipping and masking support: `clip-path` and `mask` presentation attributes
+allowed globally on all elements
+
+==== Clipping and Masking Support
+
+The `AllowedElementsRequirement` allows `clip-path` and `mask` attributes as global
+presentation attributes on any SVG element. These are defined in `GLOBAL_PROPERTIES`
+and are allowed regardless of element-specific attribute configurations.
+
+**What are `clip-path` and `mask`?**
+
+* **`clip-path`**: References a `<clipPath>` element to restrict rendering to a
+  defined region. Used for creating gaps around annotations, masking out areas,
+  or compositing shapes.
+
+* **`mask`**: References a `<mask>` element to apply opacity/transparency effects.
+  Used for hatching patterns, fading, or advanced compositing.
+
+These attributes use URL references (e.g., `clip-path="url(#myClip)"`) to point to
+`<clipPath>` and `<mask>` elements defined in the document.
+
+**Example usage**:
+
+[source,xml]
+----
+<svg viewBox="0 0 100 100">
+  <defs>
+    <clipPath id="clip1">
+      <rect x="0" y="0" width="50" height="50"/>
+    </clipPath>
+    <mask id="mask1">
+      <rect x="0" y="0" width="50" height="50" fill="white"/>
+    </mask>
+  </defs>
+  <g clip-path="url(#clip1)" mask="url(#mask1)">
+    <rect x="10" y="10" width="30" height="30" fill="red"/>
+  </g>
+</svg>
+----
+
+**ID reference validation**: While `clip-path` and `mask` attributes are allowed,
+the `IdReferenceRequirement` still validates that referenced IDs exist. Broken
+references (e.g., `clip-path="url(#nonexistent)"`) will be flagged as errors.
+
+**Why allow these attributes?**
+
+Clipping and masking are fundamental SVG features used in technical documentation:
+
+* **Wire annotations**: Draw traces without breaks, then clip around text
+* **Hatching patterns**: Apply hatching via mask elements for cross-hatching
+* **Image compositing**: Build complex graphics from multiple source images
+* **Layer management**: Control visibility with precision
+
+These were not supported in the original svgcheck reference implementation but are
+part of the SVG specification and commonly used in professional technical diagrams.
 
 ==== Related remediation
 
