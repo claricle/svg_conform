@@ -269,6 +269,7 @@ See link:remediation.adoc#namespace-attribute-remediation[NamespaceAttributeReme
 * **Flexible fonts**: Any font families allowed (unlike RFC 7996 generic-only restriction)
 * **Flexible styles**: Any CSS styles allowed
 * **Event handlers allowed**: Supports event attributes (`on*`) for interactivity
+* **Clipping and masking**: `clip-path` and `mask` presentation attributes allowed
 * **Self-contained resources**: All CSS and fonts must be embedded
 * **Structural compliance**: Proper namespaces and viewBox required
 * **No external dependencies**: External CSS and fonts strictly prohibited
@@ -285,6 +286,31 @@ requirements:
     allowed_attribute_patterns:
       - "on*"  # Allow all event handler attributes
 ----
+
+**Clipping and Masking Support**:
+
+The metanorma profile allows `clip-path` and `mask` presentation attributes on all SVG elements. These are fundamental features for technical documentation:
+
+* **`clip-path`**: Restricts rendering to a defined region (e.g., gaps around wire annotations)
+* **`mask`**: Applies opacity/transparency effects (e.g., hatching patterns, image compositing)
+
+These are allowed via the `GLOBAL_PROPERTIES` constant in `AllowedElementsRequirement`:
+
+[source,yaml]
+----
+# clip-path and mask are global properties - allowed on any element
+# No explicit configuration needed - included by default
+----
+
+**Use cases**:
+
+* **Wire annotations**: Draw unbroken traces, then clip around text labels
+* **Hatching**: Apply cross-hatching via `<mask>` elements for technical drawings
+* **Compositing**: Build complex graphics from multiple source images with masking
+* **Layer gaps**: Create precise gaps between elements using clipping paths
+
+This support was added in response to issue #80 (https://github.com/claricle/svg_conform/issues/80)
+to address real-world technical documentation workflows.
 
 **Requirements**:
 [source,yaml]
@@ -333,6 +359,10 @@ See link:remediation.adoc#viewbox-remediation[ViewboxRemediation], link:remediat
 |CSS Styles
 |Restricted property set
 |Any styles allowed
+
+|Clipping and Masking
+|Not allowed (rejected as invalid attributes)
+|`clip-path` and `mask` allowed on all elements
 
 |External CSS
 |Implicitly prohibited

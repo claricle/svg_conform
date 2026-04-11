@@ -21,7 +21,7 @@ requirements:
     element_configs:
       # Direct encoding from svgcheck word_properties.py elements dictionary
       - tag: "svg"
-        attributes: ["version", "baseProfile", "width", "viewBox", "preserveAspectRatio", "snapshotTime", "height", "id", "role", "break", "color-rendering", "fill-rule", "overflow", "data-name"]
+        attributes: ["version", "baseProfile", "width", "viewBox", "preserveAspectRatio", "snapshotTime", "height", "id", "role", "break", "color-rendering", "fill-rule", "overflow", "data-name", "clip-path", "mask"]
         required_attributes: ["version", "baseProfile"]
         attribute_values:
           version: ["1.2"]
@@ -34,37 +34,37 @@ requirements:
         attributes: ["id", "role", "shape-rendering", "text-rendering", "buffered-rendering", "visibility", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "fill-rule"]
         allowed_children: ["text"]
       - tag: "path"
-        attributes: ["d", "pathLength", "stroke-miterlimit", "id", "role", "fill", "style", "transform", "font-size", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        attributes: ["d", "pathLength", "stroke-miterlimit", "id", "role", "fill", "style", "transform", "font-size", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "clip-path", "mask"]
         allowed_children: ["title", "desc"]
       - tag: "rect"
-        attributes: ["x", "y", "width", "height", "rx", "ry", "stroke-miterlimit", "id", "role", "fill", "style", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        attributes: ["x", "y", "width", "height", "rx", "ry", "stroke-miterlimit", "id", "role", "fill", "style", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "clip-path", "mask"]
         allowed_children: ["title", "desc"]
       - tag: "circle"
-        attributes: ["cx", "cy", "r", "id", "role", "fill", "style", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        attributes: ["cx", "cy", "r", "id", "role", "fill", "style", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "clip-path", "mask"]
         allowed_children: ["title", "desc"]
       - tag: "line"
-        attributes: ["x1", "y1", "x2", "y2", "id", "role", "fill", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        attributes: ["x1", "y1", "x2", "y2", "id", "role", "fill", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "clip-path", "mask"]
         allowed_children: ["title", "desc"]
       - tag: "ellipse"
-        attributes: ["cx", "cy", "rx", "ry", "id", "role", "fill", "style", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        attributes: ["cx", "cy", "rx", "ry", "id", "role", "fill", "style", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "clip-path", "mask"]
         allowed_children: ["title", "desc"]
       - tag: "polyline"
-        attributes: ["points", "id", "role", "fill", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        attributes: ["points", "id", "role", "fill", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "clip-path", "mask"]
         allowed_children: ["title", "desc"]
       - tag: "polygon"
-        attributes: ["points", "id", "role", "fill", "style", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        attributes: ["points", "id", "role", "fill", "style", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "clip-path", "mask"]
         allowed_children: ["title", "desc"]
       - tag: "solidColor"
-        attributes: ["id", "role", "fill", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        attributes: ["id", "role", "fill", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "clip-path", "mask"]
         allowed_children: ["title", "desc"]
       - tag: "textArea"
-        attributes: ["x", "y", "width", "height", "auto", "id", "role", "fill", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        attributes: ["x", "y", "width", "height", "auto", "id", "role", "fill", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "clip-path", "mask"]
         allowed_children: ["desc", "title", "tspan", "text", "a"]
       - tag: "text"
-        attributes: ["x", "y", "rotate", "id", "role", "fill", "style", "transform", "font-size", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "font-stretch", "writing-mode", "text-decoration"]
+        attributes: ["x", "y", "rotate", "id", "role", "fill", "style", "transform", "font-size", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "font-stretch", "writing-mode", "text-decoration", "clip-path", "mask"]
         allowed_children: ["desc", "title", "tspan", "text", "a"]
       - tag: "g"
-        attributes: ["label", "class", "id", "role", "fill", "style", "transform", "fill-rule", "visibility", "base", "lang", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "data-name"]
+        attributes: ["label", "class", "id", "role", "fill", "style", "transform", "fill-rule", "visibility", "base", "lang", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "data-name", "clip-path", "mask"]
         allowed_children: ["title", "path", "rect", "circle", "line", "ellipse", "polyline", "polygon", "solidColor", "textArea", "text", "g", "defs", "use", "a", "tspan", "desc", "image"]
       - tag: "defs"
         attributes: ["id", "role", "fill", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
@@ -97,7 +97,7 @@ requirements:
         attributes: ["type", "media", "title", "id", "class"]
         allowed_children: []
       - tag: "use"
-        attributes: ["x", "y", "href", "xlink:href", "id", "role", "fill", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        attributes: ["x", "y", "href", "xlink:href", "id", "role", "fill", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "clip-path", "mask"]
         allowed_children: ["title", "desc"]
       - tag: "a"
         attributes: ["id", "role", "fill", "transform", "fill-rule", "target", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
@@ -108,7 +108,7 @@ requirements:
       - tag: "tbreak"
         attributes: ["id", "role", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
       - tag: "image"
-        attributes: ["x", "y", "width", "height", "href", "xlink:href", "preserveAspectRatio", "id", "class", "style", "transform"]
+        attributes: ["x", "y", "width", "height", "href", "xlink:href", "preserveAspectRatio", "id", "class", "style", "transform", "clip-path", "mask"]
         allowed_children: ["title", "desc"]
     check_attributes: true
     check_invalid_attributes: true
