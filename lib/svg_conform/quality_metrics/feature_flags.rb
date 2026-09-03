@@ -23,7 +23,10 @@ module SvgConform
       attribute :has_clip_paths, :boolean, default: false
       attribute :has_external_refs, :boolean, default: false
 
-      after_initialize { freeze }
+      def initialize(**args)
+        super(args)
+        freeze
+      end
 
       # Value equality
       def ==(other)

@@ -30,7 +30,10 @@ module SvgConform
       attribute :non_remediable, :integer, default: 0
 
       # Ensure immutability after initialization
-      after_initialize { freeze }
+      def initialize(**args)
+        super(args)
+        freeze
+      end
 
       # Value equality
       def ==(other)

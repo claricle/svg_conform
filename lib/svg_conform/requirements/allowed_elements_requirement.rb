@@ -73,6 +73,11 @@ module SvgConform
         map "allow_rdf_metadata", to: :allow_rdf_metadata
       end
 
+      def initialize(**args)
+        super(args)
+        after_initialize
+      end
+
       def after_initialize
         build_element_config_index if element_configs&.any?
       end

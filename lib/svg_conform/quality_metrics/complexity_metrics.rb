@@ -21,7 +21,10 @@ module SvgConform
       attribute :element_count, :integer, default: 0
       attribute :max_depth, :integer, default: 0
 
-      after_initialize { freeze }
+      def initialize(**args)
+        super(args)
+        freeze
+      end
 
       # Value equality
       def ==(other)
