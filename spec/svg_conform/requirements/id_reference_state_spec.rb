@@ -34,7 +34,7 @@ RSpec.describe "IdReferenceRequirement" do
 
     # Verify first validation caught the error
     expect(result1.errors.map(&:message)).to include(
-      match(/Reference to undefined ID 'missing_id'/),
+      include("Reference to undefined ID 'missing_id'"),
     )
 
     # Second validation: SVG without reference errors
@@ -68,7 +68,7 @@ RSpec.describe "IdReferenceRequirement" do
       if i.even?
         # Should have error (svg_with_error)
         expect(result.errors.map(&:message)).to include(
-          match(/Reference to undefined ID 'missing_id'/),
+          include("Reference to undefined ID 'missing_id'"),
         )
       else
         # Should NOT have error about missing_id (svg_without_error)

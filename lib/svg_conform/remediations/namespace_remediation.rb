@@ -61,7 +61,7 @@ module SvgConform
               # Handle both string keys and Moxml::Attribute objects
               local_name = attr_name.respond_to?(:name) ? attr_name.name : attr_name.to_s
               # Include namespace prefix for namespaced attributes (e.g. "custom:id")
-              ns_prefix = attr_name.respond_to?(:namespace) && attr_name.namespace&.respond_to?(:prefix) ? attr_name.namespace.prefix : nil
+              ns_prefix = attr_name.respond_to?(:namespace) && attr_name.namespace.respond_to?(:prefix) ? attr_name.namespace.prefix : nil
               name_str = ns_prefix && !ns_prefix.empty? ? "#{ns_prefix}:#{local_name}" : local_name
 
               # For root SVG element, remove xmlns declarations for disallowed namespaces
