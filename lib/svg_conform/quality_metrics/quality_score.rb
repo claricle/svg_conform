@@ -18,7 +18,10 @@ module SvgConform
 
       LEVELS = %i[excellent good fair poor critical].freeze
 
-      after_initialize { freeze }
+      def initialize(**args)
+        super(args)
+        freeze
+      end
 
       # Value equality
       def ==(other)

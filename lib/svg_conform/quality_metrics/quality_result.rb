@@ -34,7 +34,10 @@ module SvgConform
       attribute :content_health, :symbol
       attribute :size_category, :symbol
 
-      after_initialize { freeze }
+      def initialize(**args)
+        super(args)
+        freeze
+      end
 
       # Value equality
       def ==(other)
