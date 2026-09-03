@@ -83,7 +83,7 @@ module SvgConform
             attributes.each do |attr|
               if should_remove_moxml_attribute?(attr, node, removed_namespaces)
                 local_name = attr.respond_to?(:name) ? attr.name : attr.to_s
-                ns_prefix = attr.respond_to?(:namespace) && attr.namespace&.respond_to?(:prefix) ? attr.namespace.prefix : nil
+                ns_prefix = attr.respond_to?(:namespace) && attr.namespace.respond_to?(:prefix) ? attr.namespace.prefix : nil
                 attr_name = ns_prefix && !ns_prefix.empty? ? "#{ns_prefix}:#{local_name}" : local_name
                 attributes_to_remove << attr_name
               end
