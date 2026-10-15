@@ -72,8 +72,11 @@ module SvgConform
     end
 
     def xpath(path, namespaces = {})
-      cache_key = [path, namespaces].hash
-      @xpath_cache[cache_key] ||= @moxml_document.xpath(path, namespaces)
+      # No memoization: cached node sets go stale the moment any
+      # remediation mutates the tree, and validation then reads
+      # pre-remediation state (watch: style promotions silently
+      # "not applied" on revalidation).
+      @moxml_document.xpath(path, namespaces)
     end
 
     def traverse(&)
