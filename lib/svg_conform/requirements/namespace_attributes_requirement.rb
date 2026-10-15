@@ -33,7 +33,7 @@ module SvgConform
 
         # Try to get attributes using different methods depending on what's available
         if node.respond_to?(:attribute_nodes)
-          # Use attribute_nodes if available (Nokogiri style)
+          # Use attribute_nodes if available (nokogiri-compatible API style)
           check_attribute_nodes(node, context)
         elsif node.respond_to?(:attributes)
           # Fallback to attributes method (Moxml style)

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "nokogiri"
+require "leptris"
 require_relative "sax_validation_handler"
 
 module SvgConform
@@ -26,7 +26,7 @@ module SvgConform
     # Validate using SAX streaming parser
     def validate_with_profile(profile)
       handler = SaxValidationHandler.new(profile)
-      parser = Nokogiri::XML::SAX::Parser.new(handler)
+      parser = Leptris::XML::SAX::Parser.new(handler)
 
       begin
         parser.parse(@content)

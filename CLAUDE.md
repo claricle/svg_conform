@@ -97,7 +97,7 @@ Profiles support `import` to inherit from other profiles (e.g., `metanorma` impo
 
 The `Validator` accepts multiple input types and always uses SAX:
 - String (XML content) → parsed directly with SAX
-- Moxml/Nokogiri documents → serialized once, then SAX validated
+- Moxml/leptris documents → serialized once, then SAX validated
 - Document/Element objects → same serialization approach
 
 This ensures memory safety for large files regardless of input type.

@@ -341,7 +341,7 @@ RSpec.describe "SvgCheck Compatibility" do
 
   def parse_xml(xml_content)
     # Simple XML parsing check
-    require "nokogiri"
-    Nokogiri::XML(xml_content, &:strict)
+    require "leptris"
+    Leptris::XML.parse(xml_content)
   end
 end

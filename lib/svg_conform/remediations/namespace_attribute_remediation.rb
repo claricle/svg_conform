@@ -32,7 +32,7 @@ module SvgConform
         end
 
         # Second pass: remove unused namespace declarations
-        # Nokogiri/libxml2 cannot remove namespace declarations via DOM,
+        # Moxml adapters cannot remove namespace declarations via DOM,
         # so we use string manipulation + reparse
         if removed_namespaces.any? || disallowed_namespaces.any?
           changes.concat(remove_namespace_declarations(document,
@@ -51,7 +51,7 @@ module SvgConform
         attributes_to_remove = []
 
         if node.respond_to?(:attribute_nodes)
-          # Use attribute_nodes if available (Nokogiri style)
+          # Use attribute_nodes if available (nokogiri-compatible API style)
           node.attribute_nodes.each do |attr|
             namespace_uri = attr.namespace&.href
             next unless namespace_uri
@@ -132,7 +132,7 @@ module SvgConform
 
         # Reparse the document to update the internal DOM
         # This is necessary because namespace declarations cannot be removed
-        # from the DOM directly in Nokogiri/libxml2
+        # from the DOM directly in moxml adapters
         if changes.any?
           context = Moxml.new
           new_moxml_doc = context.parse(xml_str)

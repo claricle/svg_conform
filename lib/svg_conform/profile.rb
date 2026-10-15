@@ -132,7 +132,7 @@ module SvgConform
         ValidationResult.new(document, self, context)
       elsif document.respond_to?(:to_xml)
         # For other document objects, serialize and use SAX for safety
-        # (This handles Nokogiri/Moxml documents that aren't wrapped in Document)
+        # (This handles leptris/Moxml documents that aren't wrapped in Document)
         content = document.to_xml
         sax_doc = SaxDocument.from_content(content)
         sax_doc.validate_with_profile(self)

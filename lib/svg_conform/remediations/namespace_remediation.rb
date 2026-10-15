@@ -107,7 +107,7 @@ module SvgConform
         end
 
         # Clean up unused namespace declarations
-        # Note: Moxml/Nokogiri don't support removing namespace declarations directly,
+        # Note: Moxml doesn't support removing namespace declarations directly,
         # so we mark the document for post-processing during serialization
         cleanup_unused_namespace_declarations(document)
 

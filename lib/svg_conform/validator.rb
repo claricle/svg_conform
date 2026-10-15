@@ -35,7 +35,7 @@ module SvgConform
     # Accepts:
     # - String (XML content) → uses SAX for efficient parsing
     # - Moxml::Document or Moxml::Element → serializes once, then SAX validates
-    # - Nokogiri::XML::Document or Nokogiri::XML::Element → serializes once, then SAX validates
+    # - leptris::XML::Document or leptris::XML::Element → serializes once, then SAX validates
     # - Any adapter document object (Ox, Oga, REXML, LibXML) → serializes once, then SAX validates
     #
     # IMPORTANT: Always uses SAX validation to safely handle large SVG files.
@@ -110,8 +110,8 @@ module SvgConform
         return input.to_xml
       end
 
-      # Check for Nokogiri document or element
-      if defined?(Nokogiri) && input.is_a?(Nokogiri::XML::Node)
+      # Check for leptris document or element
+      if defined?(Leptris) && input.is_a?(Leptris::XML::Node)
         return input.to_xml
       end
 
@@ -123,7 +123,7 @@ module SvgConform
       # If we can't convert, raise an error
       raise ArgumentError,
             "Invalid input type: #{input.class}. " \
-            "Expected String, Moxml document, Nokogiri document, or adapter document object. " \
+            "Expected String, Moxml document, leptris document, or adapter document object. " \
             "Input must respond to #to_xml or be a valid XML string."
     end
 
