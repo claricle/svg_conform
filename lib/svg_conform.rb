@@ -4,7 +4,7 @@ require "lutaml/model"
 
 # Configure Lutaml::Model adapters
 Lutaml::Model::Config.configure do |config|
-  config.xml_adapter_type = :nokogiri
+  config.xml_adapter_type = :leptris
   config.json_adapter_type = :standard_json
   config.yaml_adapter_type = :standard_yaml
 end

@@ -20,7 +20,7 @@ module SvgConform
       return nil unless node.respond_to?(:name) && node.name
 
       # Use native.object_id as cache key since wrapper object_id changes
-      # across traverses but underlying Nokogiri node identity is stable
+      # across traverses but underlying leptris node identity is stable
       native_id = node.native.object_id
       @cache[native_id] ||= compute_and_cache_path(node)
     end
@@ -107,7 +107,7 @@ module SvgConform
 
       # Count this node's position among siblings with same name
       # Use native.object_id comparison since wrapper objects differ
-      # across traverses but underlying Nokogiri nodes are stable
+      # across traverses but underlying leptris nodes are stable
       position = 0
       native_id = node.native.object_id
       parent.children.each do |child|

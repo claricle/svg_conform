@@ -66,19 +66,19 @@ RSpec.describe SvgConform::Validator do
       end
     end
 
-    context "with Nokogiri input (metanorm use case)" do
-      it "validates Nokogiri::XML::Document" do
-        nokogiri_doc = Nokogiri::XML(simple_svg)
+    context "with leptris input (metanorm use case)" do
+      it "validates a leptris document" do
+        leptris_doc = Leptris::XML.parse(simple_svg)
 
-        result = validator.validate(nokogiri_doc, profile: :metanorma)
+        result = validator.validate(leptris_doc, profile: :metanorma)
 
         expect(result).to be_a(SvgConform::ValidationResult)
         expect(result.valid?).to be true
       end
 
-      it "validates Nokogiri::XML::Element" do
-        nokogiri_doc = Nokogiri::XML(simple_svg)
-        svg_element = nokogiri_doc.root
+      it "validates a leptris element" do
+        leptris_doc = Leptris::XML.parse(simple_svg)
+        svg_element = leptris_doc.root
 
         # This is the metanorma use case - passing element directly
         result = validator.validate(svg_element, profile: :metanorma)
@@ -87,9 +87,9 @@ RSpec.describe SvgConform::Validator do
         expect(result.valid?).to be true
       end
 
-      it "serializes Nokogiri element once for SAX validation" do
-        nokogiri_doc = Nokogiri::XML(simple_svg)
-        svg_element = nokogiri_doc.root
+      it "serializes leptris element once for SAX validation" do
+        leptris_doc = Leptris::XML.parse(simple_svg)
+        svg_element = leptris_doc.root
 
         # Should call to_xml once for SAX validation
         # (SAX mode is memory-safe for large SVGs)
@@ -126,9 +126,9 @@ RSpec.describe SvgConform::Validator do
         SVG
       end
 
-      it "builds reference manifest from Nokogiri element" do
-        nokogiri_doc = Nokogiri::XML(svg_with_refs)
-        svg_element = nokogiri_doc.root
+      it "builds reference manifest from leptris element" do
+        leptris_doc = Leptris::XML.parse(svg_with_refs)
+        svg_element = leptris_doc.root
 
         result = validator.validate(svg_element, profile: :metanorma)
 
@@ -159,8 +159,8 @@ RSpec.describe SvgConform::Validator do
     end
 
     it "applies remediation when using document object input" do
-      nokogiri_doc = Nokogiri::XML(invalid_svg)
-      svg_element = nokogiri_doc.root
+      leptris_doc = Leptris::XML.parse(invalid_svg)
+      svg_element = leptris_doc.root
 
       result = validator.validate(svg_element, profile: :svg_1_2_rfc, fix: true)
 

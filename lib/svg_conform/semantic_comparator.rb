@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "nokogiri"
+require "leptris"
 
 module SvgConform
   # Semantic comparison engine for comparing validation results and remediated content
@@ -553,8 +553,8 @@ repair_mode = false, _mixed_mode = false)
     def self.parse_svg_safely(content)
       return nil if content.nil? || content.strip.empty?
 
-      Nokogiri::XML(content, &:strict)
-    rescue Nokogiri::XML::SyntaxError
+      Leptris::XML.parse(content)
+    rescue Leptris::XML::ParseError
       nil
     end
 

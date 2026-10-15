@@ -8,6 +8,7 @@ gemspec
 gem "canon", "~>0.1.10"
 gem "lutaml-model", github: "lutaml/lutaml-model", branch: "main"
 gem "moxml", github: "lutaml/moxml", branch: "main"
+gem "leptris"
 gem "openssl", "~> 3.0"
 gem "rake"
 gem "rspec"

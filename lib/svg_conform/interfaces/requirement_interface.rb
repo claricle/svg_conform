@@ -28,7 +28,7 @@ module SvgConform
       # This is the main validation method called for each node that passes
       # the should_check_node? filter during DOM-based validation.
       #
-      # @param node [Moxml::Node, Nokogiri::XML::Node] The node to validate
+      # @param node [Moxml::Node, Leptris::XML::Node] The node to validate
       # @param context [ValidationContext] The validation context for reporting errors
       # @return [void]
       # @raise [NotImplementedError] If not implemented by subclass
@@ -143,7 +143,7 @@ module SvgConform
       #
       # Override this to add additional filtering logic.
       #
-      # @param node [Moxml::Node, Nokogiri::XML::Node, ElementProxy] The node to check
+      # @param node [Moxml::Node, Leptris::XML::Node, ElementProxy] The node to check
       # @param context [ValidationContext, nil] The validation context (may be nil in some cases)
       # @return [Boolean] true if the node should be validated
       def should_check_node?(node, context = nil)

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "moxml"
-require "nokogiri" if defined?(Nokogiri)
+require "leptris" if defined?(Leptris)
 
 module SvgConform
   # Wrapper around Moxml document for SVG validation
@@ -29,7 +29,7 @@ module SvgConform
       new(content)
     end
 
-    # Create Document from an already-parsed node (Nokogiri or Moxml)
+    # Create Document from an already-parsed node (leptris or Moxml)
     # Avoids re-parsing when input is already a DOM object
     def self.from_node(node)
       doc = allocate
@@ -42,15 +42,15 @@ module SvgConform
         doc.instance_variable_set(:@content, nil) # Don't store XML string
         doc.instance_variable_set(:@moxml_document,
                                   node.is_a?(Moxml::Document) ? node : wrap_moxml_element(node))
-      elsif defined?(Nokogiri) && node.is_a?(Nokogiri::XML::Node)
-        # Nokogiri node - must serialize to convert to Moxml
+      elsif defined?(Leptris) && node.is_a?(Leptris::XML::Node)
+        # leptris node - must serialize to convert to Moxml
         # This is unavoidable due to different DOM implementations
         xml_string = node.to_xml
         doc.instance_variable_set(:@content, xml_string)
         doc.send(:parse_document)
       else
         raise ArgumentError,
-              "Invalid input type: #{node.class}. Expected Moxml or Nokogiri DOM node."
+              "Invalid input type: #{node.class}. Expected Moxml or leptris DOM node."
       end
 
       doc
@@ -110,7 +110,7 @@ module SvgConform
 
     def remove_namespace_declarations(xml, prefixes)
       # Remove xmlns:prefix="uri" declarations from the XML string
-      # This works around Moxml/Nokogiri's inability to remove namespace declarations
+      # This works around Moxml's inability to remove namespace declarations
       prefixes.reduce(xml) do |result, prefix|
         # Match xmlns:prefix="..." with various quote styles and surrounding whitespace
         # The pattern matches: xmlns:prefix="uri" or xmlns:prefix='uri'

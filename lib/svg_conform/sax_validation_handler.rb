@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "nokogiri"
+require "leptris"
 require_relative "element_proxy"
 require_relative "validation_context"
 require_relative "validation/error_tracker"
@@ -38,7 +38,7 @@ module SvgConform
   # - Each validation creates a fresh SaxValidationHandler with fresh ValidationContext
   # - ValidationContext creates fresh State instances for deferred requirements
   # - No state pollution occurs across validations
-  class SaxValidationHandler < Nokogiri::XML::SAX::Document
+  class SaxValidationHandler < Leptris::XML::SAX::Document
     attr_reader :result, :context
 
     def initialize(profile)
@@ -134,8 +134,8 @@ module SvgConform
     end
 
     # SAX Event: Parse error
-    def error(error_message)
-      @parse_errors << error_message
+    def error(message, _line = 0, _column = 0)
+      @parse_errors << message
     end
 
     # SAX Event: Warning
