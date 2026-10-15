@@ -57,7 +57,18 @@ module SvgConform
     # @param name [String] attribute name
     # @return [Boolean] true if successful
     def remove_attribute(node, name)
-      if node.respond_to?(:remove_attribute)
+      if node.respond_to?(:attributes)
+        # Remove via the attribute wrapper: node-level remove_attribute is
+        # a silent no-op for namespace-prefixed names (moxml#378), while
+        # the wrapper's #remove works on every adapter.
+        attr = Array(node.attributes).find do |a|
+          a.respond_to?(:name) && a.name == name && a.respond_to?(:remove)
+        end
+        return false unless attr
+
+        attr.remove
+        true
+      elsif node.respond_to?(:remove_attribute)
         node.remove_attribute(name)
         true
       elsif node.respond_to?(:[]=) && node.respond_to?(:[])
