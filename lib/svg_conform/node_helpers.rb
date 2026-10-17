@@ -10,7 +10,10 @@ module SvgConform
     # @param node [Object] the node to check
     # @return [Boolean] true if the node is an element
     def element?(node)
-      node.respond_to?(:name) && !node.name.nil?
+      # moxml >= 0.5.140 gives Text nodes a name, so the name check
+      # alone stopped filtering them; elements are exactly the nodes
+      # that carry attributes (true for both Nokogiri and Moxml).
+      node.respond_to?(:name) && !node.name.nil? && node.respond_to?(:attributes)
     end
 
     # Check if a node is text
@@ -61,8 +64,10 @@ module SvgConform
         # Remove via the attribute wrapper: node-level remove_attribute is
         # a silent no-op for namespace-prefixed names (moxml#378), while
         # the wrapper's #remove works on every adapter.
+        local_name = name.include?(":") ? name.split(":", 2).last : name
         attr = Array(node.attributes).find do |a|
-          a.respond_to?(:name) && a.name == name && a.respond_to?(:remove)
+          a.respond_to?(:name) && (a.name == name || a.name == local_name) &&
+            a.respond_to?(:remove)
         end
         return false unless attr
 
