@@ -752,8 +752,8 @@ filename)
       render_gh_style_table(headers, rows)
 
       puts "\n#{Paint['📊 COMPATIBILITY METRICS:', :blue, :bold]}"
-      puts "  🗂️  Total files processed: #{Paint[total_files.to_s, :cyan,
-                                                :bold]}"
+      total = Paint[total_files.to_s, :cyan, :bold]
+      puts "  🗂️  Total files processed: #{total}"
       puts "  ✅ Files with matching error counts: #{Paint[matching_files.to_s,
                                                            :green, :bold]}"
 
