@@ -752,10 +752,10 @@ filename)
       render_gh_style_table(headers, rows)
 
       puts "\n#{Paint['📊 COMPATIBILITY METRICS:', :blue, :bold]}"
-      puts "  🗂️  Total files processed: #{Paint[total_files.to_s, :cyan,
-                                                :bold]}"
-      puts "  ✅ Files with matching error counts: #{Paint[matching_files.to_s,
-                                                           :green, :bold]}"
+      total_label = Paint[total_files.to_s, :cyan, :bold]
+      matching_label = Paint[matching_files.to_s, :green, :bold]
+      puts "  🗂️  Total files processed: #{total_label}"
+      puts "  ✅ Files with matching error counts: #{matching_label}"
 
       # Color-code the percentage based on value
       percentage_color = if match_percentage >= 90
