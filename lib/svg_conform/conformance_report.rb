@@ -74,13 +74,16 @@ module SvgConform
     # Create report from SvgConform ValidationResult
     def self.from_svg_conform_result(filename, validation_result, profile: nil,
 use_svgcheck_mapping: false)
+      # The canonical LensCore report is built first, for every path; the
+      # legacy shape below is a deprecated projection of it.
+      canonical = validation_result.to_lens_core_report
       report = new
       report.filename = filename
       report.profile = profile
       report.tool = "svg_conform"
       report.version = SvgConform::VERSION
       report.timestamp = Time.now.iso8601
-      report.valid = validation_result.valid?
+      report.valid = canonical.valid
       report.errors = IssueSummary.new
       report.errors.total_count = 0
       report.errors.by_requirement = {}
@@ -102,6 +105,11 @@ use_svgcheck_mapping: false)
           # Return empty report like svgcheck does for unparseable files
           return report
         end
+      end
+
+      unless use_svgcheck_mapping
+        project_canonical(report, canonical)
+        return report
       end
 
       # Process errors (including conditional validity_errors for svgcheck compatibility)
@@ -179,6 +187,40 @@ use_svgcheck_mapping: false)
 
       report
     end
+
+    # Fills the legacy summaries from the canonical report's error and
+    # warning diagnostics (infos have no legacy channel).
+    def self.project_canonical(report, canonical)
+      {
+        "error" => report.errors, "warning" => report.warnings
+      }.each do |severity, summary|
+        diagnostics = canonical.diagnostics.select do |d|
+          d.severity == severity
+        end
+        summary.total_count = diagnostics.length
+        diagnostics.group_by(&:requirement_id).each do |id, list|
+          summary.by_requirement[id] = list.length
+        end
+        summary.issues = diagnostics.map { |d| issue_from(d) }
+      end
+    end
+
+    def self.issue_from(diagnostic)
+      data = diagnostic.context["data"]
+      data = {} unless data.is_a?(Hash)
+      issue = ConformanceIssue.new
+      issue.type = diagnostic.severity
+      issue.requirement_id = diagnostic.requirement_id
+      issue.message = diagnostic.message
+      issue.element = diagnostic.context["element"]
+      if diagnostic.severity == "error"
+        issue.attribute = data["attribute"]
+        issue.value = data["value"]&.to_s
+      end
+      issue.line = diagnostic.location&.line
+      issue
+    end
+    private_class_method :project_canonical, :issue_from
 
     # Create report from svgcheck error output
     def self.from_svgcheck_result(filename, error_content,

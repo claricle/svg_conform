@@ -29,7 +29,7 @@ RSpec.describe SvgConform::Commands::Check do
       options = { profile: "svg_1_2_rfc", format: "table" }
       command = described_class.new(tempfile.path, options)
 
-      expect { command.execute }.to output(/SVG Validation Report/).to_stdout
+      expect { command.execute }.to output(/profile svg_1_2_rfc\nVALID|profile svg_1_2_rfc\nINVALID/).to_stdout
         .and raise_error(SystemExit)
 
       tempfile.unlink
@@ -43,7 +43,7 @@ RSpec.describe SvgConform::Commands::Check do
       options = { profile: "svg_1_2_rfc", format: "table" }
       command = described_class.new(tempfile.path, options)
 
-      expect { command.execute }.to output(/Validation Errors/).to_stdout
+      expect { command.execute }.to output(/INVALID: .*\n\nerror  /).to_stdout
         .and raise_error(SystemExit)
 
       tempfile.unlink
@@ -75,6 +75,26 @@ RSpec.describe SvgConform::Commands::Check do
         .and raise_error(SystemExit)
 
       tempfile.unlink
+    end
+
+    it "renders JSON from the canonical report, keeping the info diagnostic" do
+      fixture = File.expand_path("../../fixtures/diagnostics/external-reference-info.svg",
+                                 __dir__)
+      options = { profile: "svg_1_2_rfc", format: "json" }
+      command = described_class.new(fixture, options)
+
+      expect { command.execute }
+        .to output(/"infos": 1.*"requirement_id": "link_validation".*"severity": "info"|"severity": "info".*"requirement_id": "link_validation"/m)
+        .to_stdout.and raise_error(SystemExit) { |e| expect(e.status).to eq(0) }
+    end
+
+    it "renders the info diagnostic in the human (table) format" do
+      fixture = File.expand_path("../../fixtures/diagnostics/external-reference-info.svg",
+                                 __dir__)
+      command = described_class.new(fixture, { profile: "svg_1_2_rfc", format: "table" })
+
+      expect { command.execute }.to output(/info  link_validation/).to_stdout
+        .and raise_error(SystemExit)
     end
 
     it "handles missing files gracefully" do

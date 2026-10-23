@@ -1,0 +1,73 @@
+= SvgConform Diagnostics
+:toc: left
+:source-highlighter: rouge
+
+== Purpose
+
+SvgConform reports one validation result as one
+https://github.com/claricle/lens_core[LensCore] diagnostics report (schema
+version 1). JSON, YAML and human output all render from that report.
+
+== Producing a report
+
+[source,ruby]
+----
+result = SvgConform::Validator.new.validate_file("a.svg", profile: :svg_1_2_rfc)
+
+report = result.to_lens_core_report                       # LensCore::Report
+report = result.to_lens_core_report(timestamp: Time.now)  # timestamp only if given
+
+LensCore::Renderers::Json.render(report)
+LensCore::Renderers::Yaml.render(report)
+LensCore::Renderers::Human.render(report)
+----
+
+`SvgConform::Diagnostics::LensCoreAdapter.call(result, filename: nil,
+timestamp: nil)` is the single entry point behind these.
+
+== Mapping
+
+[cols="2,1,3"]
+|===
+| svg_conform source | Severity | Kind
+
+| `errors` | `error` | the issue's violation type, else `validation`
+| `validity_errors` | `error` | `validity`
+| `warnings` | `warning` | the issue's violation type, else `validation`
+| `infos` | `info` | the issue's violation type, else `notice`
+|===
+
+An `unknown_violation` type counts as absent. Order within each channel is
+preserved and channels are emitted in the order above. Requirement IDs are
+the explicit IDs on the issues; infos created through
+`ValidationContext#add_notice(requirement_id:)` and
+`#add_external_reference_notice(requirement_id:)` carry their requirement's
+ID. `valid` is true only when there are no errors and no validity errors.
+
+Each diagnostic carries `location` (XML line, column and element path when
+known), `remediation` (the suggested action when remediable) and `context`
+(`element`, remediation flags, and the issue `data`). Issue data must be
+JSON-safe; symbols become strings, and any other object raises
+`SvgConform::Diagnostics::UnsupportedContextError`.
+
+== Citations
+
+`Profile` accepts `specification_uri` and `specification_label`; every
+requirement accepts `citation_uri` and `citation_label`. Both are read from
+profile YAML and become LensCore citations on the report profile and on
+diagnostics for that requirement. Existing profiles may omit them.
+
+== Transition
+
+For one transition the previous surfaces remain callable:
+
+* `ValidationResult#to_h`, `#to_json`, `#to_s(format:)` project the canonical
+  report, with `file`, `fixes_applied`, `fixable` and `reference_manifest` as
+  compatibility extensions.
+* `ConformanceReport.from_svg_conform_result` (deprecated) builds the
+  canonical report first and projects its errors and warnings into the legacy
+  YAML shape. `use_svgcheck_mapping:` and `from_svgcheck_result` keep their
+  signatures; svgcheck filtering happens after canonical construction and
+  never mutates the report.
+* `svg_conform check --format table|json|yaml` renders through LensCore;
+  `table` is an alias for the human renderer.

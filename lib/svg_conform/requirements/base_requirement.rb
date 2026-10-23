@@ -95,6 +95,8 @@ module SvgConform
 
       attribute :id, :string
       attribute :description, :string
+      attribute :citation_uri, :string
+      attribute :citation_label, :string
       attribute :type, :string, polymorphic_class: true, default: -> {
         self.class.name&.split("::")&.last
       }
@@ -102,6 +104,8 @@ module SvgConform
       yaml do
         map "id", to: :id
         map "description", to: :description
+        map "citation_uri", to: :citation_uri
+        map "citation_label", to: :citation_label
         map "type", to: :type
       end
 

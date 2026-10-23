@@ -15,6 +15,8 @@ module SvgConform
     attribute :name, :string
     attribute :description, :string
     attribute :import, :string
+    attribute :specification_uri, :string
+    attribute :specification_label, :string
     attribute :requirements, SvgConform::Requirements::BaseRequirement,
               collection: true, polymorphic: true
     attribute :remediations, SvgConform::Remediations::BaseRemediation,
@@ -48,6 +50,8 @@ module SvgConform
       map "name", to: :name
       map "description", to: :description
       map "import", to: :import
+      map "specification_uri", to: :specification_uri
+      map "specification_label", to: :specification_label
       map "requirements", to: :requirements, polymorphic: {
         attribute: "type",
         class_map: REQUIREMENTS_CLASS_MAP,

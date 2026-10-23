@@ -69,76 +69,27 @@ module SvgConform
         result = validator.validate_file(@file,
                                          profile: @options[:profile].to_sym)
 
-        # Generate report
-        report = SvgConform::ConformanceReport.from_svg_conform_result(
-          File.basename(@file),
-          result,
-          profile: @options[:profile].to_sym,
+        # One canonical report; every output format renders from it.
+        report = SvgConform::Diagnostics::LensCoreAdapter.call(
+          result, filename: File.basename(@file)
         )
 
-        # Output based on format
-        case @options[:format]
-        when "yaml"
-          output_yaml(report)
-        when "json"
-          output_json(report)
-        else
-          output_table(report)
-        end
+        write_output(render(report))
 
         # Create remediated file if requested
         create_remediated_file(result) if @options[:fix]
 
         # Exit with appropriate code based on validation result
-        exit(report.valid? ? 0 : 1)
+        exit(report.valid ? 0 : 1)
       end
 
-      def output_table(report)
-        puts Paint["SVG Validation Report", :bold]
-        puts "=" * 50
-        puts "File: #{@file}"
-        puts "Profile: #{@options[:profile]}"
-        puts "Valid: #{report.valid? ? Paint['✓', :green] : Paint['✗', :red]}"
-        puts "Total Errors: #{report.errors.total_count}"
-        puts
-
-        if report.errors.total_count.positive?
-          puts Paint["Validation Errors:", :bold]
-          puts
-
-          # Group errors by type
-          error_groups = report.errors.issues.group_by(&:message)
-
-          error_groups.each do |message, errors|
-            puts Paint["• #{message}", :red]
-            if errors.size > 1
-              puts Paint["  (#{errors.size} occurrences)",
-                         :black]
-            end
-
-            # Show first few locations
-            errors.first(3).each do |error|
-              puts Paint["    at #{error.element}", :black] if error.element
-            end
-
-            if errors.size > 3
-              puts Paint["    ... and #{errors.size - 3} more",
-                         :black]
-            end
-            puts
-          end
-        else
-          puts Paint["✓ No validation errors found", :green]
+      # "table" stays an accepted alias for the human renderer.
+      def render(report)
+        case @options[:format]
+        when "yaml" then LensCore::Renderers::Yaml.render(report)
+        when "json" then LensCore::Renderers::Json.render(report)
+        else LensCore::Renderers::Human.render(report)
         end
-      end
-
-      def output_yaml(report)
-        output = report.to_yaml
-        write_output(output)
-      end
-
-      def output_json(report)
-        write_output(report.to_json)
       end
 
       def write_output(content)

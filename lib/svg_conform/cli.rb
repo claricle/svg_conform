@@ -45,9 +45,9 @@ module SvgConform
       - Directory: Requires --output-dir or --in-place
 
       REPORT FORMATS:
-      - table: Human-readable (default for single file)
-      - json: JSON format using lutaml-model
-      - yaml: YAML format using lutaml-model
+      - table: Human-readable text (default for single file; alias for the LensCore human renderer)
+      - json: LensCore diagnostics JSON (schema version 1)
+      - yaml: LensCore diagnostics YAML (schema version 1)
 
       EXAMPLES:
         svg_conform check file.svg -p metanorma
