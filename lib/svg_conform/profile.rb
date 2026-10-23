@@ -126,10 +126,15 @@ module SvgConform
       # If it's a Document object, it's already loaded into DOM
       # Use DOM validation (safe, already in memory)
       if document.is_a?(Document)
-        context = ValidationContext.new(document, self)
+        context = ValidationContext.new(
+          document, self,
+          source: document.source, source_path: document.file_path,
+          source_serialized: document.source_serialized?
+        )
 
         # Validate using requirements system
         requirements&.each do |requirement|
+          requirement.validate_source(document.source, context)
           requirement.validate_document(document, context)
         end
 
@@ -138,7 +143,7 @@ module SvgConform
         # For other document objects, serialize and use SAX for safety
         # (This handles leptris/Moxml documents that aren't wrapped in Document)
         content = document.to_xml
-        sax_doc = SaxDocument.from_content(content)
+        sax_doc = SaxDocument.from_content(content, source_serialized: true)
         sax_doc.validate_with_profile(self)
       else
         # Fallback to DOM mode for non-serializable objects

@@ -753,9 +753,9 @@ filename)
 
       puts "\n#{Paint['📊 COMPATIBILITY METRICS:', :blue, :bold]}"
       total_label = Paint[total_files.to_s, :cyan, :bold]
+      matching_label = Paint[matching_files.to_s, :green, :bold]
       puts "  🗂️  Total files processed: #{total_label}"
-      puts "  ✅ Files with matching error counts: #{Paint[matching_files.to_s,
-                                                           :green, :bold]}"
+      puts "  ✅ Files with matching error counts: #{matching_label}"
 
       # Color-code the percentage based on value
       percentage_color = if match_percentage >= 90

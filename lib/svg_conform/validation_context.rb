@@ -100,6 +100,12 @@ module SvgConform
     # The document being validated (nil in SAX mode)
     attr_reader :document
 
+    # Original input text (nil when only a parsed tree was available)
+    attr_reader :source
+
+    # File path the source was read from, when known
+    attr_reader :source_path
+
     # The profile containing requirements to validate against
     attr_reader :profile
 
@@ -126,9 +132,13 @@ module SvgConform
       @error_tracker.infos
     end
 
-    def initialize(document, profile)
+    def initialize(document, profile, source: nil, source_path: nil,
+                   source_serialized: false)
       @document = document
       @profile = profile
+      @source = source
+      @source_path = source_path
+      @source_serialized = source_serialized
 
       # Use TrackerFactory to create all tracker instances
       trackers = Validation::TrackerFactory.create_all_trackers(document)
@@ -143,6 +153,12 @@ module SvgConform
 
     # Get or create state for a requirement
     # Each requirement gets its own state instance, preventing state pollution
+    # True when #source was re-serialized from a parsed tree, so original
+    # declaration/doctype/processing instructions cannot be proved.
+    def source_serialized?
+      @source_serialized ? true : false
+    end
+
     def state_for(requirement)
       @state_registry[requirement.class] ||= requirement.class::State.new
     end
