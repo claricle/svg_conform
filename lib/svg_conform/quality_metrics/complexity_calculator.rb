@@ -63,12 +63,10 @@ module SvgConform
         # Track opening and closing tags to estimate nesting
         depth = 0
         max_depth = 0
-        in_tag = false
 
         content.each_char do |char|
           case char
           when "<"
-            in_tag = true
             # Check if it's a closing tag
             if content[content.index(char) + 1] == "/"
               depth -= 1
@@ -76,8 +74,6 @@ module SvgConform
               depth += 1
               max_depth = [max_depth, depth].max
             end
-          when ">"
-            in_tag = false
           end
         end
 
