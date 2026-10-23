@@ -67,6 +67,20 @@ RSpec.describe SvgConform::Diagnostics::LensCoreAdapter do
                                        "remediation_type" => "add")
     end
 
+    it "maps source-level line and column data to an XML location" do
+      context.add_error(node: nil, message: "css", requirement_id: "viewbox_required",
+                        data: { line: 7, column: 2 })
+      context.add_error(node: nil, message: "bad", requirement_id: "viewbox_required",
+                        data: { line: 0, column: "x" })
+      context.add_error(node: node, message: "node", requirement_id: "viewbox_required",
+                        data: { line: 99 })
+      first, second, third = described_class.call(result).diagnostics
+
+      expect(first.location.to_h).to include("line" => 7, "column" => 2)
+      expect(second.location).to be_nil
+      expect(third.location.line).to eq(3)
+    end
+
     it "turns profile and requirement citations into LensCore citations" do
       add_all
       report = described_class.call(result)

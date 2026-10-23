@@ -94,4 +94,57 @@ RSpec.describe "SVG 2 secure-static profile" do # rubocop:disable RSpec/Describe
     expect(report.valid).to be false
     expect(report.profile.id).to eq("svg_2_secure_static")
   end
+
+  def inline_ids(body)
+    xml = %(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1">#{body}</svg>)
+    dom = profile.validate(SvgConform::Document.from_content(xml)).errors
+    sax = SvgConform::SaxDocument.from_content(xml)
+      .validate_with_profile(profile).errors
+    expect(sax.map(&:requirement_id)).to eq(dom.map(&:requirement_id))
+    dom.map(&:requirement_id)
+  end
+
+  {
+    "unlisted pointer handler" => ['<rect onpointerdown="x()"/>',
+                                   %w[svg2.secure_static.interaction]],
+    "unlisted drag handler" => ['<rect ondragstart="x()"/>',
+                                %w[svg2.secure_static.interaction]],
+    "listed load handler keeps script id" => ['<rect onload="x()"/>',
+                                              %w[svg2.secure_static.script]],
+    "listed click handler is reported once" => ['<rect onclick="x()"/>',
+                                                %w[svg2.secure_static.interaction]],
+    "listed begin handler keeps animation id" => ['<rect onbegin="x()"/>',
+                                                  %w[svg2.secure_static.animation]],
+    "style attribute animation" => ['<rect style="animation: pulse 1s infinite"/>',
+                                    %w[svg2.secure_static.animation]],
+    "style attribute vendor transition" => ['<rect style="fill:red;-webkit-transition: all 1s"/>',
+                                            %w[svg2.secure_static.animation]],
+    "style attribute escaped animation" => ['<rect style="\\61nimation-name: pulse"/>',
+                                            %w[svg2.secure_static.animation]],
+    "style element animation" => ["<style>rect { animation: pulse 1s }</style>",
+                                  %w[svg2.secure_static.animation]],
+    "style element keyframes" => ["<style>@keyframes pulse { from { opacity: 0 } }</style>",
+                                  %w[svg2.secure_static.animation]],
+    "style element nested media animation" => ["<style>@media print { a { transition: all 1s } }</style>",
+                                               %w[svg2.secure_static.animation]],
+    "static css is accepted" => ['<style>rect { fill: red } a:hover { fill: blue }</style><rect style="fill: red"/>', []],
+    "animation word in selector or value is accepted" => ['<style>.animation { fill: red }</style><rect style="font-family: animation"/>', []],
+  }.each do |label, (body, expected)|
+    it "#{label}: #{expected.inspect} through DOM and SAX" do
+      expect(inline_ids(body)).to eq(expected)
+    end
+  end
+
+  it "reports external CSS references hidden by escapes through DOM and SAX" do
+    bodies = [
+      '<rect style="fill:u\\72l(https://example.com/x.png)"/>',
+      '<rect style="fill:\\75rl(https://example.com/x.png)"/>',
+      '<style>@\\69mport "https://example.com/a.css";</style>',
+      '<style>@IMP\\4frt url(https://example.com/a.css);</style>',
+    ]
+    bodies.each do |body|
+      expect(inline_ids(body)).to eq(["svg2.secure_static.external_reference"]),
+                                  body
+    end
+  end
 end
