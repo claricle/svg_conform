@@ -138,5 +138,22 @@ RSpec.describe SvgConform::References::ReferenceClassifier do
       expect(ref.line_number).to eq(42)
       expect(ref.column_number).to eq(15)
     end
+
+    it "keeps typed returns and the classify signature for secure-static inputs" do
+      expect(described_class.method(:classify).parameters).to eq(
+        [%i[req href_value], %i[keyreq element_name], %i[keyreq attribute_name],
+         %i[key line_number], %i[key column_number]],
+      )
+      {
+        "//example.com/a.png" => SvgConform::References::RelativePathReference,
+        "other.svg#id" => SvgConform::References::RelativePathReference,
+        "file:///etc/passwd#id" => SvgConform::References::RelativePathReference,
+        "DATA:image/png,x" => SvgConform::References::DataUriReference,
+      }.each do |value, klass|
+        ref = described_class.classify(value, element_name: "use",
+                                              attribute_name: "href")
+        expect(ref).to be_a(klass), value
+      end
+    end
   end
 end

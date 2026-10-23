@@ -74,4 +74,20 @@ RSpec.describe SvgConform::Requirements::LinkValidationRequirement do
       expect(requirement).to be_a(described_class)
     end
   end
+
+  describe "classifier sharing with ExternalReferencesRequirement" do
+    it "still reports a missing fragment target while external-reference allows the fragment" do
+      svg = '<svg xmlns="http://www.w3.org/2000/svg"><use href="#missing"/></svg>'
+      profile = SvgConform::Profile.new(
+        name: "p",
+        requirements: [
+          described_class.new(id: "link"),
+          SvgConform::Requirements::ExternalReferencesRequirement.new(id: "ext"),
+        ],
+      )
+      ids = SvgConform::SaxDocument.from_content(svg)
+        .validate_with_profile(profile).errors.map(&:requirement_id)
+      expect(ids).not_to include("ext")
+    end
+  end
 end

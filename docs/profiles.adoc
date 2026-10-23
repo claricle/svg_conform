@@ -17,7 +17,7 @@ Each profile consists of:
 
 == Available profiles
 
-SvgConform includes 7 built-in profiles, each designed for different use cases and compliance standards.
+SvgConform includes built-in profiles, each designed for different use cases and compliance standards.
 
 [[svg-1-1-full-static-profile]]
 === SVG 1.1 Full static profile (`:svg_1_1_full_static`)
@@ -222,6 +222,51 @@ remediations:
 ----
 
 See link:remediation.adoc#viewbox-remediation[ViewboxRemediation] and link:remediation.adoc#namespace-remediation[NamespaceRemediation] for detailed remediation information.
+
+[[svg-2-secure-static-profile]]
+=== SVG 2 secure-static profile (`:svg_2_secure_static`)
+
+**Purpose**: Checks the resource and processing rules of the secure-static processing mode in the SVG 2 Candidate Recommendation of 6 October 2026 (`https://www.w3.org/TR/2026/CR-SVG2-20261006/conform.html#secure-static-mode`).
+
+The profile is opt-in. No existing profile and no default selection changes.
+
+**Stable requirement IDs** (all cite the dated secure-static section):
+
+[cols="1,3"]
+|===
+|ID |Rule
+
+|`svg2.secure_static.script` |Rejects `script` elements and script event-handler attributes.
+|`svg2.secure_static.animation` |Rejects SVG animation elements and timing attributes, and CSS `animation*` / `transition*` attributes.
+|`svg2.secure_static.interaction` |Rejects interaction event attributes and the `cursor` attribute or element.
+|`svg2.secure_static.external_reference` |Rejects references that need another document, a local file or the network.
+|===
+
+The first three IDs configure the shared `ProcessingFeaturesRequirement`; the fourth is `ExternalReferencesRequirement`, which classifies every reference with `SvgConform::References::ReferenceClassifier`.
+
+**Accepted references**:
+
+[cols="2,1,3"]
+|===
+|Reference |Result |Notes
+
+|`#fragment` in the current document |allowed |`link_validation` still reports a missing target.
+|`data:image/png` or `data:image/jpeg`, base64 or percent-encoded |allowed |Payload must be non-empty and a structurally valid PNG (chunk checksums) or JPEG (SOI/EOI).
+|`data:image/svg+xml`, base64 or percent-encoded |allowed |Must decode to one well-formed SVG document with no external reference of its own; nesting is limited to 3 levels.
+|Other media types, malformed base64 or percent-encoding |rejected |
+|`http:`, `https:`, `//host/...`, `urn:`, `file:` and other schemes |rejected |
+|Relative paths, including `other.svg#id` |rejected |
+|===
+
+Inspected locations: `href` and `xlink:href`; `fill`, `stroke`, `filter`, `clip-path`, `mask`, `marker-*` and `cursor` attributes; CSS `url(...)` and `@import` in `style` attributes and `style` elements; and `xml-stylesheet` processing instructions in the original source.
+
+**Non-goals**: This profile does not claim complete SVG 2 document, rendering or CSS conformance. It does not check `font-face` sources, CSS `@font-face`, script or animation expressed only inside CSS rules, or the contents of raster images.
+
+**Example**:
+[source,sh]
+----
+svg_conform check drawing.svg --profile svg_2_secure_static
+----
 
 [[no-external-css-profile]]
 === No external CSS profile (`:no_external_css`)
