@@ -8,6 +8,16 @@ module SvgConform
   class Document
     attr_reader :file_path, :moxml_document
 
+    # Original input text; a serialization when built via from_node
+    def source
+      @content
+    end
+
+    # True when #source was serialized from a node, not the original input
+    def source_serialized?
+      @source_serialized ? true : false
+    end
+
     def initialize(content_or_path)
       if File.exist?(content_or_path.to_s)
         @file_path = content_or_path
@@ -33,13 +43,14 @@ module SvgConform
     # Avoids re-parsing when input is already a DOM object
     def self.from_node(node)
       doc = allocate
+      doc.instance_variable_set(:@source_serialized, true)
       doc.instance_variable_set(:@file_path, nil)
       doc.instance_variable_set(:@xpath_cache, {})
 
       # Convert node to Moxml document
       if node.respond_to?(:to_xml) && node.class.name.start_with?("Moxml")
         # Already a Moxml node, wrap it
-        doc.instance_variable_set(:@content, nil) # Don't store XML string
+        doc.instance_variable_set(:@content, node.to_xml)
         doc.instance_variable_set(:@moxml_document,
                                   node.is_a?(Moxml::Document) ? node : wrap_moxml_element(node))
       elsif defined?(Leptris) && node.is_a?(Leptris::XML::Node)

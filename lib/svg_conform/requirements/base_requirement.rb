@@ -121,6 +121,8 @@ module SvgConform
 
       # Called for each element during SAX parsing
       # Override in subclasses for immediate validation
+      def validate_source(source, context); end
+
       def validate_sax_element(element, context)
         # Default: Empty - subclasses must override for SAX support
         # Cannot call check() here as it's abstract

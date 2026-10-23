@@ -14,18 +14,22 @@ module SvgConform
       new(File.read(file_path), file_path)
     end
 
-    def self.from_content(content)
-      new(content, nil)
+    def self.from_content(content, source_serialized: false)
+      new(content, nil, source_serialized: source_serialized)
     end
 
-    def initialize(content, file_path = nil)
+    def initialize(content, file_path = nil, source_serialized: false)
       @content = content
       @file_path = file_path
+      @source_serialized = source_serialized
     end
 
     # Validate using SAX streaming parser
     def validate_with_profile(profile)
-      handler = SaxValidationHandler.new(profile)
+      handler = SaxValidationHandler.new(
+        profile, source: @content, source_path: @file_path,
+                 source_serialized: @source_serialized
+      )
       parser = Leptris::XML::SAX::Parser.new(handler)
 
       begin

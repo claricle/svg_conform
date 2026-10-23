@@ -66,7 +66,7 @@ module SvgConform
         # the wrapper's #remove works on every adapter.
         local_name = name.include?(":") ? name.split(":", 2).last : name
         attr = Array(node.attributes).find do |a|
-          a.respond_to?(:name) && (a.name == name || a.name == local_name) &&
+          a.respond_to?(:name) && [name, local_name].include?(a.name) &&
             a.respond_to?(:remove)
         end
         return false unless attr
