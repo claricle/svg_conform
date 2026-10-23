@@ -16,5 +16,10 @@ RSpec.describe SvgConform::Commands::Profiles do
 
       expect { command.execute }.to output(/Available SVG Profiles/).to_stdout
     end
+
+    it "lists the opt-in svg_2_secure_static profile" do
+      expect { described_class.new({}).execute }
+        .to output(/svg_2_secure/).to_stdout
+    end
   end
 end

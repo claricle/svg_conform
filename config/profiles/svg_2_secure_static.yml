@@ -1,0 +1,50 @@
+name: "svg_2_secure_static"
+description: "Opt-in SVG 2 secure-static processing mode: no script, animation, interaction or external resources"
+specification_uri: "https://www.w3.org/TR/2026/CR-SVG2-20261006/"
+specification_label: "Scalable Vector Graphics (SVG) 2, Candidate Recommendation 6 October 2026"
+
+# Scope: secure-static resource behavior only. This is not a complete SVG 2
+# document, rendering or CSS conformance check.
+requirements:
+  # Same shape as config/requirements/processing_features_static.yml;
+  # only ids, citations and the feature lists differ.
+  - id: "svg2.secure_static.processing"
+    type: "ProcessingFeaturesRequirement"
+    description: "Secure-static mode rejects script, animation and interaction"
+    categories:
+      - name: "script"
+        id: "svg2.secure_static.script"
+        citation: "https://www.w3.org/TR/2026/CR-SVG2-20261006/conform.html#secure-static-mode"
+        description: "Secure-static mode rejects script elements and event-handler attributes"
+        elements: ["script"]
+        attributes:
+          [onabort, onerror, onload, onresize, onscroll, onunload, onzoom]
+      - name: "animation"
+        id: "svg2.secure_static.animation"
+        citation: "https://www.w3.org/TR/2026/CR-SVG2-20261006/conform.html#secure-static-mode"
+        description: "Secure-static mode rejects SVG/CSS animation and animation-timing features"
+        elements: [animate, animateColor, animateMotion, animateTransform, set, mpath, discard]
+        attributes:
+          [begin, end, dur, min, max, restart, repeatCount, repeatDur, calcMode,
+           keyTimes, keySplines, onbegin, onend, onrepeat]
+        attribute_patterns:
+          - "\\Aanimation(-.+)?\\z"
+          - "\\Atransition(-.+)?\\z"
+      - name: "interaction"
+        id: "svg2.secure_static.interaction"
+        citation: "https://www.w3.org/TR/2026/CR-SVG2-20261006/conform.html#secure-static-mode"
+        description: "Secure-static mode rejects interaction-only event attributes and cursor behavior"
+        elements: ["cursor"]
+        attributes:
+          [onactivate, onauxclick, onblur, onclick, ondblclick, onfocus,
+           onfocusin, onfocusout, onkeydown, onkeypress, onkeyup, onmousedown,
+           onmouseenter, onmouseleave, onmousemove, onmouseout, onmouseover,
+           onmouseup, onwheel, ontouchstart, ontouchend, ontouchmove,
+           ontouchcancel, cursor]
+
+  - id: "svg2.secure_static.external_reference"
+    type: "ExternalReferencesRequirement"
+    description: "Permits same-document fragments and self-contained image data URLs; rejects references to another document, local file or network resource"
+    citation_uri: "https://www.w3.org/TR/2026/CR-SVG2-20261006/conform.html#secure-static-mode"
+    citation_label: "SVG 2 CR, secure static mode"
+    max_data_uri_depth: 3
