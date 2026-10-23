@@ -14,5 +14,8 @@ on:
 jobs:
   rake:
     uses: metanorma/ci/.github/workflows/generic-rake.yml@main
+    with:
+      # tests-passed dispatch is refused on pull_request runs; releases come from push
+      cascade: ${{ github.event_name != 'pull_request' }}
     secrets:
       pat_token: ${{ secrets.GITHUB_TOKEN }}
