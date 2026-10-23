@@ -1,0 +1,84 @@
+= LensCore v1 freeze candidate: adoption handoff
+:toc: left
+:source-highlighter: rouge
+
+== Purpose
+
+This page lets another lens adopt https://github.com/claricle/lens_core[LensCore]
+without reading any SVG code. It names the exact immutable commits and digests.
+Nothing here is tagged, released or published.
+
+== Pinned facts
+
+[cols="2,5"]
+|===
+| LensCore freeze commit | `d8903de61dec5b600853e1d605a712cc83f99c41` (claricle/lens_core#4 merge commit)
+| Schema path | `schemas/lens-diagnostics-v1.json`
+| Schema SHA-256 | `90f0976166aaa88417d3eec59cab8288e085b89230a9521e431169acb3e87cba`
+| Schema version | `1` (`LensCore::SCHEMA_VERSION`)
+| Golden manifest | `spec/fixtures/v1/golden/manifest.yml`
+| Contract commit used to render the goldens | `98c21c82bc97e3c8c4038048acdcec4a177c5f7c` (schema and `lib/` are identical at the freeze commit)
+| svg_conform producer commit named by the manifest | `5bf0f80af2a80bb5fd9f8a68cc95e470ae43e5d0`
+| svg_conform pin | `Gemfile` and `Gemfile.lock` resolve LensCore to the freeze commit above
+|===
+
+== Adopting
+
+Pin the exact commit, never a branch:
+
+[source,ruby]
+----
+gem "lens_core", git: "https://github.com/claricle/lens_core.git",
+                 ref: "d8903de61dec5b600853e1d605a712cc83f99c41"
+----
+
+Canonical calls:
+
+[source,ruby]
+----
+report = LensCore::Parsers::Json.parse(File.binread("report.json"))  # or Parsers::Yaml
+LensCore::Renderers::Json.render(report)   # canonical bytes
+LensCore::Renderers::Yaml.render(report)
+LensCore::Renderers::Human.render(report)
+----
+
+Rendering a parsed canonical golden returns the input bytes exactly. Timestamps
+are omitted unless the producer passes one.
+
+== Compatibility and errors
+
+* A `schema_version` other than `1` raises `LensCore::UnsupportedVersionError`;
+  a non-integer one raises `LensCore::SchemaError`.
+* Within version 1 consumers accept new `kind` values and unknown members.
+  Removing a member, changing its meaning, or adding a `severity` or location
+  `type` is a new schema version.
+* Other failures are `LensCore::ParseError`, `UnsafeYamlError`,
+  `InvalidEncodingError` and `SchemaError` (with the failing path).
+* `summary` is derived and checked on parse; `valid: true` with an error is
+  rejected. The full rules are in LensCore `docs/diagnostics-v1.adoc`.
+
+== Evidence completed
+
+* Three real svg_conform exports in `spec/fixtures/v1/golden/svg_conform/`:
+  SVG 1.1 invalid CSS grammar, SVG 2 external reference, and a four-channel
+  report (error, validity error, warning, info) built through the public
+  `SvgConform::Diagnostics::LensCoreAdapter`.
+* Each golden validates against the schema, parses, and renders byte for byte;
+  summary counts equal the diagnostics.
+* `spec/fixtures/host_app/` reads the whole golden directory using LensCore
+  alone (no svg_conform, no other lens).
+* `script/refresh_svg_goldens PATH_TO_SVG_CONFORM` regenerates the three SVG
+  goldens from a checkout at the manifest's producer commit.
+
+== Not evidence
+
+`spec/fixtures/v1/golden/examples/binary-location.json` is a format-neutral
+contract example of the binary location form. It is not PNG, EMF or PostScript
+implementation evidence; no lens other than svg_conform has adopted LensCore.
+
+== Future work, outside this issue
+
+* EMF, PNG and PostScript adapters.
+* Tagging and publishing a LensCore gem, and replacing every Git pin with a
+  released constraint.
+* Migrating other lenses.
