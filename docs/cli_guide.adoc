@@ -125,9 +125,13 @@ Available profiles:
 * `metanorma` - Metanorma requirements
 * `lucid` - Lucid profile
 * `no_external_css` - No external CSS
+* `svg_1_1_full_static` - SVG 1.1 Full document grammar, static processing (see link:profiles.adoc#svg-1-1-full-static-profile[profiles])
 * `svg_2_secure_static` - SVG 2 secure-static resource rules (opt-in; see link:profiles.adoc#svg-2-secure-static-profile[profiles])
 
-Example, validating against the SVG 2 secure-static profile:
+Examples:
+
+* `svg_conform check drawing.svg --profile svg_1_1_full_static`
+* SVG 2 secure-static:
 
 [source,sh]
 ----

@@ -1,0 +1,69 @@
+name: "svg_1_1_full_static"
+description: "SVG 1.1 Full (Second Edition) document grammar under static processing"
+specification_uri: "https://www.w3.org/TR/2011/REC-SVG11-20110816/"
+specification_label: "Scalable Vector Graphics (SVG) 1.1 (Second Edition)"
+
+requirements:
+  - id: "svg11.document.xml"
+    type: "Svg11DocumentRequirement"
+    rule: "xml"
+    description: "The source is well-formed XML and exposes its original declaration, doctype, and processing instructions"
+    citation_uri: "https://www.w3.org/TR/2011/REC-SVG11-20110816/conform.html#ConformingSVGDocuments"
+    citation_label: "Conforming SVG Documents"
+  - id: "svg11.document.root"
+    type: "Svg11DocumentRequirement"
+    rule: "root"
+    description: "The document element is svg in the SVG namespace"
+    citation_uri: "https://www.w3.org/TR/2011/REC-SVG11-20110816/struct.html#SVGElement"
+    citation_label: "The svg element"
+  - id: "svg11.document.version"
+    type: "Svg11DocumentRequirement"
+    rule: "version"
+    description: "The root declares SVG version 1.1"
+    citation_uri: "https://www.w3.org/TR/2011/REC-SVG11-20110816/struct.html#SVGElementVersionAttribute"
+    citation_label: "The version attribute"
+  - id: "svg11.document.grammar"
+    type: "Svg11DocumentRequirement"
+    rule: "grammar"
+    description: "Elements, attributes and content models validate against the pinned SVG 1.1 Full flat DTD after the Appendix G.2 foreign-namespace transform"
+    citation_uri: "https://www.w3.org/TR/2011/REC-SVG11-20110816/conform.html#ConformingSVGDocuments"
+    citation_label: "Conforming SVG Documents"
+  - id: "svg11.document.css2"
+    type: "Svg11DocumentRequirement"
+    rule: "css2"
+    description: "Style attributes and style sheets conform to the CSS 2 core grammar (syntax only)"
+    citation_uri: "https://www.w3.org/TR/2008/REC-CSS2-20080411/grammar.html"
+    citation_label: "CSS 2 grammar"
+  - id: "svg11.document.xml_stylesheet"
+    type: "Svg11DocumentRequirement"
+    rule: "xml_stylesheet"
+    description: "xml-stylesheet processing instructions obey their pseudo-attribute syntax and SVG applicability"
+    citation_uri: "https://www.w3.org/TR/1999/REC-xml-stylesheet-19990629/"
+    citation_label: "Associating Style Sheets with XML documents"
+  - id: "svg11.processing"
+    type: "ProcessingFeaturesRequirement"
+    description: "Static processing rejects script, animation and interaction"
+    categories:
+      - name: "script"
+        id: "svg11.processing.script"
+        citation: "https://www.w3.org/TR/2011/REC-SVG11-20110816/conform.html#ConformingSVGViewers"
+        description: "Static mode rejects script elements and event-handler attributes"
+        elements: ["script"]
+        attributes:
+          [onabort, onerror, onload, onresize, onscroll, onunload, onzoom]
+      - name: "animation"
+        id: "svg11.processing.animation"
+        citation: "https://www.w3.org/TR/2011/REC-SVG11-20110816/conform.html#ConformingSVGViewers"
+        description: "Static mode rejects animation elements and animation-timing attributes"
+        elements: [animate, animateColor, animateMotion, animateTransform, set, mpath]
+        attributes:
+          [begin, end, dur, min, max, restart, repeatCount, repeatDur, calcMode,
+           keyTimes, keySplines, onbegin, onend, onrepeat]
+      - name: "interaction"
+        id: "svg11.processing.interaction"
+        citation: "https://www.w3.org/TR/2011/REC-SVG11-20110816/conform.html#ConformingSVGViewers"
+        description: "Static mode rejects interaction-only event attributes and cursor behavior"
+        elements: ["cursor"]
+        attributes:
+          [onactivate, onclick, onfocusin, onfocusout, onmousedown, onmousemove,
+           onmouseout, onmouseover, onmouseup, cursor]

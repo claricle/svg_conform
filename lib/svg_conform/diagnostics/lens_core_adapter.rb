@@ -74,7 +74,7 @@ module SvgConform
         LensCore::Diagnostic.new(
           severity: severity, kind: kind, requirement_id: requirement_id,
           message: issue.message.to_s,
-          citations: requirement_citations(profile, requirement_id),
+          citations: issue_citations(issue, profile, requirement_id),
           remediation: (issue.suggested_action if remediation && issue.remediable?),
           context: context(issue, remediation),
           location: location(issue)
@@ -87,6 +87,18 @@ module SvgConform
           type.to_s == "unknown_violation"
 
         type.to_s
+      end
+
+      # A requirement's own citation, else the one an issue carries in its
+      # data (a requirement reporting several IDs, such as the processing
+      # categories, cites per issue).
+      def issue_citations(issue, profile, requirement_id)
+        found = requirement_citations(profile, requirement_id)
+        return found unless found.empty?
+
+        data = issue.data
+        uri = data.is_a?(Hash) ? (data[:citation] || data["citation"]) : nil
+        citations(uri, nil)
       end
 
       def requirement_citations(profile, requirement_id)
