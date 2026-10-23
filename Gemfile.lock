@@ -1,7 +1,7 @@
 GIT
   remote: https://github.com/claricle/lens_core.git
-  revision: 98c21c82bc97e3c8c4038048acdcec4a177c5f7c
-  ref: 98c21c82bc97e3c8c4038048acdcec4a177c5f7c
+  revision: d8903de61dec5b600853e1d605a712cc83f99c41
+  ref: d8903de61dec5b600853e1d605a712cc83f99c41
   specs:
     lens_core (0.1.0)
 
