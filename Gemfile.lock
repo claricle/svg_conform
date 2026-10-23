@@ -27,6 +27,7 @@ PATH
     svg_conform (0.2.4)
       lutaml-model (~> 0.8.0)
       moxml (~> 0.5)
+      nokogiri (~> 1.16)
       rainbow
       table_tennis
       thor
@@ -189,6 +190,7 @@ DEPENDENCIES
   leptris (>= 1.9.365.1)
   lutaml-model!
   moxml (~> 0.5.150)
+  nokogiri (~> 1.16)
   openssl (~> 3.0)
   rake
   rspec
