@@ -258,6 +258,45 @@ RSpec.describe SvgConform::ValidationContext do
 
       expect(context.infos.first.message).to eq("test notice")
     end
+
+    it "stores an explicit requirement ID on the info issue" do
+      context.add_notice(rule: nil, node: Object.new, message: "n",
+                         requirement_id: "my_requirement")
+
+      expect(context.infos.first.requirement_id).to eq("my_requirement")
+    end
+
+    it "keeps existing calls working without a requirement ID" do
+      context.add_notice(rule: Struct.new(:id).new("test_rule"),
+                         node: Object.new, message: "n")
+
+      expect(context.infos.first.requirement_id).to eq("test_rule")
+    end
+  end
+
+  describe "#add_external_reference_notice" do
+    let(:reference) do
+      SvgConform::References::ReferenceClassifier.classify(
+        "https://example.com/x", element_name: "a", attribute_name: "href"
+      )
+    end
+
+    it "stores the explicit requirement ID and JSON-safe data" do
+      context.add_external_reference_notice(node: Object.new,
+                                            reference: reference,
+                                            requirement_id: "link_validation")
+
+      info = context.infos.first
+      expect(info.requirement_id).to eq("link_validation")
+      expect(info.data[:reference][:value]).to eq("https://example.com/x")
+    end
+
+    it "keeps existing calls working" do
+      context.add_external_reference_notice(node: Object.new,
+                                            reference: reference)
+
+      expect(context.infos.size).to eq(1)
+    end
   end
 
   describe "#has_errors?" do

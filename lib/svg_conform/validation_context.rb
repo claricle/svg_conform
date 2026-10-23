@@ -194,9 +194,11 @@ requirement_id: nil, severity: nil, fix: nil, data: {})
     end
 
     # Add an informational notice (delegates to ErrorTracker)
-    def add_notice(rule:, node:, message:, fix: nil, data: {})
+    def add_notice(rule:, node:, message:, fix: nil, data: {},
+                   requirement_id: nil)
       @error_tracker.add_notice(rule: rule, node: node, message: message,
-                                fix: fix, data: data)
+                                fix: fix, data: data,
+                                requirement_id: requirement_id)
     end
 
     def add_fix(fix)
@@ -245,12 +247,14 @@ column_number: nil)
     end
 
     # Add notice for external references (not errors)
-    def add_external_reference_notice(node:, reference:, message: nil)
+    def add_external_reference_notice(node:, reference:, message: nil,
+                                      requirement_id: nil)
       @error_tracker.add_notice(
         rule: nil,
         node: node,
         message: message || "External reference: #{reference.value}",
-        data: { reference: reference },
+        data: { reference: reference.to_h },
+        requirement_id: requirement_id,
       )
     end
 

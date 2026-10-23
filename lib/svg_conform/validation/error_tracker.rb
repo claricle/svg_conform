@@ -58,7 +58,8 @@ module SvgConform
       end
 
       # Add an informational notice to the context
-      def add_notice(rule:, node:, message:, fix: nil, data: {}, type: :info)
+      def add_notice(rule:, node:, message:, fix: nil, data: {}, type: :info,
+                     requirement_id: nil)
         notice = ::SvgConform::Errors::ValidationIssue.new(
           type: type,
           rule: rule,
@@ -66,6 +67,7 @@ module SvgConform
           message: message,
           fix: fix,
           data: data,
+          requirement_id: requirement_id,
         )
         @infos << notice
         notice

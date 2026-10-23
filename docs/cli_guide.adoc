@@ -133,9 +133,9 @@ Output format for single file mode (default: `table`)
 +
 Options:
 +
-* `table` - Human-readable table (default)
-* `json` - JSON format
-* `yaml` - YAML format
+* `table` - Human-readable text (default); an alias for the LensCore human renderer
+* `json` - LensCore diagnostics JSON (schema version 1)
+* `yaml` - LensCore diagnostics YAML (schema version 1)
 
 `--output=FILE` or `-o`::
 Save report to file instead of stdout
@@ -403,67 +403,45 @@ fi
 
 ==== Table format (default)
 
-Human-readable table with error summary:
+Plain text rendered by LensCore from the canonical report. Errors, warnings
+and infos all appear; see xref:diagnostics.adoc[Diagnostics].
 
 [source,text]
 ----
-SVG Validation Report
-==================================================
-File: file.svg
-Profile: metanorma
-Valid: ✗
-Total Errors: 2
+svg_conform 0.2.4, profile metanorma
+INVALID: 1 error, 0 warnings, 1 info
 
-Validation Errors:
+error  viewbox_required  (viewbox_violation)
+  at /svg[1]
+  Viewbox is required
+  fix: Add missing viewBox attribute
 
-• Viewbox is required
-    at svg
-
-• External images are not allowed
-    at image
+info  link_validation  (reference_violation)
+  at /svg[1]/a[1]
+  External reference: https://example.com/page
 ----
 
 ==== JSON format
 
-Machine-readable JSON using lutaml-model:
+The LensCore diagnostics report, schema version 1 (see
+xref:diagnostics.adoc[Diagnostics]). No timestamp is emitted by the CLI.
 
 [source,json]
 ----
 {
-  "filename": "file.svg",
-  "profile": "metanorma",
+  "schema_version": 1,
+  "producer": { "name": "svg_conform", "version": "0.2.4" },
+  "profile": { "id": "metanorma", "citations": [] },
   "valid": false,
-  "errors": {
-    "total_count": 2,
-    "issues": [
-      {
-        "requirement_id": "viewbox_required",
-        "message": "Viewbox is required",
-        "element": "svg",
-        "line_number": 1
-      }
-    ]
-  }
+  "summary": { "errors": 1, "warnings": 0, "infos": 1 },
+  "diagnostics": [ ... ],
+  "file": "file.svg"
 }
 ----
 
 ==== YAML format
 
-Machine-readable YAML using lutaml-model:
-
-[source,yaml]
-----
-filename: file.svg
-profile: metanorma
-valid: false
-errors:
-  total_count: 2
-  issues:
-  - requirement_id: viewbox_required
-    message: Viewbox is required
-    element: svg
-    line_number: 1
-----
+The same report and key order as the JSON format, rendered as YAML.
 
 ==== Batch report format
 

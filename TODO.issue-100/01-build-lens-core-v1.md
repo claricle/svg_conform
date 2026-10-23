@@ -88,5 +88,5 @@ bundle exec rake build
 
 ## Status
 
-State: todo
-PR: none
+State: done
+PR: https://github.com/claricle/lens_core/pull/1

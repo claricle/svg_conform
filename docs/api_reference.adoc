@@ -336,9 +336,27 @@ Check if document is valid.
 
 ===== has_errors?
 
-Check if errors were found.
+Check if errors or validity errors were found (the same condition as
+`valid?` being false).
 
 **Returns**: `Boolean`
+
+===== infos / info_count
+
+Informational diagnostics (for example external reference notices) and their
+count. Infos never affect `valid?`.
+
+===== to_lens_core_report(timestamp: nil)
+
+Returns the canonical `LensCore::Report` for this result. Errors and validity
+errors are both severity `error`. The timestamp is included only when the
+caller supplies one. See xref:diagnostics.adoc[Diagnostics].
+
+===== to_h / to_json / to_s
+
+Project the canonical report. `to_h` is symbol-keyed. `file`,
+`fixes_applied`, `fixable` and `reference_manifest` are retained as
+compatibility extensions.
 
 ===== has_warnings?
 

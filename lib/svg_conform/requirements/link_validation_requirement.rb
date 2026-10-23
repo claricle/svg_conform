@@ -30,6 +30,7 @@ module SvgConform
           context.add_external_reference_notice(
             node: node,
             reference: reference,
+            requirement_id: id,
           )
         end
 
@@ -72,6 +73,7 @@ module SvgConform
               context.add_external_reference_notice(
                 node: element,
                 reference: reference,
+                requirement_id: id,
               )
             end
           end

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "lutaml/model"
+require "lens_core"
 
 # Configure Lutaml::Model adapters
 Lutaml::Model::Config.configure do |config|
@@ -38,6 +39,8 @@ module SvgConform
   class ValidationError < Error; end
   class ProfileError < Error; end
   class RuleError < Error; end
+
+  require_relative "svg_conform/diagnostics/lens_core_adapter"
 
   # Autoload core classes
   autoload :Validator, File.expand_path("svg_conform/validator", __dir__)

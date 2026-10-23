@@ -6,7 +6,7 @@ module SvgConform
   # Represents the result of validating an SVG document
   class ValidationResult
     attr_reader :document, :profile, :errors, :warnings, :validity_errors,
-                :fixes_applied, :fixed_document, :reference_manifest
+                :infos, :fixes_applied, :fixed_document, :reference_manifest
 
     def initialize(document, profile, context)
       @document = document
@@ -14,6 +14,7 @@ module SvgConform
       @errors = context.errors
       @warnings = context.warnings
       @validity_errors = context.validity_errors
+      @infos = context.infos
       @fixes_applied = []
       @fixed_document = nil
       @reference_manifest = context.reference_manifest
@@ -23,8 +24,9 @@ module SvgConform
       @errors.empty? && @validity_errors.empty?
     end
 
+    # True for errors and validity errors, matching valid?.
     def has_errors?
-      !@errors.empty?
+      error_count.positive?
     end
 
     def has_warnings?
@@ -39,12 +41,17 @@ module SvgConform
       !@fixed_document.nil?
     end
 
+    # Errors plus validity errors: both are "error" in the canonical report.
     def error_count
-      @errors.size
+      @errors.size + @validity_errors.size
     end
 
     def warning_count
       @warnings.size
+    end
+
+    def info_count
+      @infos.size
     end
 
     def issue_count
@@ -114,21 +121,25 @@ module SvgConform
       end
     end
 
-    def to_h
-      {
-        file: @document&.file_path,
-        profile: @profile.name,
-        valid: valid?,
-        errors: @errors.map(&:to_h),
-        warnings: @warnings.map(&:to_h),
-        fixes_applied: @fixes_applied.size,
-        fixable: fixable_count,
-        reference_manifest: @reference_manifest.to_h,
-      }
+    # The canonical LensCore::Report for this result (schema version 1).
+    # The timestamp is only included when the caller supplies one.
+    def to_lens_core_report(timestamp: nil)
+      Diagnostics::LensCoreAdapter.call(self, timestamp: timestamp)
     end
 
-    def to_json(*args)
-      JSON.pretty_generate(to_h, *args)
+    # Canonical report as a symbol-keyed Hash, plus the compatibility
+    # extensions +file+, +fixes_applied+, +fixable+ and +reference_manifest+.
+    def to_h
+      JSON.parse(to_json, symbolize_names: true)
+    end
+
+    # Canonical LensCore JSON (with the compatibility extensions above).
+    def to_json(*)
+      LensCore::Renderers::Json.render(compatibility_report).chomp
+    end
+
+    def to_yaml(*)
+      LensCore::Renderers::Yaml.render(compatibility_report)
     end
 
     # Export manifest separately for detailed analysis
@@ -147,40 +158,29 @@ module SvgConform
 
     private
 
+    def compatibility_report(timestamp: nil)
+      report = to_lens_core_report(timestamp: timestamp)
+      extensions = report.extensions.merge(
+        "fixes_applied" => @fixes_applied.size,
+        "fixable" => fixable_count,
+        "reference_manifest" => Diagnostics::LensCoreAdapter.json_value(
+          @reference_manifest.to_h, "reference_manifest"
+        ),
+      )
+      LensCore::Report.new(
+        producer: report.producer, profile: report.profile,
+        valid: report.valid, diagnostics: report.diagnostics,
+        timestamp: report.timestamp, extensions: extensions
+      )
+    end
+
     def to_text
-      lines = []
-      lines << "SVG Conformance Report"
-      lines << ("=" * 22)
-      lines << ""
-      lines << "File: #{@document.file_path || 'inline'}"
-      lines << "Profile: #{@profile.name} (#{@profile.description})"
-      lines << "Status: #{valid? ? 'VALID' : 'INVALID'}"
-      lines << ""
-
-      if has_errors?
-        lines << "Errors (#{error_count}):"
-        @errors.each_with_index do |error, i|
-          lines << "  #{i + 1}. #{error}"
-        end
-        lines << ""
-      end
-
-      if has_warnings?
-        lines << "Warnings (#{warning_count}):"
-        @warnings.each_with_index do |warning, i|
-          lines << "  #{i + 1}. #{warning}"
-        end
-        lines << ""
-      end
-
+      lines = [LensCore::Renderers::Human.render(to_lens_core_report).chomp]
       if fixable?
+        lines << ""
         lines << "Fixes Available: #{fixable_count}"
         lines << "Fixes Applied: #{@fixes_applied.size}" if fixed?
-        lines << ""
       end
-
-      lines << "✓ Document is valid and conforms to the #{@profile.name} profile." if valid? && !has_warnings?
-
       lines.join("\n")
     end
   end
