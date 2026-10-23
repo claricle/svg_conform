@@ -203,4 +203,34 @@ RSpec.describe "Reference Manifest Integration" do
       expect(manifest_data).to have_key(:statistics)
     end
   end
+
+  describe "secure-static profile shares the classifier" do
+    it "registers the same reference types the link requirement sees" do
+      svg = <<~SVG
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">
+          <rect id="a" width="1" height="1"/>
+          <use href="#a"/>
+          <use href="other.svg#a"/>
+        </svg>
+      SVG
+      profile = SvgConform::Profile.new(
+        name: "both",
+        requirements: [
+          SvgConform::Requirements::LinkValidationRequirement.new(id: "link"),
+          SvgConform::Requirements::ExternalReferencesRequirement.new(
+            id: "svg2.secure_static.external_reference",
+          ),
+        ],
+      )
+      result = SvgConform::SaxDocument.from_content(svg)
+        .validate_with_profile(profile)
+      manifest = result.reference_manifest.to_h
+      types = (manifest[:internal_references] + manifest[:external_references])
+        .map { |r| r[:type] }
+      expect(types).to contain_exactly("InternalFragmentReference",
+                                       "RelativePathReference")
+      expect(result.errors.map(&:requirement_id))
+        .to include("svg2.secure_static.external_reference")
+    end
+  end
 end

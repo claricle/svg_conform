@@ -125,6 +125,14 @@ Available profiles:
 * `metanorma` - Metanorma requirements
 * `lucid` - Lucid profile
 * `no_external_css` - No external CSS
+* `svg_2_secure_static` - SVG 2 secure-static resource rules (opt-in; see link:profiles.adoc#svg-2-secure-static-profile[profiles])
+
+Example, validating against the SVG 2 secure-static profile:
+
+[source,sh]
+----
+svg_conform check drawing.svg --profile svg_2_secure_static --format json
+----
 
 ==== Output format (single file)
 

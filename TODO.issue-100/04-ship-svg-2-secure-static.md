@@ -95,7 +95,7 @@ Extend the existing `spec/svg_conform/references/reference_classifier_spec.rb`,
 `spec/svg_conform/requirements/link_validation_requirement_spec.rb`. Add
 `spec/svg_conform/references/data_uri_reference_spec.rb`,
 `spec/svg_conform/requirements/external_references_requirement_spec.rb`, and
-`spec/svg_conform/profiles/svg_2_secure_static_profile_spec.rb`. Run the corpus
+`spec/svg_conform/profile_svg_2_secure_static_spec.rb`. Run the corpus
 through DOM and SAX paths and compare validity, stable IDs, and citations. Update
 the existing `docs/profiles.adoc` and `docs/cli_guide.adoc` with the exact
 accepted-reference table,
@@ -119,7 +119,7 @@ dated citation, profile non-goals, and example command.
 - All changed Ruby passes the repository linter and the gem builds.
 
 ```sh
-bundle exec rspec spec/svg_conform/references/reference_classifier_spec.rb spec/svg_conform/references/data_uri_reference_spec.rb spec/svg_conform/references/integration_spec.rb spec/svg_conform/requirements/link_validation_requirement_spec.rb spec/svg_conform/requirements/external_references_requirement_spec.rb spec/svg_conform/requirements/processing_features_requirement_spec.rb spec/svg_conform/profiles/svg_2_secure_static_profile_spec.rb spec/svg_conform/commands/profiles_command_spec.rb
+bundle exec rspec spec/svg_conform/references/reference_classifier_spec.rb spec/svg_conform/references/data_uri_reference_spec.rb spec/svg_conform/references/integration_spec.rb spec/svg_conform/requirements/link_validation_requirement_spec.rb spec/svg_conform/requirements/external_references_requirement_spec.rb spec/svg_conform/requirements/processing_features_requirement_spec.rb spec/svg_conform/profile_svg_2_secure_static_spec.rb spec/svg_conform/commands/profiles_command_spec.rb
 bundle exec svg_conform check spec/fixtures/profiles/svg_2_secure_static/valid/same-document-fragment.svg --profile svg_2_secure_static --format json
 bundle exec rubocop
 bundle exec rake build
