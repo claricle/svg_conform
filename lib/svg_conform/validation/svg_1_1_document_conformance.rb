@@ -70,8 +70,13 @@ module SvgConform
 
       private
 
+      # A file URI that libxml2 accepts for POSIX paths and for Windows drive
+      # paths ("D:\\a\\x" becomes "file:///D:/a/x").
       def dtd_uri
-        "file://#{@dtd_path}"
+        path = @dtd_path.tr("\\", "/")
+        path = "/#{path}" unless path.start_with?("/")
+        escaped = path.gsub(%r{[^A-Za-z0-9\-._~/:]}) { |char| char.bytes.map { |b| format("%%%02X", b) }.join }
+        "file://#{escaped}"
       end
 
       def failure(kind, message, line = nil)
