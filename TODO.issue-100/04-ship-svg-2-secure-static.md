@@ -127,5 +127,5 @@ bundle exec rake build
 
 ## Status
 
-State: todo
-PR: none
+State: done
+PR: https://github.com/claricle/svg_conform/pull/107
