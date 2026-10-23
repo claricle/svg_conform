@@ -1,0 +1,7 @@
+# Vendored SVG 1.1 (Second Edition, 16 August 2011) flat DTD.
+# Validation resolves this file locally; no network or external entity access.
+files:
+  - path: svg11-flat-20110816.dtd
+    source_url: https://www.w3.org/Graphics/SVG/1.1/DTD/svg11-flat-20110816.dtd
+    retrieved: 2026-10-23
+    sha256: 7c22266d65655a7d359e9e79a107d156e64b29a87491313be2092bd66cab3b9b
