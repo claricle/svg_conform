@@ -96,6 +96,15 @@ RSpec.describe SvgConform::Requirements::Svg11DocumentRequirement do # rubocop:d
         expect(run("css2", doc(body: css), mode: mode)).to be_empty
       end
 
+      it "treats text/css media types case-insensitively" do
+        upper = run("css2", doc(body: '<style type="TEXT/CSS">rect { fill: red </style>'), mode: mode)
+        mixed = run("css2", doc(body: '<style type="Text/Css">rect { fill: red </style>'), mode: mode)
+        pi = %(<?xml-stylesheet href="a.css" type="TEXT/CSS"?>\n)
+        expect(upper.size).to be >= 1
+        expect(mixed.size).to be >= 1
+        expect(run("xml_stylesheet", doc(prolog: pi), mode: mode)).to be_empty
+      end
+
       it "validates xml-stylesheet pseudo-attributes" do
         good = doc(prolog: %(<?xml-stylesheet href="a.css" type="text/css"?>\n))
         no_href = doc(prolog: %(<?xml-stylesheet type="text/css"?>\n))

@@ -142,14 +142,20 @@ module SvgConform
 
       def location(issue)
         node = issue.node
-        line = issue.line
-        column = issue.column
+        line = issue.line || data_coordinate(issue, :line)
+        column = issue.column || data_coordinate(issue, :column)
         path = node.respond_to?(:path_id) ? node.path_id : nil
         line = nil unless line.is_a?(Integer) && line >= 1
         column = nil unless column.is_a?(Integer) && column >= 1
         return nil if line.nil? && column.nil? && path.nil?
 
         LensCore::Location.xml(line: line, column: column, path: path)
+      end
+
+      # Source-level requirements have no node and keep their position in data
+      def data_coordinate(issue, key)
+        data = issue.data
+        data.is_a?(Hash) ? data[key] : nil
       end
 
       # Deep copy into JSON primitives. Symbols become strings; anything else

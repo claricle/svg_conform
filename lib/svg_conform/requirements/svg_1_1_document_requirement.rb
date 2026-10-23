@@ -17,6 +17,7 @@ module SvgConform
       RULES = %w[xml root version grammar css2 xml_stylesheet].freeze
       SVG_NS = Validation::Svg11DocumentConformance::SVG_NS
       STYLESHEET_TARGET = "xml-stylesheet"
+      CSS_MEDIA_TYPE = "text/css" # media types are case-insensitive
       PSEUDO_ATTRIBUTES = %w[href type title media charset alternate].freeze
       PSEUDO_ATTRIBUTE_PAIR = /\G\s*([^\s=]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/
       GRAMMAR_SKIPPED = %i[malformed_xml no_svg_root].freeze
@@ -138,7 +139,7 @@ module SvgConform
 
       def check_style_element(node, context)
         return unless node.name == "style"
-        return unless ["", "text/css"].include?(node["type"].to_s)
+        return unless ["", CSS_MEDIA_TYPE].include?(node["type"].to_s.downcase)
 
         report_css(Validation::Css2CoreGrammar.parse_stylesheet(node.content),
                    "style element", node, context)
@@ -171,7 +172,7 @@ module SvgConform
         end
         values = pairs.to_h
         problems << "href pseudo-attribute is required" if problems.empty? && values["href"].to_s.empty?
-        if values["type"] && values["type"] != "text/css"
+        if values["type"] && values["type"].downcase != CSS_MEDIA_TYPE
           problems << "type #{values['type'].inspect} is not applicable to SVG (text/css expected)"
         end
         if values["alternate"] && !%w[yes no].include?(values["alternate"])

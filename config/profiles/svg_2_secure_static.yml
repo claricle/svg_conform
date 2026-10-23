@@ -41,6 +41,11 @@ requirements:
            onmouseenter, onmouseleave, onmousemove, onmouseout, onmouseover,
            onmouseup, onwheel, ontouchstart, ontouchend, ontouchmove,
            ontouchcancel, cursor]
+        # Every other event-handler attribute (onpointerdown, ondragstart, ...).
+        # An attribute is reported by the first category that lists it, so the
+        # named script and animation handlers above keep their own ids.
+        attribute_patterns:
+          - "\\Aon.+\\z"
 
   - id: "svg2.secure_static.external_reference"
     type: "ExternalReferencesRequirement"

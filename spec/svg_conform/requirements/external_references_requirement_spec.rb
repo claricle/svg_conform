@@ -39,6 +39,16 @@ RSpec.describe SvgConform::Requirements::ExternalReferencesRequirement do
     "style element import url counted once" => ["<style>@import url(a.css);</style>", 1],
     "style element url" => ["<style>a{fill:url(a.svg#x)}</style>", 1],
     "css comment ignored" => ["<style>/* url(a.svg) */ a{fill:red}</style>", 0],
+    "escaped url function" => ['<rect style="fill:u\\72l(https://e.test/x.png)"/>', 1],
+    "escaped url function uppercase hex" => ['<rect style="fill:\\55RL(https://e.test/x.png)"/>', 1],
+    "escaped url in presentation attribute" => ['<rect fill="u\\72l(https://e.test/x.png)"/>', 1],
+    "escaped url with quoted string" => ['<rect style="fill:u\\72l(\'https://e.test/x.png\')"/>', 1],
+    "escaped characters inside the url" => ['<rect style="fill:url(\\68ttps://e.test/x.png)"/>', 1],
+    "escaped import string" => ['<style>@\\69mport "a.css";</style>', 1],
+    "escaped import url" => ['<style>@imp\\6frt url(a.css);</style>', 1],
+    "escaped import with escaped url" => ['<style>@\\69mport u\\72l(a.css);</style>', 1],
+    "url text inside a css string is not a reference" => ['<style>a{content:"url(a.svg)"}</style>', 0],
+    "escaped url with same-document fragment" => ['<rect style="fill:u\\72l(#g)"/>', 0],
     "javascript scheme" => ['<a href="javascript:x()">x</a>', 1],
   }.each do |label, (body, count)|
     it "#{label}: #{count} finding(s) through DOM and SAX" do

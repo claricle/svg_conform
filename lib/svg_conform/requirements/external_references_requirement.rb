@@ -2,6 +2,7 @@
 
 require_relative "base_requirement"
 require_relative "../references/reference_classifier"
+require_relative "../validation/css_references"
 
 module SvgConform
   module Requirements
@@ -17,10 +18,6 @@ module SvgConform
       URL_ATTRIBUTES = %w[fill stroke filter clip-path mask marker-start
                           marker-mid marker-end cursor].freeze
       SVG_NAMESPACE_ROOT = "svg"
-      CSS_REFERENCE = /
-        (?<import>@import\s+)?url\(\s*(?<q>['"]?)(?<url>.*?)\k<q>\s*\)
-        | @import\s+(?<iq>['"])(?<iurl>.*?)\k<iq>
-      /mix
       STYLESHEET_PI = /<\?xml-stylesheet\s(?<body>.*?)\?>/mi
       EXTERNAL_DOCTYPE = /<!ENTITY|<!DOCTYPE[^>\[]*\b(?:SYSTEM|PUBLIC)\b/i
 
@@ -102,16 +99,12 @@ module SvgConform
 
       def css_findings(css, depth: 0, seen: [], element_name: "style",
                        attribute_name: "style", urls_only: false)
-        text = css.gsub(%r{/\*.*?\*/}m, "")
-        text.to_enum(:scan, CSS_REFERENCE).flat_map do
-          m = Regexp.last_match
-          url = m[:url] || m[:iurl]
-          next [] if url.nil? || url.empty?
-          next [] if urls_only && m[:import]
+        Validation::CssReferences.extract(css).flat_map do |reference|
+          next [] if urls_only && reference.import
 
-          attr = m[:import] || m[:iurl] ? "@import" : "url()"
-          reference_findings(url.strip, element_name, "#{attribute_name} #{attr}",
-                             depth, seen)
+          attr = reference.import ? "@import" : "url()"
+          reference_findings(reference.url.strip, element_name,
+                             "#{attribute_name} #{attr}", depth, seen)
         end
       end
 

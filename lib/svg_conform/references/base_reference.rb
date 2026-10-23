@@ -227,11 +227,56 @@ module SvgConform
         "PNG is missing IEND"
       end
 
+      # Walks the marker segments: every segment with a length must fit in the
+      # payload, entropy-coded scan data is skipped to the next marker, and the
+      # file must end with EOI. This proves the structure, not that pixels decode.
       def jpeg_error(bytes)
         return "not a JPEG file" unless bytes.start_with?("\xFF\xD8\xFF".b)
-        return "truncated JPEG" unless bytes.end_with?("\xFF\xD9".b)
 
-        nil
+        offset = 2
+        while offset < bytes.bytesize
+          return "malformed JPEG marker" unless bytes.getbyte(offset) == 0xFF
+
+          offset += 1 while bytes.getbyte(offset + 1) == 0xFF
+          marker = bytes.getbyte(offset + 1)
+          return "truncated JPEG" if marker.nil?
+          return jpeg_trailer_error(bytes, offset + 2) if marker == 0xD9
+
+          offset = jpeg_next_offset(bytes, offset + 2, marker)
+          return offset if offset.is_a?(String)
+        end
+        "truncated JPEG"
+      end
+
+      def jpeg_trailer_error(bytes, offset)
+        offset == bytes.bytesize ? nil : "data after JPEG end marker"
+      end
+
+      # Offset of the marker after the segment (and scan data) at +offset+,
+      # or an error String
+      def jpeg_next_offset(bytes, offset, marker)
+        return offset if marker == 0x01 || marker.between?(0xD0, 0xD8)
+
+        length = bytes.byteslice(offset, 2)&.unpack1("n")
+        return "truncated JPEG segment" if length.nil?
+        return "invalid JPEG segment length" if length < 2
+        return "truncated JPEG segment" if offset + length > bytes.bytesize
+
+        offset += length
+        marker == 0xDA ? jpeg_skip_scan(bytes, offset) : offset
+      end
+
+      def jpeg_skip_scan(bytes, offset)
+        while offset < bytes.bytesize
+          if bytes.getbyte(offset) == 0xFF
+            following = bytes.getbyte(offset + 1)
+            return offset unless following.nil? || following.zero? || following.between?(0xD0, 0xD7)
+
+            offset += 1 if following
+          end
+          offset += 1
+        end
+        "truncated JPEG"
       end
     end
   end

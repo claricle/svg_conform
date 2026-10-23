@@ -21,7 +21,7 @@ RSpec.describe SvgConform::References::DataUriReference do
       chunk("IDAT", Zlib::Deflate.deflate("\x00\xFF\x00\x00".b)) +
       chunk("IEND", "")
   end
-  let(:jpeg) { "\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\xFF\xD9".b }
+  let(:jpeg) { "\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00\xFF\xD9".b }
 
   it "decodes base64 and percent-encoded payloads to the same bytes" do
     pct = png.each_byte.map { |b| format("%%%02X", b) }.join
@@ -55,6 +55,30 @@ RSpec.describe SvgConform::References::DataUriReference do
     it "rejects #{value}" do
       expect(ref(value).raster_error).to match(pattern)
     end
+  end
+
+  {
+    "APP0 declaring more bytes than present" => "\xFF\xD8\xFF\xE0\x00\x10\xFF\xD9",
+    "segment length below two" => "\xFF\xD8\xFF\xE0\x00\x01\xFF\xD9",
+    "marker without length" => "\xFF\xD8\xFF",
+    "stray non-marker byte" => "\xFF\xD8\xFF\xE0\x00\x02\x41\xFF\xD9",
+    "end marker inside the data before the end" => "\xFF\xD8\xFF\xD9\x00\x00",
+    "no end of image" => "\xFF\xD8\xFF\xE0\x00\x02",
+    "SOS scan without end of image" => "\xFF\xD8\xFF\xDA\x00\x02\x01\x02\x03",
+  }.each do |label, bytes|
+    it "rejects a malformed JPEG (#{label}) in base64 and percent forms" do
+      raw = bytes.b
+      pct = raw.each_byte.map { |b| format("%%%02X", b) }.join
+      expect(ref("data:image/jpeg;base64,#{Base64.strict_encode64(raw)}").raster_error)
+        .to include("JPEG")
+      expect(ref("data:image/jpeg,#{pct}").raster_error).to include("JPEG")
+    end
+  end
+
+  it "accepts a JPEG with a scan, byte stuffing and restart markers" do
+    scan = "\xFF\xD8\xFF\xE0\x00\x04\x00\x00\xFF\xDA\x00\x04\x01\x02\x11\xFF\x00\x22\xFF\xD0\x33\xFF\xD9".b
+    expect(ref("data:image/jpeg;base64,#{Base64.strict_encode64(scan)}").raster_error)
+      .to be_nil
   end
 
   it "detects PNG checksum corruption and truncation" do
