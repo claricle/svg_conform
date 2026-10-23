@@ -2,8 +2,6 @@
 
 require "spec_helper"
 require "svg_conform/profile_compiler"
-require "open3"
-require "json"
 
 # Path is fixed by the card; the cop expects svg11_ instead of svg_1_1_.
 RSpec.describe "svg_1_1_full_static profile" do # rubocop:disable RSpec/DescribeClass
@@ -134,13 +132,15 @@ RSpec.describe "svg_1_1_full_static profile" do # rubocop:disable RSpec/Describe
     expect(profile.remediation_count).to eq(0)
   end
 
-  it "runs through the CLI check command and prints JSON" do
-    out, status = Open3.capture2e(
-      "bundle", "exec", "exe/svg_conform", "check",
-      fixture("valid", "minimal-full"), "--profile", "svg_1_1_full_static",
-      "--format", "json"
+  it "runs through the CLI check command and prints a JSON report" do
+    command = SvgConform::Commands::Check.new(
+      fixture("valid", "minimal-full"),
+      { profile: "svg_1_1_full_static", format: "json" },
     )
-    expect(status.exitstatus).to eq(0), out
-    expect(JSON.parse(out[/\{.*\}/m])).to be_a(Hash)
+    expect do
+      expect { command.execute }.to raise_error(SystemExit) do |error|
+        expect(error.status).to eq(0)
+      end
+    end.to output(/"id": "svg_1_1_full_static".*"valid": true/m).to_stdout
   end
 end
