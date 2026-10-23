@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe "SVG 2 secure-static profile" do
+RSpec.describe "SVG 2 secure-static profile" do # rubocop:disable RSpec/DescribeClass
   let(:profile) { SvgConform::Profiles.get("svg_2_secure_static") }
   let(:citation) do
     "https://www.w3.org/TR/2026/CR-SVG2-20261006/conform.html#secure-static-mode"
