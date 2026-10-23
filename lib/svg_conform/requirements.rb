@@ -20,6 +20,7 @@ require_relative "requirements/no_external_fonts_requirement"
 require_relative "requirements/no_external_images_requirement"
 require_relative "requirements/text_as_path_requirement"
 require_relative "requirements/processing_features_requirement"
+require_relative "requirements/svg_1_1_document_requirement"
 
 module SvgConform
   module Requirements
@@ -42,6 +43,7 @@ module SvgConform
         IdReferenceRequirement,
         TextAsPathRequirement,
         ProcessingFeaturesRequirement,
+        Svg11DocumentRequirement,
       ]
     end
 

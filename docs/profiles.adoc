@@ -17,7 +17,46 @@ Each profile consists of:
 
 == Available profiles
 
-SvgConform includes 5 built-in profiles, each designed for different use cases and compliance standards.
+SvgConform includes 7 built-in profiles, each designed for different use cases and compliance standards.
+
+[[svg-1-1-full-static-profile]]
+=== SVG 1.1 Full static profile (`:svg_1_1_full_static`)
+
+**Purpose**: Opt-in check that a document is a conforming SVG 1.1 (Second Edition) Full document under static processing. It validates the Recommendation's document grammar; it is not an element allow-list.
+
+**Specification**: https://www.w3.org/TR/2011/REC-SVG11-20110816/[SVG 1.1 Second Edition]
+
+**Requirements** (each reports under its own ID and carries its normative citation in issues and LensCore reports):
+
+[cols="2,4,3"]
+|===
+| ID | Rule | Citation
+
+| `svg11.document.xml` | Well-formed XML; the original declaration, doctype and processing instructions are provable from the source | https://www.w3.org/TR/2011/REC-SVG11-20110816/conform.html#ConformingSVGDocuments[Conforming SVG Documents]
+| `svg11.document.root` | Document element is `svg` in `http://www.w3.org/2000/svg` | https://www.w3.org/TR/2011/REC-SVG11-20110816/struct.html#SVGElement[The svg element]
+| `svg11.document.version` | Root declares `version="1.1"` | https://www.w3.org/TR/2011/REC-SVG11-20110816/struct.html#SVGElementVersionAttribute[version attribute]
+| `svg11.document.grammar` | Elements, attributes and content models validate against the vendored flat DTD (`data/svg_1_1/svg11-flat-20110816.dtd`) after the Appendix G.2 foreign-namespace transform, applied to a copy | https://www.w3.org/TR/2011/REC-SVG11-20110816/conform.html#ConformingSVGDocuments[Conforming SVG Documents]
+| `svg11.document.css2` | `style` attributes and `style` elements parse under the CSS 2 core grammar (syntax only) | https://www.w3.org/TR/2008/REC-CSS2-20080411/grammar.html[CSS 2 grammar]
+| `svg11.document.xml_stylesheet` | `xml-stylesheet` processing instructions have valid pseudo-attributes, an `href`, and a CSS `type` | https://www.w3.org/TR/1999/REC-xml-stylesheet-19990629/[xml-stylesheet]
+| `svg11.processing.script` | No `script` element or script event-handler attribute | https://www.w3.org/TR/2011/REC-SVG11-20110816/conform.html#ConformingSVGViewers[Conforming SVG Viewers]
+| `svg11.processing.animation` | No animation element or animation-timing attribute | same
+| `svg11.processing.interaction` | No interaction-only event attribute, `cursor` element or `cursor` attribute | same
+|===
+
+**Example**:
+
+[source,shell]
+----
+svg_conform check drawing.svg --profile svg_1_1_full_static --format json
+----
+
+**Behavior notes**:
+
+* Validation is offline: the DTD is resolved from the gem, and any external entity declaration is an error. No file is read and no network request is made.
+* DOM and SAX validation give the same result for the same input. A malformed document cannot be loaded as a DOM, so DOM mode raises `SvgConform::ParseError` where SAX reports `svg11.document.xml`.
+* Declaration, doctype and processing-instruction checks need the original text. A document validated from an already-parsed node (re-serialized source) is reported under `svg11.document.xml` because those claims cannot be proved.
+
+**Non-goals**: SVG Tiny or Basic, rendering or browser behavior, CSS property and value semantics, external style sheets referenced by `xml-stylesheet`, and remediation (the profile has none).
 
 [[svg-1-2-rfc-profile]]
 === SVG 1.2 RFC profile (`:svg_1_2_rfc`)
