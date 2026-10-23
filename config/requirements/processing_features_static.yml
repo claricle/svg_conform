@@ -1,0 +1,29 @@
+# Static-processing categories for ProcessingFeaturesRequirement.
+# Profiles copy this requirement entry into their `requirements` list.
+id: "svg11.processing"
+type: "ProcessingFeaturesRequirement"
+description: "Static processing rejects script, animation and interaction"
+categories:
+  - name: "script"
+    id: "svg11.processing.script"
+    citation: "https://www.w3.org/TR/2011/REC-SVG11-20110816/conform.html#ConformingSVGViewers"
+    description: "Static mode rejects script elements and event-handler attributes"
+    elements: ["script"]
+    attributes:
+      [onabort, onerror, onload, onresize, onscroll, onunload, onzoom]
+  - name: "animation"
+    id: "svg11.processing.animation"
+    citation: "https://www.w3.org/TR/2011/REC-SVG11-20110816/conform.html#ConformingSVGViewers"
+    description: "Static mode rejects animation elements and animation-timing attributes"
+    elements: [animate, animateColor, animateMotion, animateTransform, set, mpath]
+    attributes:
+      [begin, end, dur, min, max, restart, repeatCount, repeatDur, calcMode,
+       keyTimes, keySplines, onbegin, onend, onrepeat]
+  - name: "interaction"
+    id: "svg11.processing.interaction"
+    citation: "https://www.w3.org/TR/2011/REC-SVG11-20110816/conform.html#ConformingSVGViewers"
+    description: "Static mode rejects interaction-only event attributes and cursor behavior"
+    elements: ["cursor"]
+    attributes:
+      [onactivate, onclick, onfocusin, onfocusout, onmousedown, onmousemove,
+       onmouseout, onmouseover, onmouseup, cursor]

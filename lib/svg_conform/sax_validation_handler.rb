@@ -41,8 +41,13 @@ module SvgConform
   class SaxValidationHandler < Leptris::XML::SAX::Document
     attr_reader :result, :context
 
-    def initialize(profile)
+    def initialize(profile, source: nil, source_path: nil,
+                   source_serialized: false)
       @profile = profile
+      @source = source
+      @source_path = source_path
+      @source_serialized = source_serialized
+      @source_validated = false
       @element_stack = [] # Track parent-child hierarchy
       @path_stack = [] # Current element path
       @position_counters = [] # Stack of sibling counters per level
@@ -65,6 +70,7 @@ module SvgConform
 
     # SAX Event: Document start
     def start_document
+      run_source_validation
       # No need to reset state - each validation has fresh requirement instances
       # Initialize root level counters
       @position_counters.push({})
@@ -124,6 +130,7 @@ module SvgConform
 
     # SAX Event: Document complete
     def end_document
+      run_source_validation
       # Run deferred validation
       @deferred_requirements.each do |req|
         req.validate_sax_complete(@context)
@@ -145,6 +152,7 @@ module SvgConform
 
     # Handle parse errors
     def add_parse_error(error)
+      run_source_validation
       @context.add_error(
         node: nil,
         message: "Parse error: #{error.message}",
@@ -159,6 +167,16 @@ module SvgConform
     end
 
     private
+
+    # Source hooks run once, before any element dispatch
+    def run_source_validation
+      return if @source_validated
+
+      @source_validated = true
+      @requirements.each do |req|
+        req.validate_source(@source, @context)
+      end
+    end
 
     def create_incomplete_result
       # Return result even if parsing incomplete
@@ -180,6 +198,9 @@ module SvgConform
                                     trackers[:structural_invalidity_tracker])
       context.instance_variable_set(:@reference_manifest,
                                     trackers[:reference_manifest])
+      context.instance_variable_set(:@source, @source)
+      context.instance_variable_set(:@source_path, @source_path)
+      context.instance_variable_set(:@source_serialized, @source_serialized)
       context.instance_variable_set(:@fixes, [])
       context.instance_variable_set(:@state_registry, {})
       context
