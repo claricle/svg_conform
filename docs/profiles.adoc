@@ -274,6 +274,15 @@ See link:remediation.adoc#namespace-attribute-remediation[NamespaceAttributeReme
 * **Structural compliance**: Proper namespaces and viewBox required
 * **No external dependencies**: External CSS and fonts strictly prohibited
 
+**PlantUML attributes**:
+
+The Metanorma compatibility profile accepts `contentStyleType` and `zoomAndPan`
+on `svg`, `textLength` and `lengthAdjust` on `text`, and `title` on `a`.
+These explicit allowances preserve generated diagrams' measured text layout and
+link titles. They do not change the strict RFC 7996 profiles or permit arbitrary
+additional attributes. Fragment links into a surrounding document must also be
+validated by that document's build.
+
 **Event Handler Support**:
 
 The metanorma profile allows SVG event handler attributes (e.g., `onmouseover`, `onmouseout`, `onfocus`, `onblur`) for interactive elements. This is configured using wildcard attribute patterns:

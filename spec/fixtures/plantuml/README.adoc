@@ -1,0 +1,11 @@
+= PlantUML SVG regression fixture
+
+`unit-type.svg` is native output from PlantUML 1.2026.3 (bundled with metanorma-plugin-plantuml 1.0.15) using the Smetana layout engine.
+It represents the UnitsML XML Schema `UnitType` content model used by
+https://github.com/unitsml/docs/pull/9[UnitsML documentation PR 9].
+The embedded PlantUML source records its schema labels and diagram input.
+
+The diagram links target anchors in the surrounding documentation page.
+Standalone profile tests therefore check attribute validation separately from
+those document-level references; the UnitsML documentation checks the targets.
+The test preserves the SVG's measured text layout and link titles.
