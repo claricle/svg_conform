@@ -21,7 +21,7 @@ requirements:
     element_configs:
       # Direct encoding from svgcheck word_properties.py elements dictionary
       - tag: "svg"
-        attributes: ["version", "baseProfile", "width", "viewBox", "preserveAspectRatio", "snapshotTime", "height", "id", "role", "break", "color-rendering", "fill-rule", "overflow", "data-name", "clip-path", "mask"]
+        attributes: ["version", "baseProfile", "width", "viewBox", "preserveAspectRatio", "snapshotTime", "height", "id", "role", "break", "color-rendering", "fill-rule", "overflow", "data-name", "clip-path", "mask", "contentStyleType", "zoomAndPan"]
         required_attributes: ["version", "baseProfile"]
         attribute_values:
           version: ["1.2"]
@@ -61,7 +61,7 @@ requirements:
         attributes: ["x", "y", "width", "height", "auto", "id", "role", "fill", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "clip-path", "mask"]
         allowed_children: ["desc", "title", "tspan", "text", "a"]
       - tag: "text"
-        attributes: ["x", "y", "rotate", "id", "role", "fill", "style", "transform", "font-size", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "font-stretch", "writing-mode", "text-decoration", "clip-path", "mask"]
+        attributes: ["x", "y", "rotate", "id", "role", "fill", "style", "transform", "font-size", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "font-stretch", "writing-mode", "text-decoration", "clip-path", "mask", "textLength", "lengthAdjust"]
         allowed_children: ["desc", "title", "tspan", "text", "a"]
       - tag: "g"
         attributes: ["label", "class", "id", "role", "fill", "style", "transform", "fill-rule", "visibility", "base", "lang", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "data-name", "clip-path", "mask"]
@@ -100,7 +100,7 @@ requirements:
         attributes: ["x", "y", "href", "xlink:href", "id", "role", "fill", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "clip-path", "mask"]
         allowed_children: ["title", "desc"]
       - tag: "a"
-        attributes: ["id", "role", "fill", "transform", "fill-rule", "target", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        attributes: ["id", "role", "fill", "transform", "fill-rule", "target", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "title"]
         allowed_children: ["title", "path", "rect", "circle", "line", "ellipse", "polyline", "polygon", "solidColor", "textArea", "text", "g", "defs", "use", "a", "tspan", "desc"]
       - tag: "tspan"
         attributes: ["x", "y", "id", "role", "fill", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "letter-spacing"]
