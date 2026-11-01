@@ -31,7 +31,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "lens_core", "~> 0.1"
   spec.add_dependency "lutaml-model", "~> 0.8.0"
-  spec.add_dependency "moxml", "~> 0.5"
+  spec.add_dependency "moxml", "~> 0.6.0" # moxml 0.6 removed the Opal surface (lutaml/moxml#516); owner call to forward-pin the 0.6 series
   spec.add_dependency "nokogiri", "~> 1.16"
   spec.add_dependency "rainbow"
   spec.add_dependency "table_tennis"
