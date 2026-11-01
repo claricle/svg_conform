@@ -75,15 +75,19 @@ module SvgConform
     def self.from_svg_conform_result(filename, validation_result, profile: nil,
 use_svgcheck_mapping: false)
       # The canonical LensCore report is built first, for every path; the
-      # legacy shape below is a deprecated projection of it.
-      canonical = validation_result.to_lens_core_report
+      # legacy shape below is a deprecated projection of it. Without the
+      # optional lens_core gem the report projects the validation result
+      # directly.
+      canonical = if SvgConform.lens_core_available?
+                    validation_result.to_lens_core_report
+                  end
       report = new
       report.filename = filename
       report.profile = profile
       report.tool = "svg_conform"
       report.version = SvgConform::VERSION
       report.timestamp = Time.now.iso8601
-      report.valid = canonical.valid
+      report.valid = canonical ? canonical.valid : validation_result.valid?
       report.errors = IssueSummary.new
       report.errors.total_count = 0
       report.errors.by_requirement = {}
@@ -108,7 +112,11 @@ use_svgcheck_mapping: false)
       end
 
       unless use_svgcheck_mapping
-        project_canonical(report, canonical)
+        if canonical
+          project_canonical(report, canonical)
+        else
+          project_validation_result(report, validation_result)
+        end
         return report
       end
 
@@ -220,7 +228,35 @@ use_svgcheck_mapping: false)
       issue.line = diagnostic.location&.line
       issue
     end
-    private_class_method :project_canonical, :issue_from
+
+    # The lens_core-free projection: fill the summaries straight from the
+    # validation result, mirroring project_canonical's output shape.
+    def self.project_validation_result(report, result)
+      {
+        "error" => [report.errors, result.errors],
+        "warning" => [report.warnings, result.warnings],
+      }.each do |severity, (summary, issues)|
+        summary.total_count = issues.length
+        issues.group_by(&:requirement_id).each do |id, list|
+          summary.by_requirement[id] = list.length
+        end
+        summary.issues = issues.map do |error|
+          issue = ConformanceIssue.new
+          issue.type = severity
+          issue.requirement_id = error.requirement_id
+          issue.message = error.message
+          issue.element = error.element_name
+          if severity == "error"
+            issue.attribute = error.data[:attribute] if error.respond_to?(:data) && error.data
+            issue.value = error.data[:value]&.to_s if error.respond_to?(:data) && error.data
+          end
+          issue.line = error.line if error.respond_to?(:line)
+          issue
+        end
+      end
+    end
+    private_class_method :project_canonical, :issue_from,
+                         :project_validation_result
 
     # Create report from svgcheck error output
     def self.from_svgcheck_result(filename, error_content,

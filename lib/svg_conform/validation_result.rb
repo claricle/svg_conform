@@ -123,23 +123,44 @@ module SvgConform
 
     # The canonical LensCore::Report for this result (schema version 1).
     # The timestamp is only included when the caller supplies one.
+    # Raises when the optional lens_core gem is not installed.
     def to_lens_core_report(timestamp: nil)
+      unless SvgConform.lens_core_available?
+        raise SvgConform::Error,
+              "lens_core is not installed; the canonical diagnostics " \
+              "report requires it"
+      end
       Diagnostics::LensCoreAdapter.call(self, timestamp: timestamp)
     end
 
-    # Canonical report as a symbol-keyed Hash, plus the compatibility
-    # extensions +file+, +fixes_applied+, +fixable+ and +reference_manifest+.
+    # Report as a symbol-keyed Hash: the canonical LensCore shape (with
+    # the compatibility extensions +file+, +fixes_applied+, +fixable+ and
+    # +reference_manifest+) when lens_core is installed, else the plain
+    # structural shape.
     def to_h
-      JSON.parse(to_json, symbolize_names: true)
+      if SvgConform.lens_core_available?
+        JSON.parse(to_json, symbolize_names: true)
+      else
+        structural_h
+      end
     end
 
-    # Canonical LensCore JSON (with the compatibility extensions above).
+    # Canonical LensCore JSON when lens_core is installed, else the plain
+    # structural serialization.
     def to_json(*)
-      LensCore::Renderers::Json.render(compatibility_report).chomp
+      if SvgConform.lens_core_available?
+        LensCore::Renderers::Json.render(compatibility_report).chomp
+      else
+        JSON.pretty_generate(structural_h)
+      end
     end
 
     def to_yaml(*)
-      LensCore::Renderers::Yaml.render(compatibility_report)
+      if SvgConform.lens_core_available?
+        LensCore::Renderers::Yaml.render(compatibility_report)
+      else
+        structural_h.to_yaml
+      end
     end
 
     # Export manifest separately for detailed analysis
@@ -175,13 +196,67 @@ module SvgConform
     end
 
     def to_text
-      lines = [LensCore::Renderers::Human.render(to_lens_core_report).chomp]
-      if fixable?
+      if SvgConform.lens_core_available?
+        lines = [LensCore::Renderers::Human.render(to_lens_core_report).chomp]
+        if fixable?
+          lines << ""
+          lines << "Fixes Available: #{fixable_count}"
+          lines << "Fixes Applied: #{@fixes_applied.size}" if fixed?
+        end
+        return lines.join("\n")
+      end
+
+      lines = []
+      lines << "SVG Conformance Report"
+      lines << ("=" * 22)
+      lines << ""
+      lines << "File: #{@document.file_path || 'inline'}"
+      lines << "Profile: #{@profile.name} (#{@profile.description})"
+      lines << "Status: #{valid? ? 'VALID' : 'INVALID'}"
+      lines << ""
+
+      if has_errors?
+        lines << "Errors (#{error_count}):"
+        @errors.each_with_index do |error, i|
+          lines << "  #{i + 1}. #{error}"
+        end
         lines << ""
+      end
+
+      if has_warnings?
+        lines << "Warnings (#{warning_count}):"
+        @warnings.each_with_index do |warning, i|
+          lines << "  #{i + 1}. #{warning}"
+        end
+        lines << ""
+      end
+
+      if fixable?
         lines << "Fixes Available: #{fixable_count}"
         lines << "Fixes Applied: #{@fixes_applied.size}" if fixed?
+        lines << ""
       end
+
+      if valid? && !has_warnings?
+        lines << "✓ Document is valid and conforms to the #{@profile.name} profile."
+      end
+
       lines.join("\n")
+    end
+
+    # The plain structural shape (the 0.2.4 serialization), used when the
+    # optional lens_core renderer is not installed.
+    def structural_h
+      {
+        file: @document&.file_path,
+        profile: @profile.name,
+        valid: valid?,
+        errors: @errors.map(&:to_h),
+        warnings: @warnings.map(&:to_h),
+        fixes_applied: @fixes_applied.size,
+        fixable: fixable_count,
+        reference_manifest: @reference_manifest.to_h,
+      }
     end
   end
 end

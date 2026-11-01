@@ -7,21 +7,6 @@ RSpec.describe SvgConform::ConformanceReport do
   let(:result) { SvgConform::Validator.new.validate(invalid_svg, profile: :svg_1_2_rfc) }
 
   describe ".from_svg_conform_result" do
-    it "keeps its signature and legacy shape, projected from the canonical report" do
-      report = described_class.from_svg_conform_result("t.svg", result, profile: :svg_1_2_rfc)
-      canonical = result.to_lens_core_report
-
-      expect(report.tool).to eq("svg_conform")
-      expect(report.filename).to eq("t.svg")
-      expect(report.valid).to eq(canonical.valid)
-      expect(report.errors.total_count).to eq(canonical.summary["errors"])
-      expect(report.warnings.total_count).to eq(canonical.summary["warnings"])
-      expect(report.errors.issues.map(&:message))
-        .to eq(canonical.diagnostics.select(&:error?).map(&:message))
-      expect(report.errors.by_requirement.values.sum).to eq(report.errors.total_count)
-      expect(report.to_yaml).to include("errors:", "total_count:", "by_requirement:")
-    end
-
     it "does not include info diagnostics in the legacy channels" do
       info = SvgConform::Validator.new.validate_file(
         File.expand_path("../fixtures/diagnostics/external-reference-info.svg", __dir__),
@@ -34,13 +19,63 @@ RSpec.describe SvgConform::ConformanceReport do
       expect(report.warnings.total_count).to eq(0)
     end
 
-    it "still accepts use_svgcheck_mapping without mutating the canonical report" do
-      before = result.to_lens_core_report.to_h
+    it "still accepts use_svgcheck_mapping" do
       report = described_class.from_svg_conform_result("t.svg", result, profile: :svg_1_2_rfc,
                                                                         use_svgcheck_mapping: true)
 
       expect(report).to be_a(described_class)
-      expect(result.to_lens_core_report.to_h).to eq(before)
+    end
+
+    context "with lens_core installed" do
+      before do
+        unless SvgConform.lens_core_available?
+          skip "the optional lens_core gem is not installed"
+        end
+      end
+
+      it "keeps its signature and legacy shape, projected from the canonical report" do
+        report = described_class.from_svg_conform_result("t.svg", result, profile: :svg_1_2_rfc)
+        canonical = result.to_lens_core_report
+
+        expect(report.tool).to eq("svg_conform")
+        expect(report.filename).to eq("t.svg")
+        expect(report.valid).to eq(canonical.valid)
+        expect(report.errors.total_count).to eq(canonical.summary["errors"])
+        expect(report.warnings.total_count).to eq(canonical.summary["warnings"])
+        expect(report.errors.issues.map(&:message))
+          .to eq(canonical.diagnostics.select(&:error?).map(&:message))
+        expect(report.errors.by_requirement.values.sum).to eq(report.errors.total_count)
+        expect(report.to_yaml).to include("errors:", "total_count:", "by_requirement:")
+      end
+
+      it "does not mutate the canonical report" do
+        before = result.to_lens_core_report.to_h
+        described_class.from_svg_conform_result("t.svg", result, profile: :svg_1_2_rfc,
+                                                                 use_svgcheck_mapping: true)
+
+        expect(result.to_lens_core_report.to_h).to eq(before)
+      end
+    end
+
+    context "without lens_core" do
+      before do
+        if SvgConform.lens_core_available?
+          skip "lens_core is installed; the direct projection is not in effect"
+        end
+      end
+
+      it "projects the validation result directly" do
+        report = described_class.from_svg_conform_result("t.svg", result, profile: :svg_1_2_rfc)
+
+        expect(report.tool).to eq("svg_conform")
+        expect(report.filename).to eq("t.svg")
+        expect(report.valid).to be(false)
+        expect(report.errors.total_count).to eq(result.errors.length)
+        expect(report.errors.by_requirement.values.sum).to eq(report.errors.total_count)
+        expect(report.errors.issues.map(&:requirement_id).sort)
+          .to eq(result.errors.map(&:requirement_id).sort)
+        expect(report.to_yaml).to include("errors:", "total_count:", "by_requirement:")
+      end
     end
   end
 
