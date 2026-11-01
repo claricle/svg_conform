@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
-require "lens_core"
+begin
+  require "lens_core"
+rescue LoadError
+  nil
+end
 
 module SvgConform
   module Diagnostics

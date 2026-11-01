@@ -9,7 +9,6 @@ PATH
   remote: .
   specs:
     svg_conform (0.2.5)
-      lens_core (~> 0.1)
       lutaml-model (~> 0.8.155)
       moxml (~> 0.6.0)
       nokogiri (~> 1.16)

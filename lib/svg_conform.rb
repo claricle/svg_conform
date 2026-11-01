@@ -1,7 +1,16 @@
 # frozen_string_literal: true
 
 require "lutaml/model"
-require "lens_core"
+
+# lens_core is optional (0.2.5 shipped it as a hard dependency while the
+# gem is still unpublished, which made every fresh resolve unsolvable).
+# When present it renders the canonical diagnostics reports; when absent
+# the plain structural serializers answer instead.
+begin
+  require "lens_core"
+rescue LoadError
+  nil
+end
 
 # Configure Lutaml::Model adapters
 Lutaml::Model::Config.configure do |config|
@@ -39,6 +48,18 @@ module SvgConform
   class ValidationError < Error; end
   class ProfileError < Error; end
   class RuleError < Error; end
+
+  # True when the optional lens_core diagnostics renderer is installed.
+  def self.lens_core_available?
+    return @lens_core_available unless @lens_core_available.nil?
+
+    @lens_core_available = begin
+      require "lens_core"
+      true
+    rescue LoadError
+      false
+    end
+  end
 
   require_relative "svg_conform/diagnostics/lens_core_adapter"
 
