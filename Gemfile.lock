@@ -15,7 +15,7 @@ PATH
       rainbow
       table_tennis
       thor
-      yeptris (>= 0.6.44)
+      yeptris (~> 0.6.36)
 
 GEM
   remote: https://rubygems.org/
