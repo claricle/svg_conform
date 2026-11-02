@@ -18,7 +18,7 @@ RSpec.describe "svg_conform.gemspec" do # rubocop:disable RSpec/DescribeClass
     dependency = specification.runtime_dependencies.find { |d| d.name == "yeptris" }
 
     expect(dependency).not_to be_nil
-    expect(dependency.requirement).to eq(Gem::Requirement.new(">= 0.6.44"))
+    expect(dependency.requirement).to eq(Gem::Requirement.new("~> 0.6.36"))
   end
 
   it "loads the Psych-compatible yeptris API" do
