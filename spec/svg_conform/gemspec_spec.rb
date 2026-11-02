@@ -14,6 +14,19 @@ RSpec.describe "svg_conform.gemspec" do # rubocop:disable RSpec/DescribeClass
     expect(File.read("lib/svg_conform.rb")).to include("rescue LoadError")
   end
 
+  it "declares yeptris as a runtime dependency" do
+    dependency = specification.runtime_dependencies.find { |d| d.name == "yeptris" }
+
+    expect(dependency).not_to be_nil
+    expect(dependency.requirement).to eq(Gem::Requirement.new(">= 0.6.44"))
+  end
+
+  it "loads the Psych-compatible yeptris API" do
+    require "yeptris/psych"
+
+    expect(defined?(Yeptris::Psych)).to be_truthy
+  end
+
   it "exposes the lens_core availability probe" do
     expect(SvgConform).to respond_to(:lens_core_available?)
     expect(SvgConform.lens_core_available?).to be_truthy.or be_falsey

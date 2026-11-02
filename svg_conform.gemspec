@@ -35,4 +35,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "rainbow"
   spec.add_dependency "table_tennis"
   spec.add_dependency "thor"
+  spec.add_dependency "yeptris", ">= 0.6.44"
 end
