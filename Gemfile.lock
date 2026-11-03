@@ -1,10 +1,3 @@
-GIT
-  remote: https://github.com/claricle/lens_core.git
-  revision: d00a6e8f7c0b5365a76b43e256a2f41ef9aee4ef
-  ref: d00a6e8f7c0b5365a76b43e256a2f41ef9aee4ef
-  specs:
-    lens_core (0.1.0)
-
 PATH
   remote: .
   specs:
@@ -46,6 +39,7 @@ GEM
     ffi (1.17.4-x86_64-linux-musl)
     json (3.1.0)
     language_server-protocol (3.17.0.6)
+    lens_core (0.1.0)
     leptris (1.9.399.0-aarch64-linux)
       ffi (~> 1.15)
     leptris (1.9.399.0-aarch64-linux-musl)
@@ -199,7 +193,7 @@ PLATFORMS
 
 DEPENDENCIES
   canon (~> 0.1.10)
-  lens_core!
+  lens_core (~> 0.1)
   leptris (>= 1.9.399.0)
   lutaml-model (~> 0.8.155)
   moxml (~> 0.6.0)
@@ -232,7 +226,7 @@ CHECKSUMS
   ffi (1.17.4-x86_64-linux-musl) sha256=3fdf9888483de005f8ef8d1cf2d3b20d86626af206cbf780f6a6a12439a9c49e
   json (3.1.0) sha256=3ce7ccf8fde58960177a3a756c31f292a4c1e1dedee884547096a5b0604e3bd8
   language_server-protocol (3.17.0.6) sha256=5ef2c0c138f8267e1bc631d3328347d354f96724b0af22f2c79516120443b7f0
-  lens_core (0.1.0)
+  lens_core (0.1.0) sha256=9481ce7721be1b9ddb08e0edde349775849614d40a78ff05ec5887de2aa9e2b6
   leptris (1.9.399.0-aarch64-linux) sha256=f96125c2ceb69a48c9576dbba33d20466fd27b017ab7f54041f6bf37f0d3dc78
   leptris (1.9.399.0-aarch64-linux-musl) sha256=feede158d84c3a46ac11da49e99ba2108a0b85a3e7113e056fa33e88f1dc694f
   leptris (1.9.399.0-arm-linux) sha256=39046099c3d16e429966a79e5d509e120ad839bb41f3a1ed8183f0174f5a22fb
