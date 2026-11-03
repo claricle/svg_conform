@@ -64,6 +64,7 @@ module SvgConform
   require_relative "svg_conform/diagnostics/lens_core_adapter"
 
   # Autoload core classes
+  autoload :YamlIO, File.expand_path("svg_conform/yaml_io", __dir__)
   autoload :Validator, File.expand_path("svg_conform/validator", __dir__)
   autoload :Fixer, "svg_conform/fixer"
   autoload :RemediationEngine, "svg_conform/remediation_engine"

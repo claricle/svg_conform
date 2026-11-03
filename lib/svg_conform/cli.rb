@@ -2,7 +2,6 @@
 
 require "thor"
 require "json"
-require "yaml"
 require "paint"
 require_relative "commands/check"
 require_relative "commands/svgcheck"
