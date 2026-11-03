@@ -115,8 +115,7 @@ column_number: nil)
 
       # Export as YAML for easy inspection
       def to_yaml
-        require "yaml"
-        to_h.to_yaml
+        SvgConform::YamlIO.dump(to_h)
       end
 
       # Export as JSON for programmatic processing

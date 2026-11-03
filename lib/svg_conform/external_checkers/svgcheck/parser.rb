@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "yaml"
-
 module SvgConform
   module ExternalCheckers
     module Svgcheck
@@ -26,7 +24,7 @@ module SvgConform
 
         def load_mapping_config
           @mapping_config = if File.exist?(@mapping_config_path)
-                              YAML.load_file(@mapping_config_path)
+                              SvgConform::YamlIO.load_file(@mapping_config_path)
                             else
                               # Fallback to empty config if file doesn't exist
                               {

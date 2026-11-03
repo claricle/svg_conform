@@ -39,8 +39,10 @@ module SvgConform
             raise ArgumentError, "Configuration file not found: #{path}"
           end
 
-          hash = YAML.safe_load_file(path, permitted_classes: [Symbol],
-                                           permitted_symbols: [], aliases: true)
+          hash = SvgConform::YamlIO.safe_load_file(
+            path, permitted_classes: [Symbol], permitted_symbols: [],
+                  aliases: true
+          )
           new(hash)
         end
 
