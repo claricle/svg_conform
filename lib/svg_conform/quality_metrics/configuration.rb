@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "lutaml/model"
+require "yeptris"
 
 module SvgConform
   module QualityMetrics
@@ -39,8 +40,8 @@ module SvgConform
             raise ArgumentError, "Configuration file not found: #{path}"
           end
 
-          hash = YAML.safe_load_file(path, permitted_classes: [Symbol],
-                                           permitted_symbols: [], aliases: true)
+          hash = Yeptris::Psych.safe_load_file(path, permitted_classes: [Symbol],
+                                                     aliases: true)
           new(hash)
         end
 
