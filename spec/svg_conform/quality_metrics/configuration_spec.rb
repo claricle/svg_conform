@@ -28,6 +28,34 @@ RSpec.describe SvgConform::QualityMetrics::Configuration do
   end
 
   describe ".from_yaml" do
+    def load_yaml(source)
+      Tempfile.create(["quality_metrics", ".yml"]) do |file|
+        file.write(source)
+        file.flush
+        described_class.from_yaml(file.path)
+      end
+    end
+
+    it "preserves quoted Symbol values" do
+      config = load_yaml('a: :"x y"')
+
+      expect(config.instance_variable_get(:@hash)).to eq("a" => :"x y")
+    end
+
+    it "preserves Psych error compatibility for disallowed dates" do
+      expect { load_yaml("f: 2024-01-02\n") }
+        .to raise_error(Psych::DisallowedClass, /Date/)
+    end
+
+    it "preserves Psych error compatibility and type for disallowed times" do
+      expect { load_yaml("f: 2024-01-02 10:00:00\n") }
+        .to raise_error(Psych::DisallowedClass, /Time/)
+    end
+
+    it "preserves Psych error compatibility for invalid YAML" do
+      expect { load_yaml("a: [\n") }.to raise_error(Psych::SyntaxError)
+    end
+
     it "resolves anchors and aliases" do
       path = File.expand_path("../../fixtures/quality_metrics/aliases.yml", __dir__)
       hash = described_class.from_yaml(path).instance_variable_get(:@hash)
