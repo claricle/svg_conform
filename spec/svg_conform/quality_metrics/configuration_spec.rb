@@ -42,18 +42,18 @@ RSpec.describe SvgConform::QualityMetrics::Configuration do
       expect(config.instance_variable_get(:@hash)).to eq("a" => :"x y")
     end
 
-    it "preserves Psych error compatibility for disallowed dates" do
+    it "rejects disallowed dates with the yeptris error naming Date" do
       expect { load_yaml("f: 2024-01-02\n") }
-        .to raise_error(Psych::DisallowedClass, /Date/)
+        .to raise_error(Yeptris::Psych::DisallowedClass, /Date/)
     end
 
-    it "preserves Psych error compatibility and type for disallowed times" do
+    it "rejects disallowed times with the yeptris error naming Time" do
       expect { load_yaml("f: 2024-01-02 10:00:00\n") }
-        .to raise_error(Psych::DisallowedClass, /Time/)
+        .to raise_error(Yeptris::Psych::DisallowedClass, /Time/)
     end
 
-    it "preserves Psych error compatibility for invalid YAML" do
-      expect { load_yaml("a: [\n") }.to raise_error(Psych::SyntaxError)
+    it "rejects invalid YAML with the yeptris syntax error" do
+      expect { load_yaml("a: [\n") }.to raise_error(Yeptris::Psych::SyntaxError)
     end
 
     it "resolves anchors and aliases" do
