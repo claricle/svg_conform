@@ -18,4 +18,4 @@ jobs:
       # tests-passed dispatch is refused on pull_request runs; releases come from push
       cascade: ${{ github.event_name != 'pull_request' }}
     secrets:
-      pat_token: ${{ secrets.GITHUB_TOKEN }}
+      pat_token: ${{ secrets.CLARICLE_CI_PAT_TOKEN }}
