@@ -1,0 +1,7 @@
+remediable_types: &violation_types
+  - :reference_violation
+severity_levels:
+  critical:
+    violation_types: *violation_types
+    default_weight: 5
+    max_penalty: 20
