@@ -2,6 +2,11 @@
 
 require "spec_helper"
 
+# Container elements take the clip-path and mask presentation attributes
+# per SVG (metanorma-pdfa#106).
+METANORMA_PROFILE_CONTAINER_TAGS = %w[g a defs].freeze
+METANORMA_PROFILE_CLIP_ATTRIBUTES = %w[clip-path mask].freeze
+
 RSpec.describe "Metanorma Profile" do
   let(:metanorma_profile_path) { "config/profiles/metanorma.yml" }
 
@@ -83,8 +88,8 @@ RSpec.describe "Metanorma Profile" do
       SVG
     end
 
-    %w[g a defs].each do |tag|
-      %w[clip-path mask].each do |attribute|
+    METANORMA_PROFILE_CONTAINER_TAGS.each do |tag|
+      METANORMA_PROFILE_CLIP_ATTRIBUTES.each do |attribute|
         it "allows #{attribute} on #{tag}" do
           svg = svg_with_clip_assets(
             "<#{tag} #{attribute}=\"url(##{attribute == 'clip-path' ? 'clip1' : 'mask1'})\">" \
