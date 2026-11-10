@@ -67,7 +67,7 @@ requirements:
         attributes: ["label", "class", "id", "role", "fill", "style", "transform", "fill-rule", "visibility", "base", "lang", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "data-name", "clip-path", "mask"]
         allowed_children: ["title", "path", "rect", "circle", "line", "ellipse", "polyline", "polygon", "solidColor", "textArea", "text", "g", "defs", "use", "a", "tspan", "desc", "image"]
       - tag: "defs"
-        attributes: ["id", "role", "fill", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space"]
+        attributes: ["id", "role", "fill", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "clip-path", "mask"]
         allowed_children: ["title", "path", "rect", "circle", "line", "ellipse", "polyline", "polygon", "solidColor", "textArea", "text", "g", "defs", "use", "a", "tspan", "desc", "style", "clipPath", "linearGradient", "radialGradient", "pattern", "marker", "mask", "filter", "image"]
       - tag: "clipPath"
         attributes: ["id", "clipPathUnits", "class", "style"]
@@ -100,7 +100,7 @@ requirements:
         attributes: ["x", "y", "href", "xlink:href", "id", "role", "fill", "transform", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "clip-path", "mask"]
         allowed_children: ["title", "desc"]
       - tag: "a"
-        attributes: ["id", "role", "fill", "transform", "fill-rule", "target", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "title"]
+        attributes: ["id", "role", "fill", "transform", "fill-rule", "target", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "title", "clip-path", "mask"]
         allowed_children: ["title", "path", "rect", "circle", "line", "ellipse", "polyline", "polygon", "solidColor", "textArea", "text", "g", "defs", "use", "a", "tspan", "desc"]
       - tag: "tspan"
         attributes: ["x", "y", "id", "role", "fill", "fill-rule", "base", "lang", "class", "rel", "rev", "typeof", "content", "datatype", "resource", "about", "property", "space", "letter-spacing"]

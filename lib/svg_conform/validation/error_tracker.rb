@@ -18,13 +18,38 @@ module SvgConform
       end
 
       # Add an error to the context
+      #
+      # A declared severity of :warning is a quality advisory (see
+      # TextAsPathRequirement) and must surface as a warning, not an error:
+      # otherwise schema-valid documents are reported as corrupt by consumers
+      # that log result.errors (metanorma, metanorma-pdfa#106). Other
+      # severities keep their existing routing: :validity_error stays out of
+      # the main error bucket, and :info remains in errors because the style
+      # remediation flow consumes it there.
       def add_error(node:, message:, rule: nil, requirement: nil,
                      requirement_id: nil, severity: nil, fix: nil, data: {})
         # Support both old rule system and new requirements system
         rule_or_requirement = requirement || rule
 
-        error = ::SvgConform::Errors::ValidationIssue.new(
-          type: :error,
+        if severity == :warning
+          warning = ::SvgConform::Errors::ValidationIssue.new(
+            type: :warning,
+            rule: rule_or_requirement,
+            node: node,
+            message: message,
+            fix: fix,
+            data: data,
+            requirement_id: requirement_id,
+            severity: severity,
+          )
+          @warnings << warning
+          return warning
+        end
+
+        type, bucket = severity_bucket(severity)
+
+        issue = ::SvgConform::Errors::ValidationIssue.new(
+          type: type,
           rule: rule_or_requirement,
           node: node,
           message: message,
@@ -34,14 +59,18 @@ module SvgConform
           severity: severity,
         )
 
-        # Handle special severity types
-        if severity == :validity_error
-          @validity_errors << error
-        else
-          @errors << error
-        end
+        bucket << issue
+        issue
+      end
 
-        error
+      # Map a declared severity to the issue type and tracker bucket
+      def severity_bucket(severity)
+        case severity
+        when :validity_error
+          [:error, @validity_errors]
+        else
+          [:error, @errors]
+        end
       end
 
       # Add a warning to the context
