@@ -10,6 +10,11 @@ METANORMA_PROFILE_CLIP_ATTRIBUTES = %w[clip-path mask].freeze
 RSpec.describe "Metanorma Profile" do
   let(:metanorma_sample_profile_path) { "config/profiles/metanorma-sample.yml" }
 
+  let(:validator) { SvgConform::Validator.new(mode: :sax, profile: profile) }
+  let(:profile) do
+    SvgConform::Profile.load_from_file("config/profiles/metanorma-sample.yml")
+  end
+
   describe "profile loading" do
     it "loads the Metanorma profile successfully" do
       profile = SvgConform::Profile.load_from_file(metanorma_sample_profile_path)
@@ -107,13 +112,14 @@ RSpec.describe "Metanorma Profile" do
       end
     end
   end
-end
 
-RSpec.describe "metanorma-sample marker presentation attributes" do
-  let(:profile) do
-    SvgConform::Profile.load_from_file("config/profiles/metanorma-sample.yml")
+  def shape_geometry(tag)
+    case tag
+    when "path" then 'd="M2,6 H38"'
+    when "line" then 'x1="2" y1="6" x2="38" y2="6"'
+    else 'points="2,6 20,6 38,6"'
+    end
   end
-  let(:validator) { SvgConform::Validator.new(mode: :sax, profile: profile) }
 
   def marker_svg(shape_attrs)
     <<~SVG
@@ -135,7 +141,7 @@ RSpec.describe "metanorma-sample marker presentation attributes" do
   %w[path line polyline polygon].each do |tag|
     it "allows marker-end on #{tag}" do
       svg = marker_svg(
-        %(<#{tag} #{tag == 'path' ? 'd="M2,6 H38"' : tag == 'line' ? 'x1="2" y1="6" x2="38" y2="6"' : 'points="2,6 20,6 38,6"'} marker-end="url(#a)"/>),
+        %(<#{tag} #{shape_geometry(tag)} marker-end="url(#a)"/>),
       )
       result = validator.validate(svg, profile: profile)
       attribute_errors = result.errors.select { |e| e.message.include?("marker-end") }
@@ -144,7 +150,7 @@ RSpec.describe "metanorma-sample marker presentation attributes" do
 
     it "allows marker-start and marker-mid on #{tag}" do
       svg = marker_svg(
-        %(<#{tag} #{tag == 'path' ? 'd="M2,6 H38"' : tag == 'line' ? 'x1="2" y1="6" x2="38" y2="6"' : 'points="2,6 20,6 38,6"'} marker-start="url(#a)" marker-mid="url(#a)" marker-end="url(#a)"/>),
+        %(<#{tag} #{shape_geometry(tag)} marker-start="url(#a)" marker-mid="url(#a)" marker-end="url(#a)"/>),
       )
       result = validator.validate(svg, profile: profile)
       attribute_errors = result.errors.select { |e| e.message.include?("marker") }
