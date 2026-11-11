@@ -342,18 +342,24 @@ See link:remediation.adoc#namespace-attribute-remediation[NamespaceAttributeReme
 * Maintains valid SVG markup
 
 [[metanorma-profile]]
-=== Metanorma profile (`:metanorma`)
+=== Metanorma sample profile (`:"metanorma-sample"`)
 
 **Purpose**: Ensures SVG documents comply with Metanorma requirements for technical documents with embedded resources.
 
 **Target use case**: Technical diagrams, flowcharts, and illustrations for Metanorma-generated standards documents (ISO, IEC, IETF, etc.).
+
+This bundled profile is a sample and testing reference. Profiles are consumer
+policy: the operative Metanorma profile ships and loads by path from
+metanorma-standoc (`lib/metanorma/standoc/svg_conform_profile/metanorma.yml`),
+so the `metanorma` name is not registered here and resolving it fails loudly
+with `ProfileError: Profile not found`.
 
 **Key Characteristics**:
 * **Flexible colors**: Any colors allowed (unlike RFC 7996 black/white restriction)
 * **Flexible fonts**: Any font families allowed (unlike RFC 7996 generic-only restriction)
 * **Flexible styles**: Any CSS styles allowed
 * **Event handlers allowed**: Supports event attributes (`on*`) for interactivity
-* **Clipping and masking**: `clip-path` and `mask` presentation attributes allowed
+* **Clipping and masking**: `clip-path` and `mask` presentation attributes allowed, and `clip-path`, `clip-rule`, and `opacity` allowed on container elements (`g`, `a`, `defs`)
 * **Self-contained resources**: All CSS and fonts must be embedded
 * **Structural compliance**: Proper namespaces and viewBox required
 * **No external dependencies**: External CSS and fonts strictly prohibited
