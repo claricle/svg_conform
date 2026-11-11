@@ -55,7 +55,7 @@ RSpec.describe SvgConform::Requirements::TextAsPathRequirement do
         </svg>
       SVG
 
-      result = validator.validate(svg, profile: :metanorma)
+      result = validator.validate(svg, profile: :"metanorma-sample")
 
       # Text-as-path is a quality advisory declared with severity: warning:
       # it must surface as a warning, never as an error, so that schema-valid
@@ -76,7 +76,7 @@ RSpec.describe SvgConform::Requirements::TextAsPathRequirement do
         </svg>
       SVG
 
-      result = validator.validate(svg, profile: :metanorma)
+      result = validator.validate(svg, profile: :"metanorma-sample")
       text_as_path_errors = result.errors.select do |e|
         e.message.include?("rendered as paths")
       end
@@ -92,7 +92,7 @@ RSpec.describe SvgConform::Requirements::TextAsPathRequirement do
         </svg>
       SVG
 
-      result = validator.validate(svg, profile: :metanorma)
+      result = validator.validate(svg, profile: :"metanorma-sample")
       text_as_path_errors = result.errors.select do |e|
         e.message.include?("rendered as paths")
       end
@@ -107,7 +107,7 @@ RSpec.describe SvgConform::Requirements::TextAsPathRequirement do
         </svg>
       SVG
 
-      result = validator.validate(svg, profile: :metanorma)
+      result = validator.validate(svg, profile: :"metanorma-sample")
       text_as_path_errors = result.errors.select do |e|
         e.message.include?("rendered as paths")
       end
@@ -122,7 +122,7 @@ RSpec.describe SvgConform::Requirements::TextAsPathRequirement do
         </svg>
       SVG
 
-      result = validator.validate(svg, profile: :metanorma)
+      result = validator.validate(svg, profile: :"metanorma-sample")
       text_as_path_errors = result.errors.select do |e|
         e.message.include?("rendered as paths")
       end

@@ -3,7 +3,7 @@
 require "spec_helper"
 
 RSpec.describe "Reference Manifest Integration" do
-  let(:validator) { SvgConform::Validator.new(profile: "metanorma") }
+  let(:validator) { SvgConform::Validator.new(profile: "metanorma-sample") }
 
   describe "complete reference manifest generation" do
     let(:svg_content) do

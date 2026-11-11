@@ -5,7 +5,7 @@ require "nokogiri"
 
 RSpec.describe SvgConform::Profiles do
   let(:validator) { SvgConform::Validator.new(mode: :sax) }
-  let(:profile) { described_class.get(:metanorma) }
+  let(:profile) { described_class.get(:"metanorma-sample") }
   let(:plantuml_attributes) { %w[contentstyletype zoomandpan title textlength lengthadjust] }
   let(:svg) do
     <<~SVG

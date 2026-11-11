@@ -16,7 +16,7 @@ RSpec.describe SvgConform::Validator do
   describe "#validate with different input types" do
     context "with String input (backward compatibility)" do
       it "validates XML string successfully" do
-        result = validator.validate(simple_svg, profile: :metanorma)
+        result = validator.validate(simple_svg, profile: :"metanorma-sample")
 
         expect(result).to be_a(SvgConform::ValidationResult)
         expect(result.valid?).to be true
@@ -37,7 +37,7 @@ RSpec.describe SvgConform::Validator do
         moxml_doc = Moxml.new.parse(simple_svg)
 
         # Validate using the document object
-        result = validator.validate(moxml_doc, profile: :metanorma)
+        result = validator.validate(moxml_doc, profile: :"metanorma-sample")
 
         expect(result).to be_a(SvgConform::ValidationResult)
         expect(result.valid?).to be true
@@ -50,7 +50,7 @@ RSpec.describe SvgConform::Validator do
         # (SAX mode is safe for large files, unlike DOM)
         expect(moxml_doc).to receive(:to_xml).once.and_call_original
 
-        validator.validate(moxml_doc, profile: :metanorma)
+        validator.validate(moxml_doc, profile: :"metanorma-sample")
       end
     end
 
@@ -59,7 +59,7 @@ RSpec.describe SvgConform::Validator do
         moxml_doc = Moxml.new.parse(simple_svg)
         svg_element = moxml_doc.root
 
-        result = validator.validate(svg_element, profile: :metanorma)
+        result = validator.validate(svg_element, profile: :"metanorma-sample")
 
         expect(result).to be_a(SvgConform::ValidationResult)
         expect(result.valid?).to be true
@@ -70,7 +70,7 @@ RSpec.describe SvgConform::Validator do
       it "validates a leptris document" do
         leptris_doc = Leptris::XML.parse(simple_svg)
 
-        result = validator.validate(leptris_doc, profile: :metanorma)
+        result = validator.validate(leptris_doc, profile: :"metanorma-sample")
 
         expect(result).to be_a(SvgConform::ValidationResult)
         expect(result.valid?).to be true
@@ -81,7 +81,7 @@ RSpec.describe SvgConform::Validator do
         svg_element = leptris_doc.root
 
         # This is the metanorma use case - passing element directly
-        result = validator.validate(svg_element, profile: :metanorma)
+        result = validator.validate(svg_element, profile: :"metanorma-sample")
 
         expect(result).to be_a(SvgConform::ValidationResult)
         expect(result.valid?).to be true
@@ -95,20 +95,20 @@ RSpec.describe SvgConform::Validator do
         # (SAX mode is memory-safe for large SVGs)
         expect(svg_element).to receive(:to_xml).once.and_call_original
 
-        validator.validate(svg_element, profile: :metanorma)
+        validator.validate(svg_element, profile: :"metanorma-sample")
       end
     end
 
     context "with invalid input" do
       it "raises ArgumentError for unsupported input type" do
         expect do
-          validator.validate(12345, profile: :metanorma)
+          validator.validate(12345, profile: :"metanorma-sample")
         end.to raise_error(ArgumentError, /Invalid input type/)
       end
 
       it "raises ArgumentError for nil input" do
         expect do
-          validator.validate(nil, profile: :metanorma)
+          validator.validate(nil, profile: :"metanorma-sample")
         end.to raise_error(ArgumentError, /Invalid input type/)
       end
     end
@@ -130,7 +130,7 @@ RSpec.describe SvgConform::Validator do
         leptris_doc = Leptris::XML.parse(svg_with_refs)
         svg_element = leptris_doc.root
 
-        result = validator.validate(svg_element, profile: :metanorma)
+        result = validator.validate(svg_element, profile: :"metanorma-sample")
 
         expect(result.reference_manifest).not_to be_nil
         expect(result.available_ids.map(&:id_value)).to include("box")
@@ -140,7 +140,7 @@ RSpec.describe SvgConform::Validator do
       it "builds reference manifest from Moxml document" do
         moxml_doc = Moxml.new.parse(svg_with_refs)
 
-        result = validator.validate(moxml_doc, profile: :metanorma)
+        result = validator.validate(moxml_doc, profile: :"metanorma-sample")
 
         expect(result.reference_manifest).not_to be_nil
         expect(result.available_ids.map(&:id_value)).to include("box")
