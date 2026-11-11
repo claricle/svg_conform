@@ -10,6 +10,11 @@ METANORMA_PROFILE_CLIP_ATTRIBUTES = %w[clip-path mask].freeze
 RSpec.describe "Metanorma Profile" do
   let(:metanorma_sample_profile_path) { "config/profiles/metanorma-sample.yml" }
 
+  let(:validator) { SvgConform::Validator.new(mode: :sax, profile: profile) }
+  let(:profile) do
+    SvgConform::Profile.load_from_file("config/profiles/metanorma-sample.yml")
+  end
+
   describe "profile loading" do
     it "loads the Metanorma profile successfully" do
       profile = SvgConform::Profile.load_from_file(metanorma_sample_profile_path)
@@ -106,5 +111,56 @@ RSpec.describe "Metanorma Profile" do
         end
       end
     end
+  end
+
+  def shape_geometry(tag)
+    case tag
+    when "path" then 'd="M2,6 H38"'
+    when "line" then 'x1="2" y1="6" x2="38" y2="6"'
+    else 'points="2,6 20,6 38,6"'
+    end
+  end
+
+  def marker_svg(shape_attrs)
+    <<~SVG
+      <svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" width="40" height="12" viewBox="0 0 40 12">
+        <defs>
+          <marker id="a" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto">
+            <path d="M0,0 L4,2 L0,4"/>
+          </marker>
+        </defs>
+        <g>#{shape_attrs}</g>
+      </svg>
+    SVG
+  end
+
+  # claricle/svg_conform#128: the profile listed the marker element but
+  # none of the marker presentation attributes on the shapes, so
+  # marker-end="url(...)" failed while the same marker in a style
+  # attribute passed.
+  %w[path line polyline polygon].each do |tag|
+    it "allows marker-end on #{tag}" do
+      svg = marker_svg(
+        %(<#{tag} #{shape_geometry(tag)} marker-end="url(#a)"/>),
+      )
+      result = validator.validate(svg, profile: profile)
+      attribute_errors = result.errors.select { |e| e.message.include?("marker-end") }
+      expect(attribute_errors).to be_empty
+    end
+
+    it "allows marker-start and marker-mid on #{tag}" do
+      svg = marker_svg(
+        %(<#{tag} #{shape_geometry(tag)} marker-start="url(#a)" marker-mid="url(#a)" marker-end="url(#a)"/>),
+      )
+      result = validator.validate(svg, profile: profile)
+      attribute_errors = result.errors.select { |e| e.message.include?("marker") }
+      expect(attribute_errors).to be_empty
+    end
+  end
+
+  it "still rejects marker attributes on rect, where SVG does not define them" do
+    svg = marker_svg(%(<rect x="2" y="2" width="36" height="8" marker-end="url(#a)"/>))
+    result = validator.validate(svg, profile: profile)
+    expect(result.errors.map(&:message).join).to include("marker-end")
   end
 end
