@@ -2,6 +2,11 @@
 
 require "spec_helper"
 
+# Container elements take the clip-path and mask presentation attributes
+# per SVG (metanorma-pdfa#106).
+METANORMA_PROFILE_CONTAINER_TAGS = %w[g a defs].freeze
+METANORMA_PROFILE_CLIP_ATTRIBUTES = %w[clip-path mask].freeze
+
 RSpec.describe "Metanorma Profile" do
   let(:metanorma_profile_path) { "config/profiles/metanorma.yml" }
 
@@ -57,6 +62,49 @@ RSpec.describe "Metanorma Profile" do
 
       result = profile.validate(document)
       expect(result).to respond_to(:valid?)
+    end
+  end
+
+  describe "clip-path and mask on container elements" do
+    # SVG applies the clip-path and mask properties to container elements and
+    # graphics elements alike; rejecting them on containers rejects
+    # schema-valid documents (metanorma-pdfa#106).
+    let(:profile) { SvgConform::Profile.load_from_file(metanorma_profile_path) }
+    let(:validator) { SvgConform::Validator.new(mode: :sax) }
+
+    def svg_with_clip_assets(inner)
+      <<~SVG
+        <svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" viewBox="0 0 100 100">
+          <defs>
+            <clipPath id="clip1">
+              <rect x="0" y="0" width="50" height="50"/>
+            </clipPath>
+            <mask id="mask1">
+              <rect x="0" y="0" width="50" height="50" fill="white"/>
+            </mask>
+          </defs>
+          #{inner}
+        </svg>
+      SVG
+    end
+
+    METANORMA_PROFILE_CONTAINER_TAGS.each do |tag|
+      METANORMA_PROFILE_CLIP_ATTRIBUTES.each do |attribute|
+        it "allows #{attribute} on #{tag}" do
+          svg = svg_with_clip_assets(
+            "<#{tag} #{attribute}=\"url(##{attribute == 'clip-path' ? 'clip1' : 'mask1'})\">" \
+            "<rect x=\"10\" y=\"10\" width=\"30\" height=\"30\" fill=\"red\"/>" \
+            "</#{tag}>",
+          )
+
+          result = validator.validate(svg, profile: profile)
+          attribute_errors = result.errors.select do |e|
+            e.message.include?("'#{attribute}'")
+          end
+          expect(attribute_errors).to be_empty
+          expect(result).to be_valid
+        end
+      end
     end
   end
 end

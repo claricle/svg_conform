@@ -56,12 +56,16 @@ RSpec.describe SvgConform::Requirements::TextAsPathRequirement do
       SVG
 
       result = validator.validate(svg, profile: :metanorma)
-      text_as_path_errors = result.errors.select do |e|
-        e.message.include?("rendered as paths")
-      end
 
-      expect(text_as_path_errors).not_to be_empty
-      expect(text_as_path_errors.first.severity).to eq(:warning)
+      # Text-as-path is a quality advisory declared with severity: warning:
+      # it must surface as a warning, never as an error, so that schema-valid
+      # documents are not reported as invalid (metanorma-pdfa#106).
+      expect(result.errors).to be_empty
+      expect(result.warnings.map(&:message)).to include(
+        a_string_including("rendered as paths"),
+      )
+      expect(result.warnings.first.severity).to eq(:warning)
+      expect(result).to be_valid
     end
 
     it "does not flag SVG with native text elements" do
