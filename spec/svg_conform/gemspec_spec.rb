@@ -34,4 +34,15 @@ RSpec.describe "svg_conform.gemspec" do # rubocop:disable RSpec/DescribeClass
     expect(SvgConform).to respond_to(:lens_core_available?)
     expect(SvgConform.lens_core_available?).to be_truthy.or be_falsey
   end
+
+  it "keeps the committed lockfile in sync with the gem version" do
+    # The release flow (metanorma/ci rubygems-release) deletes the lock and
+    # bumps version.rb without restoring it: staleness is this repo's own
+    # guard (ci's words). Without this check, every post-release PR fails
+    # bundler 4's frozen install ("gemspecs for path gems changed") before
+    # anyone sees why.
+    lock = File.read("Gemfile.lock")
+    path_version = lock[/\APATH\n  remote: \.\n  specs:\n    svg_conform \(([^)]+)\)/, 1]
+    expect(path_version).to eq(SvgConform::VERSION)
+  end
 end
