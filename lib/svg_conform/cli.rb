@@ -49,10 +49,10 @@ module SvgConform
       - yaml: LensCore diagnostics YAML (schema version 1)
 
       EXAMPLES:
-        svg_conform check file.svg -p metanorma
-        svg_conform check *.svg -p metanorma -f --output-dir fixed/
-        svg_conform check -d images/ -p metanorma --report-format json --report-output report.json
-        svg_conform check -d images/ -p metanorma -f --in-place --force
+        svg_conform check file.svg -p metanorma-sample
+        svg_conform check *.svg -p metanorma-sample -f --output-dir fixed/
+        svg_conform check -d images/ -p metanorma-sample --report-format json --report-output report.json
+        svg_conform check -d images/ -p metanorma-sample -f --in-place --force
     DESC
     option :directory, aliases: "-d", type: :string,
                        desc: "Directory to scan recursively for SVG files"

@@ -30,7 +30,7 @@ RSpec.describe "IdReferenceRequirement" do
 
   it "does not leak state from first validation to second validation" do
     # First validation: SVG with reference error
-    result1 = validator.validate(svg_with_error, profile: :metanorma)
+    result1 = validator.validate(svg_with_error, profile: :"metanorma-sample")
 
     # Verify first validation caught the error
     expect(result1.errors.map(&:message)).to include(
@@ -38,7 +38,7 @@ RSpec.describe "IdReferenceRequirement" do
     )
 
     # Second validation: SVG without reference errors
-    result2 = validator.validate(svg_without_error, profile: :metanorma)
+    result2 = validator.validate(svg_without_error, profile: :"metanorma-sample")
 
     # Verify second validation does NOT report errors from first validation
     error_messages = result2.errors.map(&:message).join("\n")
@@ -59,8 +59,8 @@ RSpec.describe "IdReferenceRequirement" do
 
     # Alternate between error and no-error SVGs
     3.times do
-      results << validator.validate(svg_with_error, profile: :metanorma)
-      results << validator.validate(svg_without_error, profile: :metanorma)
+      results << validator.validate(svg_with_error, profile: :"metanorma-sample")
+      results << validator.validate(svg_without_error, profile: :"metanorma-sample")
     end
 
     # Check that error pattern is consistent
@@ -80,7 +80,7 @@ RSpec.describe "IdReferenceRequirement" do
 
   it "resets state when using the same profile instance" do
     # Get profile instance
-    profile = SvgConform::Profiles.get(:metanorma)
+    profile = SvgConform::Profiles.get(:"metanorma-sample")
 
     # Run two validations using the same profile
     validator.validate(svg_with_error, profile: profile)

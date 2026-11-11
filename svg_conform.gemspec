@@ -29,6 +29,12 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
+  # The diagnostics adapter and the CLI's json/yaml output paths are built
+  # on lens_core (svg_conform.rb guards the require, but the guard's
+  # rescue LoadError misses Bundler::GemNotFound — undeclared, the CLI
+  # crashed on strict bundler deployments, claricle/svg_conform#130).
+  # lens_core 0.1.0 is published, so the 0.2.5-era optionality is obsolete.
+  spec.add_dependency "lens_core", "~> 0.1"
   spec.add_dependency "lutaml-model", "~> 0.8.155"
   spec.add_dependency "moxml", "~> 0.6.0"
   spec.add_dependency "nokogiri", "~> 1.16"

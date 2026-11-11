@@ -60,7 +60,7 @@ The `check` command validates SVG files against a profile and optionally applies
 
 [source,bash]
 ----
-$ svg_conform check file.svg --profile=metanorma
+$ svg_conform check file.svg --profile=metanorma-sample
 ----
 
 Output example:
@@ -70,7 +70,7 @@ Output example:
 SVG Validation Report
 ==================================================
 File: file.svg
-Profile: metanorma
+Profile: metanorma-sample
 Valid: ✗
 Total Errors: 2
 
@@ -88,7 +88,7 @@ Validation Errors:
 
 [source,bash]
 ----
-$ svg_conform check file1.svg file2.svg file3.svg -p metanorma
+$ svg_conform check file1.svg file2.svg file3.svg -p metanorma-sample
 ----
 
 ==== Directory validation
@@ -97,7 +97,7 @@ Recursively validate all SVG files in a directory:
 
 [source,bash]
 ----
-$ svg_conform check --directory=images/ --profile=metanorma
+$ svg_conform check --directory=images/ --profile=metanorma-sample
 ----
 
 Output shows a summary table and statistics.
@@ -157,13 +157,13 @@ Examples:
 [source,bash]
 ----
 # JSON output to stdout
-$ svg_conform check file.svg -p metanorma --format=json
+$ svg_conform check file.svg -p metanorma-sample --format=json
 
 # JSON output to file
-$ svg_conform check file.svg -p metanorma --format=json -o report.json
+$ svg_conform check file.svg -p metanorma-sample --format=json -o report.json
 
 # YAML output to file
-$ svg_conform check file.svg -p metanorma --format=yaml -o report.yaml
+$ svg_conform check file.svg -p metanorma-sample --format=yaml -o report.yaml
 ----
 
 ==== Remediation options
@@ -194,13 +194,13 @@ Examples:
 [source,bash]
 ----
 # Single file with custom output
-$ svg_conform check file.svg -p metanorma --fix --fix-output=cleaned.svg
+$ svg_conform check file.svg -p metanorma-sample --fix --fix-output=cleaned.svg
 
 # Multiple files to output directory
-$ svg_conform check *.svg -p metanorma --fix --output-dir=fixed/
+$ svg_conform check *.svg -p metanorma-sample --fix --output-dir=fixed/
 
 # Directory with in-place replacement (destructive!)
-$ svg_conform check -d images/ -p metanorma --fix --in-place --force
+$ svg_conform check -d images/ -p metanorma-sample --fix --in-place --force
 ----
 
 ==== Batch processing options
@@ -229,14 +229,14 @@ Examples:
 [source,bash]
 ----
 # Quiet mode - summary only
-$ svg_conform check -d images/ -p metanorma -q
+$ svg_conform check -d images/ -p metanorma-sample -q
 
 # Generate detailed JSON report
-$ svg_conform check -d images/ -p metanorma \
+$ svg_conform check -d images/ -p metanorma-sample \
   --report-format=json --report-output=full-report.json
 
 # Full workflow with manifest
-$ svg_conform check -d images/ -p metanorma --fix --output-dir=fixed/ \
+$ svg_conform check -d images/ -p metanorma-sample --fix --output-dir=fixed/ \
   --manifest=file-mapping.json --report-format=json --report-output=report.json
 ----
 
@@ -248,7 +248,7 @@ Process one SVG file:
 
 [source,bash]
 ----
-$ svg_conform check file.svg -p metanorma
+$ svg_conform check file.svg -p metanorma-sample
 ----
 
 Features:
@@ -264,7 +264,7 @@ Process multiple specified files:
 
 [source,bash]
 ----
-$ svg_conform check file1.svg file2.svg file3.svg -p metanorma
+$ svg_conform check file1.svg file2.svg file3.svg -p metanorma-sample
 ----
 
 Features:
@@ -279,7 +279,7 @@ Recursively process all SVG files in a directory:
 
 [source,bash]
 ----
-$ svg_conform check --directory=images/ -p metanorma
+$ svg_conform check --directory=images/ -p metanorma-sample
 ----
 
 Features:
@@ -297,7 +297,7 @@ Validate all SVGs before deployment:
 
 [source,bash]
 ----
-$ svg_conform check -d assets/images/ -p metanorma --quiet
+$ svg_conform check -d assets/images/ -p metanorma-sample --quiet
 
 # Exit code 0 = all valid
 # Exit code 1 = validation failures
@@ -308,7 +308,7 @@ Use in CI/CD:
 [source,bash]
 ----
 #!/bin/bash
-if svg_conform check -d docs/images/ -p metanorma -q; then
+if svg_conform check -d docs/images/ -p metanorma-sample -q; then
   echo "All SVGs valid"
 else
   echo "SVG validation failed"
@@ -323,10 +323,10 @@ Fix issues with review:
 [source,bash]
 ----
 # 1. Validate and see issues
-$ svg_conform check file.svg -p metanorma
+$ svg_conform check file.svg -p metanorma-sample
 
 # 2. Apply fixes to new file
-$ svg_conform check file.svg -p metanorma --fix --fix-output=file-fixed.svg
+$ svg_conform check file.svg -p metanorma-sample --fix --fix-output=file-fixed.svg
 
 # 3. Review the fixed file
 $ diff file.svg file-fixed.svg
@@ -345,15 +345,15 @@ Fix all non-conforming files in a directory:
 $ cp -r images/ images-backup/
 
 # 2. Generate pre-fix report
-$ svg_conform check -d images/ -p metanorma \
+$ svg_conform check -d images/ -p metanorma-sample \
   --report-format=json --report-output=before.json
 
 # 3. Apply fixes to new directory
-$ svg_conform check -d images/ -p metanorma \
+$ svg_conform check -d images/ -p metanorma-sample \
   --fix --output-dir=images-fixed/ --manifest=manifest.json
 
 # 4. Verify fixes
-$ svg_conform check -d images-fixed/ -p metanorma -q
+$ svg_conform check -d images-fixed/ -p metanorma-sample -q
 
 # 5. If satisfied, replace originals
 $ rm -rf images/
@@ -370,10 +370,10 @@ Fix files in place (destructive):
 $ cp -r images/ images-backup/
 
 # Fix all files in place
-$ svg_conform check -d images/ -p metanorma --fix --in-place --force
+$ svg_conform check -d images/ -p metanorma-sample --fix --in-place --force
 
 # Verify
-$ svg_conform check -d images/ -p metanorma -q
+$ svg_conform check -d images/ -p metanorma-sample -q
 ----
 
 ==== Workflow 5: Selective remediation
@@ -383,12 +383,12 @@ Fix only specific files:
 [source,bash]
 ----
 # Find invalid files
-$ svg_conform check -d images/ -p metanorma -q > results.txt
+$ svg_conform check -d images/ -p metanorma-sample -q > results.txt
 
 # Manually identify problematic files
 # Then fix them individually
-$ svg_conform check images/problematic1.svg -p metanorma -f
-$ svg_conform check images/problematic2.svg -p metanorma -f
+$ svg_conform check images/problematic1.svg -p metanorma-sample -f
+$ svg_conform check images/problematic2.svg -p metanorma-sample -f
 ----
 
 === Exit codes
@@ -403,7 +403,7 @@ Use exit codes in scripts:
 
 [source,bash]
 ----
-if svg_conform check file.svg -p metanorma; then
+if svg_conform check file.svg -p metanorma-sample; then
   echo "Valid!"
 else
   echo "Invalid - see errors above"
@@ -443,7 +443,7 @@ xref:diagnostics.adoc[Diagnostics]). No timestamp is emitted by the CLI.
 {
   "schema_version": 1,
   "producer": { "name": "svg_conform", "version": "0.2.4" },
-  "profile": { "id": "metanorma", "citations": [] },
+  "profile": { "id": "metanorma-sample", "citations": [] },
   "valid": false,
   "summary": { "errors": 1, "warnings": 0, "infos": 1 },
   "diagnostics": [ ... ],
@@ -465,7 +465,7 @@ For multiple files or directories:
 BATCH VALIDATION SUMMARY
 ================================================================================
 Directory: images/
-Profile: metanorma
+Profile: metanorma-sample
 Files processed: 15
 Valid before: 8
 Remediated: 5
@@ -527,7 +527,7 @@ Example output:
 Detailed SVG Validation Profiles
 ==================================================
 
-Profile: metanorma
+Profile: metanorma-sample
 ------------------------------
 Description: Metanorma document requirements
 Requirements: 12
@@ -587,7 +587,7 @@ $ svg_conform check --directory=/absolute/path/to/images/
 [source,bash]
 ----
 # Specify output directory
-$ svg_conform check *.svg -p metanorma --fix --output-dir=fixed/
+$ svg_conform check *.svg -p metanorma-sample --fix --output-dir=fixed/
 ----
 
 ==== "--in-place requires --force"
@@ -599,7 +599,7 @@ $ svg_conform check *.svg -p metanorma --fix --output-dir=fixed/
 [source,bash]
 ----
 # Add --force flag
-$ svg_conform check -d images/ -p metanorma --fix --in-place --force
+$ svg_conform check -d images/ -p metanorma-sample --fix --in-place --force
 ----
 
 ==== "Profile not found"
@@ -614,7 +614,7 @@ $ svg_conform check -d images/ -p metanorma --fix --in-place --force
 $ svg_conform profiles
 
 # Use correct profile name
-$ svg_conform check file.svg -p metanorma
+$ svg_conform check file.svg -p metanorma-sample
 ----
 
 ==== Exit code 1 with valid files
@@ -636,11 +636,11 @@ For directories with many files:
 [source,bash]
 ----
 # Use quiet mode
-$ svg_conform check -d large-dir/ -p metanorma -q
+$ svg_conform check -d large-dir/ -p metanorma-sample -q
 
 # Process in batches
 $ find images/ -name "*.svg" -print0 | \
-  xargs -0 -n 50 svg_conform check -p metanorma
+  xargs -0 -n 50 svg_conform check -p metanorma-sample
 ----
 
 ==== Large SVG files
@@ -718,7 +718,7 @@ changed_svgs=$(git diff --cached --name-only --diff-filter=ACM | grep '\.svg$')
 
 if [ -n "$changed_svgs" ]; then
   echo "Validating SVG files..."
-  echo "$changed_svgs" | xargs svg_conform check -p metanorma -q
+  echo "$changed_svgs" | xargs svg_conform check -p metanorma-sample -q
   if [ $? -ne 0 ]; then
     echo "SVG validation failed. Commit aborted."
     exit 1
@@ -744,7 +744,7 @@ jobs:
         with:
           ruby-version: 3.0
       - run: gem install svg_conform
-      - run: svg_conform check -d docs/images/ -p metanorma --quiet
+      - run: svg_conform check -d docs/images/ -p metanorma-sample --quiet
 ----
 
 ==== Makefile integration
@@ -756,10 +756,10 @@ jobs:
 .PHONY: validate-svg fix-svg
 
 validate-svg:
-	svg_conform check -d images/ -p metanorma --quiet
+	svg_conform check -d images/ -p metanorma-sample --quiet
 
 fix-svg:
-	svg_conform check -d images/ -p metanorma \
+	svg_conform check -d images/ -p metanorma-sample \
 		--fix --output-dir=images-fixed/ \
 		--manifest=manifest.json
 	@echo "Review images-fixed/ before replacing images/"

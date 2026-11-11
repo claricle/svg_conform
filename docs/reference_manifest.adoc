@@ -42,7 +42,7 @@ The manifest provides complete context:
 ----
 require 'svg_conform'
 
-validator = SvgConform::Validator.new(profile: 'metanorma')
+validator = SvgConform::Validator.new(profile: 'metanorma-sample')
 result = validator.validate(svg_content)
 
 # Access the reference manifest
@@ -296,7 +296,7 @@ puts result_hash[:reference_manifest]
 [source,ruby]
 ----
 # Validate SVG document
-result = validator.validate(svg_content, profile: 'metanorma')
+result = validator.validate(svg_content, profile: 'metanorma-sample')
 
 # Get external references for consumer validation
 external_refs = result.external_references
@@ -368,4 +368,4 @@ Easy to add new reference types without modifying existing code.
 * link:requirements.adoc[Requirements Documentation]
 * link:api_reference.adoc[API Reference]
 * link:../README.adoc[Main README]
-* link:../config/profiles/metanorma.yml[Metanorma Profile Configuration]
+* link:../config/profiles/metanorma-sample.yml[Metanorma Profile Configuration]

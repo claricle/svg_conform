@@ -25,7 +25,7 @@ require 'svg_conform'
 
 # Validate an SVG file
 validator = SvgConform::Validator.new
-result = validator.validate_file('image.svg', profile: :metanorma)
+result = validator.validate_file('image.svg', profile: :"metanorma-sample")
 
 if result.valid?
   puts "✓ SVG is valid"
@@ -90,15 +90,15 @@ Validate SVG content or document object.
 [source,ruby]
 ----
 # String input
-result = validator.validate(svg_string, profile: :metanorma)
+result = validator.validate(svg_string, profile: :"metanorma-sample")
 
 # Nokogiri element (common in Metanorma integration)
 nokogiri_element = Nokogiri::XML(svg_string).root
-result = validator.validate(nokogiri_element, profile: :metanorma)
+result = validator.validate(nokogiri_element, profile: :"metanorma-sample")
 
 # Moxml document
 moxml_doc = Moxml.new.parse(svg_string)
-result = validator.validate(moxml_doc, profile: :metanorma)
+result = validator.validate(moxml_doc, profile: :"metanorma-sample")
 ----
 
 ===== validate_file(file_path, profile:, **options)
@@ -139,7 +139,7 @@ Validate multiple files.
 [source,ruby]
 ----
 files = ['image1.svg', 'image2.svg', 'image3.svg']
-results = validator.validate_files(files, profile: :metanorma)
+results = validator.validate_files(files, profile: :"metanorma-sample")
 
 results.each do |file, result|
   puts "#{file}: #{result.valid? ? '✓' : '✗'}"
@@ -157,7 +157,7 @@ Get list of available profiles.
 [source,ruby]
 ----
 profiles = validator.available_profiles
-# => [:base, :svg_1_2_rfc, :metanorma, :lucid, ...]
+# => [:base, :svg_1_2_rfc, :"metanorma-sample", :lucid, ...]
 ----
 
 === SvgConform::Profile
@@ -215,7 +215,7 @@ Validate a document against this profile.
 
 [source,ruby]
 ----
-profile = SvgConform::Profiles.get(:metanorma)
+profile = SvgConform::Profiles.get(:"metanorma-sample")
 document = SvgConform::Document.from_file('image.svg')
 result = profile.validate(document)
 ----
@@ -234,7 +234,7 @@ Apply all remediations defined in the profile.
 
 [source,ruby]
 ----
-profile = SvgConform::Profiles.get(:metanorma)
+profile = SvgConform::Profiles.get(:"metanorma-sample")
 document = SvgConform::Document.from_file('image.svg')
 
 changes = profile.apply_remediations(document)
@@ -448,7 +448,7 @@ Convert result to JSON string.
 
 [source,ruby]
 ----
-result = validator.validate(svg_content, profile: :metanorma)
+result = validator.validate(svg_content, profile: :"metanorma-sample")
 
 puts "Valid: #{result.valid?}"
 puts "Errors: #{result.error_count}"
@@ -648,7 +648,7 @@ Get remediations from the profile.
 
 [source,ruby]
 ----
-profile = SvgConform::Profiles.get(:metanorma)
+profile = SvgConform::Profiles.get(:"metanorma-sample")
 runner = SvgConform::RemediationRunner.new(profile: profile)
 
 result = runner.run_remediation_file('input.svg')
@@ -740,7 +740,7 @@ Get a profile by name.
 
 [source,ruby]
 ----
-profile = SvgConform::Profiles.get(:metanorma)
+profile = SvgConform::Profiles.get(:"metanorma-sample")
 profile = SvgConform::Profiles.get('svg_1_2_rfc')
 ----
 
@@ -755,7 +755,7 @@ Get list of available profile names.
 [source,ruby]
 ----
 profiles = SvgConform::Profiles.available_profiles
-# => [:base, :svg_1_2_rfc, :metanorma, ...]
+# => [:base, :svg_1_2_rfc, :"metanorma-sample", ...]
 
 profiles.each do |name|
   profile = SvgConform::Profiles.get(name)
@@ -778,7 +778,7 @@ end
 | `:svg_1_2_rfc_with_rdf`
 | RFC 7996 with RDF/Dublin Core metadata support
 
-| `:metanorma`
+| `:"metanorma-sample"`
 | Metanorma document generation requirements
 
 | `:lucid`
@@ -1004,7 +1004,7 @@ Convert to hash.
 
 [source,ruby]
 ----
-result = validator.validate(svg_content, profile: :metanorma)
+result = validator.validate(svg_content, profile: :"metanorma-sample")
 manifest = result.reference_manifest
 
 puts "IDs defined: #{manifest.available_ids.size}"
@@ -1121,7 +1121,7 @@ errors = []
 
 Dir.glob('images/**/*.svg') do |file|
   begin
-    result = validator.validate_file(file, profile: :metanorma)
+    result = validator.validate_file(file, profile: :"metanorma-sample")
     results[file] = result
 
     unless result.valid?
@@ -1154,7 +1154,7 @@ end
 
 [source,ruby]
 ----
-profile = SvgConform::Profiles.get(:metanorma)
+profile = SvgConform::Profiles.get(:"metanorma-sample")
 runner = SvgConform::RemediationRunner.new(profile: profile)
 
 Dir.glob('input/**/*.svg').each do |input_file|
@@ -1179,7 +1179,7 @@ end
 
 [source,ruby]
 ----
-result = validator.validate(svg_content, profile: :metanorma)
+result = validator.validate(svg_content, profile: :"metanorma-sample")
 manifest = result.reference_manifest
 
 # Export manifest
@@ -1214,13 +1214,13 @@ end
 class SVGProcessor
   def initialize
     @validator = SvgConform::Validator.new
-    @profile = SvgConform::Profiles.get(:metanorma)
+    @profile = SvgConform::Profiles.get(:"metanorma-sample")
     @runner = SvgConform::RemediationRunner.new(profile: @profile)
   end
 
   def process_svg_element(nokogiri_element)
     # Validate without serializing by user
-    result = @validator.validate(nokogiri_element, profile: :metanorma)
+    result = @validator.validate(nokogiri_element, profile: :"metanorma-sample")
 
     if result.valid?
       return { status: :valid, element: nokogiri_element }
@@ -1259,7 +1259,7 @@ Raised when validation fails due to invalid input.
 [source,ruby]
 ----
 begin
-  result = validator.validate_file('missing.svg', profile: :metanorma)
+  result = validator.validate_file('missing.svg', profile: :"metanorma-sample")
 rescue SvgConform::ValidationError => e
   puts "Validation error: #{e.message}"
 end
@@ -1342,7 +1342,7 @@ validator = SvgConform::Validator.new(mode: :dom)
 ----
 # Efficient batch processing
 validator = SvgConform::Validator.new(mode: :sax)
-profile = SvgConform::Profiles.get(:metanorma) # Cache profile
+profile = SvgConform::Profiles.get(:"metanorma-sample") # Cache profile
 
 files.each do |file|
   result = validator.validate_file(file, profile: profile)

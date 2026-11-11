@@ -35,6 +35,13 @@ SvgConform is distributed as a Ruby gem.
 * **Generic namespace handling**: Configuration-driven foreign namespace validation
 * **Text-as-path detection**: Warns when text is rendered as outlined path glyphs (quality check)
 
+Profiles are consumer policy: the bundled profiles under `config/profiles/`
+(including `metanorma-sample.yml`, a testing reference for the Metanorma
+requirements) are samples, and the operative profile for a consumer lives
+with that consumer — metanorma-standoc ships and loads its own instance by
+path. Canonical diagnostics rendering rides the link:https://github.com/claricle/lens_core[lens_core]
+gem, a declared runtime dependency.
+
 
 == Concepts
 

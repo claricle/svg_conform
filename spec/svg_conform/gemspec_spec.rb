@@ -5,13 +5,16 @@ require "spec_helper"
 RSpec.describe "svg_conform.gemspec" do # rubocop:disable RSpec/DescribeClass
   let(:specification) { Gem::Specification.load("svg_conform.gemspec") }
 
-  it "does not gate installation on the unpublished lens_core gem" do
-    # lens_core is optional: the canonical diagnostics renderer rides it
-    # when installed, and the plain structural serializers answer when
-    # not. A runtime dependency on the unpublished gem made 0.2.5
-    # uninstallable for every consumer.
-    expect(specification.runtime_dependencies.map(&:name)).not_to include("lens_core")
-    expect(File.read("lib/svg_conform.rb")).to include("rescue LoadError")
+  it "declares the published lens_core gem as a runtime dependency" do
+    # lens_core 0.1.0 is on rubygems, so the 0.2.5-era optionality is
+    # obsolete: leaving it undeclared crashed the CLI on strict bundler
+    # deployments (rescue LoadError misses Bundler::GemNotFound,
+    # claricle/svg_conform#130). The guard in svg_conform.rb stays as a
+    # version-compatibility courtesy, not as the dependency mechanism.
+    dependency = specification.runtime_dependencies.find { |d| d.name == "lens_core" }
+
+    expect(dependency).not_to be_nil
+    expect(dependency.requirement).to eq(Gem::Requirement.new("~> 0.1"))
   end
 
   it "declares yeptris as a runtime dependency" do

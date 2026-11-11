@@ -8,17 +8,17 @@ METANORMA_PROFILE_CONTAINER_TAGS = %w[g a defs].freeze
 METANORMA_PROFILE_CLIP_ATTRIBUTES = %w[clip-path mask].freeze
 
 RSpec.describe "Metanorma Profile" do
-  let(:metanorma_profile_path) { "config/profiles/metanorma.yml" }
+  let(:metanorma_sample_profile_path) { "config/profiles/metanorma-sample.yml" }
 
   describe "profile loading" do
     it "loads the Metanorma profile successfully" do
-      profile = SvgConform::Profile.load_from_file(metanorma_profile_path)
+      profile = SvgConform::Profile.load_from_file(metanorma_sample_profile_path)
       expect(profile).not_to be_nil
-      expect(profile.name).to eq("metanorma")
+      expect(profile.name).to eq("metanorma-sample")
     end
 
     it "includes external resource requirements" do
-      profile = SvgConform::Profile.load_from_file(metanorma_profile_path)
+      profile = SvgConform::Profile.load_from_file(metanorma_sample_profile_path)
       requirement_ids = profile.requirements.map(&:id)
       expect(requirement_ids).to include("no_external_css")
       expect(requirement_ids).to include("no_external_fonts")
@@ -26,7 +26,7 @@ RSpec.describe "Metanorma Profile" do
     end
 
     it "includes comprehensive element support" do
-      profile = SvgConform::Profile.load_from_file(metanorma_profile_path)
+      profile = SvgConform::Profile.load_from_file(metanorma_sample_profile_path)
       requirement_ids = profile.requirements.map(&:id)
       expect(requirement_ids).to include("allowed_elements")
     end
@@ -41,7 +41,7 @@ RSpec.describe "Metanorma Profile" do
       SVG
 
       document = SvgConform::Document.from_content(svg_with_colors)
-      profile = SvgConform::Profile.load_from_file(metanorma_profile_path)
+      profile = SvgConform::Profile.load_from_file(metanorma_sample_profile_path)
 
       result = profile.validate(document)
       color_errors = result.errors.select do |e|
@@ -58,7 +58,7 @@ RSpec.describe "Metanorma Profile" do
       SVG
 
       document = SvgConform::Document.from_content(svg_with_image)
-      profile = SvgConform::Profile.load_from_file(metanorma_profile_path)
+      profile = SvgConform::Profile.load_from_file(metanorma_sample_profile_path)
 
       result = profile.validate(document)
       expect(result).to respond_to(:valid?)
@@ -69,7 +69,7 @@ RSpec.describe "Metanorma Profile" do
     # SVG applies the clip-path and mask properties to container elements and
     # graphics elements alike; rejecting them on containers rejects
     # schema-valid documents (metanorma-pdfa#106).
-    let(:profile) { SvgConform::Profile.load_from_file(metanorma_profile_path) }
+    let(:profile) { SvgConform::Profile.load_from_file(metanorma_sample_profile_path) }
     let(:validator) { SvgConform::Validator.new(mode: :sax) }
 
     def svg_with_clip_assets(inner)

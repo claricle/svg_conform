@@ -48,7 +48,7 @@ RSpec.describe SvgConform do
       validator = SvgConform::Validator.new(mode: :sax)
 
       # First validation with metanorma profile
-      profile_meta = SvgConform::Profiles.get("metanorma")
+      profile_meta = SvgConform::Profiles.get("metanorma-sample")
       result_meta1 = validator.validate(svg_with_invalid_ref,
                                         profile: profile_meta)
       first_meta_count = result_meta1.errors.count
@@ -97,7 +97,7 @@ RSpec.describe SvgConform do
     it "handles interleaved profile validations correctly" do
       validator = SvgConform::Validator.new(mode: :sax)
 
-      profile_meta = SvgConform::Profiles.get("metanorma")
+      profile_meta = SvgConform::Profiles.get("metanorma-sample")
       profile_rfc = SvgConform::Profiles.get("svg_1_2_rfc")
 
       # Interleave validations
@@ -165,7 +165,7 @@ RSpec.describe SvgConform do
       validator = SvgConform::Validator.new(mode: :sax)
 
       # Validate with metanorma (should have 0 errors - more permissive)
-      profile_meta = SvgConform::Profiles.get("metanorma")
+      profile_meta = SvgConform::Profiles.get("metanorma-sample")
       result_meta = validator.validate(svg_with_styles, profile: profile_meta)
       meta_errors = result_meta.errors.count
 
