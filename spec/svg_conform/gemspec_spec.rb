@@ -41,6 +41,10 @@ RSpec.describe "svg_conform.gemspec" do # rubocop:disable RSpec/DescribeClass
     # guard (ci's words). Without this check, every post-release PR fails
     # bundler 4's frozen install ("gemspecs for path gems changed") before
     # anyone sees why.
+    # The release flow deletes the lock before bumping; the guard applies
+    # only where the committed lock exists (normal CI and dev trees).
+    skip "no committed lockfile (release context)" unless File.exist?("Gemfile.lock")
+
     lock = File.read("Gemfile.lock")
     path_version = lock[/\APATH\n  remote: \.\n  specs:\n    svg_conform \(([^)]+)\)/, 1]
     expect(path_version).to eq(SvgConform::VERSION)
