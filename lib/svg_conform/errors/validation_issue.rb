@@ -205,7 +205,12 @@ requirement_id: nil, severity: nil, violation_type: nil)
           :font_violation
         when /forbidden|content/
           :content_violation
-        when /reference|id/
+        # The bare substring /id/ misclassified any requirement whose id
+        # merely contains it ("namespace_val[id]ation", "link_val[id]ation")
+        # as :reference_violation — the type consumers drop for the separate
+        # reference pass, so their verdicts vanished from downstream logs
+        # (#133). Match the id token only as a whole word segment.
+        when /reference/, /(^|_)id($|_)/
           :reference_violation
         when /namespace/
           :namespace_violation
