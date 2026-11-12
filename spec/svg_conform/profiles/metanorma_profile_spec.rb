@@ -6,6 +6,17 @@ require "spec_helper"
 # per SVG (metanorma-pdfa#106).
 METANORMA_PROFILE_CONTAINER_TAGS = %w[g a defs].freeze
 METANORMA_PROFILE_CLIP_ATTRIBUTES = %w[clip-path mask].freeze
+METANORMA_PROFILE_SHAPE_TAGS = %w[path rect circle ellipse line polyline polygon].freeze
+METANORMA_PROFILE_SHAPE_QUALITY_ATTRIBUTES = %w[clip-rule opacity].freeze
+METANORMA_PROFILE_SHAPE_GEOMETRY = {
+  "path" => 'd="M20,20 H50 V50"',
+  "rect" => 'x="20" y="20" width="30" height="30"',
+  "circle" => 'cx="35" cy="35" r="15"',
+  "ellipse" => 'cx="35" cy="35" rx="15" ry="10"',
+  "line" => 'x1="20" y1="35" x2="50" y2="35"',
+  "polyline" => 'points="20,35 35,20 50,35"',
+  "polygon" => 'points="20,35 35,20 50,35"',
+}.freeze
 
 RSpec.describe "Metanorma Profile" do
   let(:metanorma_sample_profile_path) { "config/profiles/metanorma-sample.yml" }
@@ -108,6 +119,29 @@ RSpec.describe "Metanorma Profile" do
           end
           expect(attribute_errors).to be_empty
           expect(result).to be_valid
+        end
+      end
+    end
+
+    # claricle/svg_conform#136: drawing exports carry clip-rule and
+    # opacity on every graphics element, not only containers; the sample
+    # mirrors the owned baseline (metanorma-standoc#1362).
+    METANORMA_PROFILE_SHAPE_TAGS.each do |tag|
+      METANORMA_PROFILE_SHAPE_QUALITY_ATTRIBUTES.each do |attribute|
+        it "accepts #{attribute} on the shape #{tag}" do
+          svg = <<~SVG
+            <svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" width="70" height="70" viewBox="0 0 70 70">
+              <clipPath id="cp">
+                <path d="M10,10 H60 V60"/>
+              </clipPath>
+              <g>
+                <#{tag} #{METANORMA_PROFILE_SHAPE_GEOMETRY[tag]} fill="red" #{attribute}="#{attribute == 'clip-rule' ? 'evenodd' : '0.85'}" clip-path="url(#cp)"/>
+              </g>
+            </svg>
+          SVG
+          result = validator.validate(svg, profile: profile)
+          attribute_errors = result.errors.select { |e| e.message.include?("'#{attribute}'") }
+          expect(attribute_errors).to be_empty
         end
       end
     end

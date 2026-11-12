@@ -215,8 +215,16 @@ module SvgConform
     def resolve_profile(profile)
       case profile
       when Symbol, String
-        SvgConform::Profiles.get(profile) || raise(ProfileError,
-                                                   "Unknown profile: #{profile}")
+        # A path to a profile file wins over a bundled name: a custom
+        # profile ends in .yml and exists on disk, while bundled names
+        # never do (claricle/svg_conform#137 - the CLI previously
+        # concatenated such paths into config/profiles).
+        if profile.to_s.end_with?(".yml") && File.exist?(profile.to_s)
+          SvgConform::Profile.load_from_file(profile.to_s)
+        else
+          SvgConform::Profiles.get(profile) || raise(ProfileError,
+                                                     "Unknown profile: #{profile}")
+        end
       when Profile
         profile
       else
