@@ -169,4 +169,40 @@ RSpec.describe SvgConform::Validator do
       # Remediation should have been attempted
     end
   end
+
+  context "with a profile file path (claricle/svg_conform#137)" do
+    # the name lookup, so a profile file path was joined onto config/
+    # profiles and always failed. An existing .yml path now loads as a
+    # profile; anything else keeps the name semantics (including the
+    # not-found error listing available profiles).
+    describe "profile resolution from a file path" do
+      let(:profile_path) do
+        File.expand_path("../../config/profiles/metanorma-sample.yml", __dir__)
+      end
+      let(:tiny_svg) do
+        <<~SVG
+          <svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" width="70" height="70" viewBox="0 0 70 70">
+            <rect x="20" y="20" width="30" height="30" fill="red"/>
+          </svg>
+        SVG
+      end
+
+      it "loads an existing .yml path instead of treating it as a name" do
+        validator = described_class.new(mode: :sax, profile: profile_path)
+        result = validator.validate(tiny_svg)
+        expect(result).to be_valid
+      end
+
+      it "keeps name semantics when the value is not a path on disk" do
+        validator = described_class.new(mode: :sax, profile: :"metanorma-sample")
+        expect(validator.validate(tiny_svg)).to be_valid
+      end
+
+      it "raises the not-found error, listing profiles, for a missing path" do
+        validator = described_class.new(mode: :sax, profile: "/tmp/definitely-missing-9f2.yml")
+        expect { validator.validate(tiny_svg) }
+          .to raise_error(SvgConform::ProfileError, /not found/i)
+      end
+    end
+  end
 end
