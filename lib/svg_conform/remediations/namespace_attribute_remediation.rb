@@ -117,19 +117,34 @@ module SvgConform
         namespaces_to_remove = removed_namespaces.to_a + disallowed_namespaces
 
         namespaces_to_remove.uniq.each do |ns_identifier|
-          # Try to match xmlns:prefix="anything" where prefix matches the identifier
-          # or xmlns:prefix="identifier" where the URI matches
-          pattern = /\s+xmlns:#{Regexp.escape(ns_identifier)}="[^"]*"/
+          # URI form (the common case): find the prefix the document
+          # actually declared for this namespace, then drop that
+          # declaration; also covers the default-namespace spelling.
+          decl = /\s+xmlns:([A-Za-z_][\w.-]*)="#{Regexp.escape(ns_identifier)}"/
+          prefix_form = /\s+xmlns:#{Regexp.escape(ns_identifier)}="[^"]*"/
+          default_form = /\s+xmlns="#{Regexp.escape(ns_identifier)}"/
 
-          if xml_str.match?(pattern)
-            xml_str = xml_str.gsub(pattern, "")
-            changes << {
-              type: :namespace_removed,
-              description: "Removed unused namespace declaration 'xmlns:#{ns_identifier}'",
-              node_name: "svg",
-              attribute: "xmlns:#{ns_identifier}",
-            }
+          removed_name = nil
+          if (m = xml_str.match(decl))
+            xml_str = xml_str.gsub(decl, "")
+            removed_name = "xmlns:#{m[1]}"
+          elsif xml_str.match?(default_form)
+            xml_str = xml_str.gsub(default_form, "")
+            removed_name = "xmlns"
+          elsif xml_str.match?(prefix_form)
+            # a caller handed the prefix itself
+            xml_str = xml_str.gsub(prefix_form, "")
+            removed_name = "xmlns:#{ns_identifier}"
           end
+
+          next unless removed_name
+
+          changes << {
+            type: :namespace_removed,
+            description: "Removed unused namespace declaration '#{removed_name}'",
+            node_name: "svg",
+            attribute: removed_name,
+          }
         end
 
         # Reparse the document to update the internal DOM
