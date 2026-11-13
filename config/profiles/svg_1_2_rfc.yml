@@ -277,6 +277,24 @@ remediations:
     description: "Promote valid style properties to attributes per RFC 7996 Section 2.1"
     targets: ["style_promotion"]
 
+  # RFC 7996 Section 2.1: enable-background is removed in SVG 1.2 RFC
+  # (never rendered); Inkscape-authored documents carry it on the root
+  - id: "enable_background_removal"
+    type: "DisallowedAttributeRemediation"
+    description: "Remove enable-background (removed in SVG 1.2 RFC, never rendered)"
+    targets: ["allowed_elements"]
+    attributes:
+      - "enable-background"
+
+  # RFC 7996: the Inkscape namespace is not permitted - strip its
+  # attributes and declarations from authoring-tool output
+  - id: "inkscape_namespace_removal"
+    type: "NamespaceAttributeRemediation"
+    description: "Strip Inkscape-namespace attributes and declarations"
+    targets: ["namespace_validation", "namespace_attributes"]
+    disallowed_namespaces:
+      - "http://www.inkscape.org/namespaces/inkscape"
+
   # RFC 7996 Section 2.1: ViewBox auto-generation
   - id: "viewbox_generation"
     type: "ViewboxRemediation"
