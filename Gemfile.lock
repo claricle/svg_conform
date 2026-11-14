@@ -159,23 +159,23 @@ GEM
     unicode-name (1.15.1)
       unicode-types (~> 1.12)
     unicode-types (1.12.0)
-    yeptris (0.6.56.1-aarch64-linux)
+    yeptris (0.6.65.0-aarch64-linux)
       ffi (~> 1.15)
-    yeptris (0.6.56.1-aarch64-linux-musl)
+    yeptris (0.6.65.0-aarch64-linux-musl)
       ffi (~> 1.15)
-    yeptris (0.6.56.1-arm-linux-eabihf)
+    yeptris (0.6.65.0-arm-linux-eabihf)
       ffi (~> 1.15)
-    yeptris (0.6.56.1-arm-linux-musleabihf)
+    yeptris (0.6.65.0-arm-linux-musleabihf)
       ffi (~> 1.15)
-    yeptris (0.6.56.1-arm64-darwin)
+    yeptris (0.6.65.0-arm64-darwin)
       ffi (~> 1.15)
-    yeptris (0.6.56.1-x64-mingw-ucrt)
+    yeptris (0.6.65.0-x64-mingw-ucrt)
       ffi (~> 1.15)
-    yeptris (0.6.56.1-x86_64-darwin)
+    yeptris (0.6.65.0-x86_64-darwin)
       ffi (~> 1.15)
-    yeptris (0.6.56.1-x86_64-linux)
+    yeptris (0.6.65.0-x86_64-linux)
       ffi (~> 1.15)
-    yeptris (0.6.56.1-x86_64-linux-musl)
+    yeptris (0.6.65.0-x86_64-linux-musl)
       ffi (~> 1.15)
 
 PLATFORMS
@@ -282,15 +282,15 @@ CHECKSUMS
   unicode-emoji (4.3.0) sha256=11c02fa73290378c066bb0562cd4c87d8e1b706fbbe0059ca12746a4244de8ce
   unicode-name (1.15.1) sha256=b8f2e3ca14bc24799f84a4f74d43a3612d02a051700d88bc6ca8e3bd53cda3f6
   unicode-types (1.12.0) sha256=7e26a4352cecc2a50325a3793df834b732581ca9f25c5e29f46f3378934363f6
-  yeptris (0.6.56.1-aarch64-linux) sha256=395697acaafda21d1c22c6ade8814ff540318770d281bd18dcfe959bf0e32775
-  yeptris (0.6.56.1-aarch64-linux-musl) sha256=1241d5a0d689a9839f9f09b293c355cc1bbec178c32fdaf60ea417704e00bce4
-  yeptris (0.6.56.1-arm-linux-eabihf) sha256=366e38b8de9f383aca7a4014ce1701dc7d628dc41cacc059c09e3f655ab295b5
-  yeptris (0.6.56.1-arm-linux-musleabihf) sha256=2e1ba49df49bd48d2a7455ca2f68082ff34f0b61f2ae1d1d6804d5d6ced67a46
-  yeptris (0.6.56.1-arm64-darwin) sha256=11f075c26292b784987be959a37a9bb1b2d424e5e5fd5628176444445521266f
-  yeptris (0.6.56.1-x64-mingw-ucrt) sha256=ef0131c9dcc8b221d2f81ce38d1db3a72113ab42ec46d911ae7c69bfe551700a
-  yeptris (0.6.56.1-x86_64-darwin) sha256=1f2828b97be8d1294c690a660a8aa24d70d26c222c19c010b818970082cf2732
-  yeptris (0.6.56.1-x86_64-linux) sha256=817bffec2f93fb38db9f61222015c87ec0bc91ff6a4fde859df8e76403f1004a
-  yeptris (0.6.56.1-x86_64-linux-musl) sha256=eb2fc3b3dfb87565d47608d9c2b41134d7af3fb29a5a1a6a8d5345b3446a9acf
+  yeptris (0.6.65.0-aarch64-linux) sha256=3a99ffe80fef3cd63a3717db0c80876550b10107b2156c212d21dc232b5c4fcc
+  yeptris (0.6.65.0-aarch64-linux-musl) sha256=b53b4770194c80ab8c3bab6a81d177800bec94045f2e588708683f4f452dbe1c
+  yeptris (0.6.65.0-arm-linux-eabihf) sha256=0e78b260fcfd9dbef17c3b6b7db218dfa90be9f2d0c9d310bc3da7594bfc7741
+  yeptris (0.6.65.0-arm-linux-musleabihf) sha256=9cc35d18285b48e1e1c03e59cc9037f445f8bafb1328609e5a699b49da7f5dd4
+  yeptris (0.6.65.0-arm64-darwin) sha256=454bd215ff788c432319a83c9a350f5c8ba1a92188e1e2b59f7ca25d86f88f68
+  yeptris (0.6.65.0-x64-mingw-ucrt) sha256=b20bfd88cb2dbbf368b633957fa014074d6194f52153d7ffc2d8a54db70b4b0d
+  yeptris (0.6.65.0-x86_64-darwin) sha256=58e8ed71f0ae11cbae7d1636371ae6a01e553defd3ff3f925fe74e1e3422d179
+  yeptris (0.6.65.0-x86_64-linux) sha256=f0b06c7eb79c963f04948116df4c738adaca42c6b2fb7eb11f3381b07791ba20
+  yeptris (0.6.65.0-x86_64-linux-musl) sha256=19cc60e7f48b2ca63082a70b02075688fd3bf3455a161ce84c175e919c296117
 
 BUNDLED WITH
   4.0.24
