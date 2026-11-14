@@ -46,7 +46,7 @@ RSpec.describe "svg_conform.gemspec" do # rubocop:disable RSpec/DescribeClass
     skip "no committed lockfile (release context)" unless File.exist?("Gemfile.lock")
 
     lock = File.read("Gemfile.lock")
-    path_version = lock[/\APATH\n  remote: \.\n  specs:\n    svg_conform \(([^)]+)\)/, 1]
+    path_version = lock[/^PATH\n  remote: \.\n  specs:\n    svg_conform \(([^)]+)\)/, 1]
     expect(path_version).to eq(SvgConform::VERSION)
   end
 end
