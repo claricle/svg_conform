@@ -60,6 +60,22 @@ RSpec.describe "SvgConform" do
     expect(report.filename).to eq("hello")
   end
 
+  it "wraps malformed profile YAML in lutaml-model's format error" do
+    expect { SvgConform::Profile.from_yaml("name: [unclosed\n") }
+      .to raise_error(Lutaml::Model::InvalidFormatError)
+  end
+
+  it "wraps malformed conformance report YAML in lutaml-model's format error" do
+    expect { SvgConform::ConformanceReport.from_yaml("filename: \"x\n  valid: : :\n") }
+      .to raise_error(Lutaml::Model::InvalidFormatError)
+  end
+
+  it "preserves the Psych alias rejection class for model YAML" do
+    expect do
+      SvgConform::ConformanceReport.from_yaml("a: &x foo.svg\nfilename: *x\n")
+    end.to raise_error(Psych::AliasesNotEnabled)
+  end
+
   it "preserves the standard adapter's emitted bytes for non-ASCII model text" do
     report = SvgConform::ConformanceReport.new(filename: "émoji 🚀")
     expected = Lutaml::Model::Config.with_adapter(yaml: :standard_yaml) do

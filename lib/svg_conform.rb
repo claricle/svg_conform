@@ -52,6 +52,12 @@ module SvgConform
       Yeptris::Psych.safe_load(
         yaml, permitted_classes: Lutaml::Yaml::Adapter::StandardAdapter::PERMITTED_CLASSES
       )
+    rescue Yeptris::Psych::SyntaxError => e
+      # Preserve the adapter's Psych error boundary so lutaml-model wraps
+      # malformed input in InvalidFormatError as it does for other formats.
+      raise syntax_error(e)
+    rescue Yeptris::Psych::AliasesError
+      raise ::Psych::AliasesNotEnabled
     end
   end
 
