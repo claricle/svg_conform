@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "lutaml/model"
+require "lutaml/yaml/adapter/yeptris_adapter"
+require "yeptris/psych"
 
 # lens_core is optional (0.2.5 shipped it as a hard dependency while the
 # gem is still unpublished, which made every fresh resolve unsolvable).
@@ -43,6 +45,27 @@ require_relative "svg_conform/fixer"
 require_relative "svg_conform/external_checkers"
 
 module SvgConform
+  # The native lutaml-model loader loses binary decoding and accepts Ruby
+  # object tags. Keep its permitted classes, using yeptris's safe loader.
+  module ModelYamlSafeLoad
+    def parse(yaml, _options = {})
+      Yeptris::Psych.safe_load(
+        yaml, permitted_classes: Lutaml::Yaml::Adapter::StandardAdapter::PERMITTED_CLASSES
+      )
+    end
+  end
+
+  # Keep stored YAML byte-compatible until yeptris's emitter matches the
+  # standard adapter for non-BMP text. Reads still use yeptris throughout.
+  module ModelYamlStableDump
+    def to_yaml(options = {})
+      Lutaml::Yaml::Adapter::StandardAdapter.new(@attributes).to_yaml(options)
+    end
+  end
+
+  Lutaml::Yaml::Adapter::YeptrisAdapter.singleton_class.prepend(ModelYamlSafeLoad)
+  Lutaml::Yaml::Adapter::YeptrisAdapter.prepend(ModelYamlStableDump)
+
   class Error < StandardError; end
   class ParseError < Error; end
   class ValidationError < Error; end

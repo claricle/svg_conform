@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "yeptris/psych"
 
 RSpec.describe "SvgConform" do
   it "uses yeptris for lutaml-model YAML serialization" do
@@ -44,6 +45,28 @@ RSpec.describe "SvgConform" do
     expect(report.errors.by_requirement).to eq("viewbox_required" => 1)
     expect(report.errors.issues.first.message).to eq("Missing viewBox")
     expect(report.errors.issues.first.line).to eq(2)
+  end
+
+  it "rejects non-permitted Ruby object tags in model YAML" do
+    yaml = "filename: !ruby/object:OpenStruct {}\nvalid: false\n"
+
+    expect { SvgConform::ConformanceReport.from_yaml(yaml) }
+      .to raise_error(Yeptris::Psych::DisallowedClass, /OpenStruct/)
+  end
+
+  it "decodes binary values in model YAML" do
+    report = SvgConform::ConformanceReport.from_yaml("filename: !!binary aGVsbG8=\n")
+
+    expect(report.filename).to eq("hello")
+  end
+
+  it "preserves the standard adapter's emitted bytes for non-ASCII model text" do
+    report = SvgConform::ConformanceReport.new(filename: "émoji 🚀")
+    expected = Lutaml::Model::Config.with_adapter(yaml: :standard_yaml) do
+      report.to_yaml
+    end
+
+    expect(report.to_yaml).to eq(expected)
   end
 
   it "keeps lib free of yaml requires and bare YAML or Psych calls" do
