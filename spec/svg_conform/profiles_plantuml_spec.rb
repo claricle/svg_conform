@@ -19,6 +19,14 @@ RSpec.describe SvgConform::Profiles do
     SVG
   end
 
+  def svg_namespace
+    "http://www.w3.org/2000/svg"
+  end
+
+  def xlink_namespace
+    "http://www.w3.org/1999/xlink"
+  end
+
   it "accepts the five explicit layout and link attributes" do
     result = validator.validate(svg, profile: profile)
     expect(result.errors.map(&:message)).to be_empty
@@ -67,18 +75,15 @@ RSpec.describe SvgConform::Profiles do
     expect(diagram_links(output).size).to eq(12)
   end
 
-  SVG_NS = "http://www.w3.org/2000/svg"
-  XLINK_NS = "http://www.w3.org/1999/xlink"
-
   def text_layout(xml)
-    Moxml.parse(xml).xpath("//svg:text", "svg" => SVG_NS).map do |node|
+    Moxml.parse(xml).xpath("//svg:text", "svg" => svg_namespace).map do |node|
       [node.content, node["x"], node["y"], node["textLength"], node["lengthAdjust"]]
     end
   end
 
   def diagram_links(xml)
-    Moxml.parse(xml).xpath("//svg:a", "svg" => SVG_NS).map do |node|
-      href = node.attributes.find { |attr| attr.namespace&.uri == XLINK_NS }
+    Moxml.parse(xml).xpath("//svg:a", "svg" => svg_namespace).map do |node|
+      href = node.attributes.find { |attr| attr.namespace&.uri == xlink_namespace }
       [node["title"], href&.value]
     end
   end

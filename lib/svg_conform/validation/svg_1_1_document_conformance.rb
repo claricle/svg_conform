@@ -26,13 +26,11 @@ module SvgConform
       MANIFEST_PATH = File.join(DATA_DIR, "manifest.yml")
       EXTERNAL_ENTITY = /<!ENTITY\s+(?:%\s+)?[^\s>]+\s+(?:SYSTEM|PUBLIC)\b/m
 
-      PUBLIC_DOCTYPE_RE = /<!DOCTYPE[^>]*>/.freeze
-
-
-      ELEMENT_DECL = /<!ELEMENT\s+([A-Za-z_:][A-Za-z0-9._:-]*)/.freeze
-      ATTLIST_DECL = /<!ATTLIST\s+([A-Za-z_:][A-Za-z0-9._:-]*)(.*?)>/m.freeze
-      ATTR_DECL = /([A-Za-z_:][A-Za-z0-9._:-]*)\s+(?:CDATA|ID|IDREF|IDREFS|ENTITY|ENTITIES|NMTOKEN|NMTOKENS|NOTATION|\()/m.freeze
-
+      PUBLIC_DOCTYPE_RE = /<!DOCTYPE[^>]*>/
+      XML_DECL_VERSION = /\A\s*<\?xml[^?]*\bversion\s*=\s*["']([^"']+)["']/
+      ELEMENT_DECL = /<!ELEMENT\s+([A-Za-z_:][A-Za-z0-9._:-]*)/
+      ATTLIST_DECL = /<!ATTLIST\s+([A-Za-z_:][A-Za-z0-9._:-]*)(.*?)>/m
+      ATTR_DECL = /([A-Za-z_:][A-Za-z0-9._:-]*)\s+(?:CDATA|ID|IDREF|IDREFS|ENTITY|ENTITIES|NMTOKEN|NMTOKENS|NOTATION|\()/m
 
       Issue = Struct.new(:kind, :message, :line, keyword_init: true)
 
@@ -74,10 +72,84 @@ module SvgConform
         %(<?xml version="#{decl_version}" encoding="UTF-8"?>\n) +
           %(<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "#{dtd_uri}">\n#{body}\n)
       end
+      # A sequential DTD preprocessor. libxml2 expands a parameter-entity
+      # reference to the definition in effect at the reference point, and the
+      # flat DTD leans on that: attribute PEs are redeclared per module and
+      # qname PEs are redeclared to literal element names after the modular
+      # machinery. A batch expansion cannot reproduce it, so the text is
+      # walked in order: PE declarations register and vanish, conditional
+      # sections resolve to INCLUDE content or nothing, and every remaining
+      # reference expands live. The result is an internal-subset-safe
+      # declaration stream (no PE references, no conditional sections).
+
+      def self.flatten_dtd(dtd_text)
+        current = {}
+        out = +""
+        process_section(dtd_text, current, out)
+        out
+      end
+
+      PE_TOKEN = %r{
+        <!ENTITY\s+%\s+([A-Za-z0-9._-]+)\s+(["'])(.*?)\2\s*>
+        |<!\[\s*(?:(INCLUDE|IGNORE)|%([A-Za-z0-9._-]+);?)\s*\[
+        |%([A-Za-z0-9._-]+);
+      }xm
+      CONDITIONAL_BODY_OPEN = /<!\[\s*(?:(?:INCLUDE|IGNORE)|%[A-Za-z0-9._-]+;?)\s*\[/i
+      MAX_PE_DEPTH = 50
+
+      def self.process_section(text, current, out)
+        pos = 0
+        while (match = PE_TOKEN.match(text, pos))
+          out << expand_refs(text[pos...match.begin(0)], current)
+          if match[1]
+            # libxml2 keeps the first declaration of a parameter entity and
+            # ignores later duplicates.
+            current[match[1]] ||= match[3]
+            pos = match.end(0)
+          elsif match[4] || match[5]
+            keyword = expand_refs(match[4] || current[match[5]] || "", current)
+              .to_s.strip.upcase
+            body_start, body_end, pos = conditional_extent(text, match.end(0))
+            process_section(text[body_start...body_end], current, out) if keyword == "INCLUDE"
+          else
+            out << expand_refs(match[0], current)
+            pos = match.end(0)
+          end
+        end
+        out << expand_refs(text[pos..], current)
+      end
+
+      # Offsets of one conditional section's body: [start, end, after_close],
+      # honouring nested conditional sections.
+      def self.conditional_extent(text, open_end)
+        depth = 1
+        pos = open_end
+        while depth.positive?
+          close = text.index("]]>", pos)
+          raise ArgumentError, "unterminated conditional section" unless close
+
+          inner = CONDITIONAL_BODY_OPEN.match(text, pos)
+          if inner && inner.end(0) <= close + 3
+            depth += 1
+            pos = inner.end(0)
+          else
+            depth -= 1
+            pos = close + 3
+          end
+        end
+        [open_end, pos - 3, pos]
+      end
+
+      def self.expand_refs(text, current, depth = 0)
+        raise ArgumentError, "parameter entity recursion too deep" if depth > MAX_PE_DEPTH
+
+        text.gsub(/%([A-Za-z0-9._-]+);/) do
+          value = current[Regexp.last_match(1)]
+          value ? expand_refs(value, current, depth + 1) : Regexp.last_match(0)
+        end
+      end
 
       private
-
-      XML_DECL_VERSION = /\A\s*<\?xml[^?]*\bversion\s*=\s*["']([^"']+)["']/.freeze
 
       # Moxml documents do not expose the XML declaration; read it from the
       # source text.
@@ -185,7 +257,7 @@ module SvgConform
                     "Element #{Regexp.last_match(1)} does not carry attribute #{Regexp.last_match(2)}"
                   when /\AElement '([^']+)' content model requires (.+)\z/m
                     "Element #{Regexp.last_match(1)} content does not follow the DTD, " \
-                      "expecting #{Regexp.last_match(2)}"
+                    "expecting #{Regexp.last_match(2)}"
                   else
                     message
                   end
@@ -222,13 +294,13 @@ module SvgConform
       end
 
       def declared_elements
-        @declared_elements ||= flattened_dtd.scan(ELEMENT_DECL).map(&:first).to_set
+        @declared_elements ||= flattened_dtd.scan(ELEMENT_DECL).to_set(&:first)
       end
 
       def declared_attributes
         @declared_attributes ||= flattened_dtd.scan(ATTLIST_DECL)
           .each_with_object({}) do |(element, body), map|
-          map[element] = body.scan(ATTR_DECL).map(&:first).to_set
+          map[element] = body.scan(ATTR_DECL).to_set(&:first)
         end
       end
 
@@ -238,82 +310,6 @@ module SvgConform
 
       def flattened_dtd
         @flattened_dtd ||= self.class.flatten_dtd(File.read(@dtd_path))
-      end
-
-      # A sequential DTD preprocessor. libxml2 expands a parameter-entity
-      # reference to the definition in effect at the reference point, and the
-      # flat DTD leans on that: attribute PEs are redeclared per module and
-      # qname PEs are redeclared to literal element names after the modular
-      # machinery. A batch expansion cannot reproduce it, so the text is
-      # walked in order: PE declarations register and vanish, conditional
-      # sections resolve to INCLUDE content or nothing, and every remaining
-      # reference expands live. The result is an internal-subset-safe
-      # declaration stream (no PE references, no conditional sections).
-      def self.flatten_dtd(dtd_text)
-        current = {}
-        out = +""
-        process_section(dtd_text, current, out)
-        out
-      end
-
-      PE_TOKEN = %r{
-        <!ENTITY\s+%\s+([A-Za-z0-9._-]+)\s+(["'])(.*?)\2\s*>
-        |<!\[\s*(?:(INCLUDE|IGNORE)|%([A-Za-z0-9._-]+);?)\s*\[
-        |%([A-Za-z0-9._-]+);
-      }xm.freeze
-      CONDITIONAL_BODY_OPEN = /<!\[\s*(?:(?:INCLUDE|IGNORE)|%[A-Za-z0-9._-]+;?)\s*\[/i.freeze
-      MAX_PE_DEPTH = 50
-
-      def self.process_section(text, current, out)
-        pos = 0
-        while (match = PE_TOKEN.match(text, pos))
-          out << expand_refs(text[pos...match.begin(0)], current)
-          if match[1]
-            # libxml2 keeps the first declaration of a parameter entity and
-            # ignores later duplicates.
-            current[match[1]] ||= match[3]
-            pos = match.end(0)
-          elsif match[4] || match[5]
-            keyword = expand_refs(match[4] || current[match[5]] || "", current)
-              .to_s.strip.upcase
-            body_start, body_end, pos = conditional_extent(text, match.end(0))
-            process_section(text[body_start...body_end], current, out) if keyword == "INCLUDE"
-          else
-            out << expand_refs(match[0], current)
-            pos = match.end(0)
-          end
-        end
-        out << expand_refs(text[pos..], current)
-      end
-
-      # Offsets of one conditional section's body: [start, end, after_close],
-      # honouring nested conditional sections.
-      def self.conditional_extent(text, open_end)
-        depth = 1
-        pos = open_end
-        while depth.positive?
-          close = text.index("]]>", pos)
-          raise ArgumentError, "unterminated conditional section" unless close
-
-          inner = CONDITIONAL_BODY_OPEN.match(text, pos)
-          if inner && inner.end(0) <= close + 3
-            depth += 1
-            pos = inner.end(0)
-          else
-            depth -= 1
-            pos = close + 3
-          end
-        end
-        [open_end, pos - 3, pos]
-      end
-
-      def self.expand_refs(text, current, depth = 0)
-        raise ArgumentError, "parameter entity recursion too deep" if depth > MAX_PE_DEPTH
-
-        text.gsub(/%([A-Za-z0-9._-]+);/) do
-          value = current[Regexp.last_match(1)]
-          value ? expand_refs(value, current, depth + 1) : Regexp.last_match(0)
-        end
       end
     end
   end
