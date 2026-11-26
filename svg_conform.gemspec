@@ -37,7 +37,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "lens_core", "~> 0.1"
   spec.add_dependency "lutaml-model", "~> 0.8.155"
   spec.add_dependency "moxml", "~> 0.6.0"
-  spec.add_dependency "nokogiri", "~> 1.16"
+  spec.add_dependency "leptris", "~> 1.9"
   spec.add_dependency "rainbow"
   spec.add_dependency "table_tennis"
   spec.add_dependency "thor"

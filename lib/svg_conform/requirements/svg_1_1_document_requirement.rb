@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "nokogiri"
+require "moxml"
 require "strscan"
 require_relative "base_requirement"
 require_relative "../validation/svg_1_1_document_conformance"
@@ -77,11 +77,11 @@ module SvgConform
       def check_root(source, context)
         root = root_of(source, context)
         return unless root
-        return if root.name == "svg" && root.namespace&.href == SVG_NS
+        return if root.name == "svg" && root.namespace&.uri == SVG_NS
 
         fail_with(context, "document element must be 'svg' in the " \
                            "#{SVG_NS} namespace, found " \
-                           "'#{root.name}' in '#{root.namespace&.href}'")
+                           "'#{root.name}' in '#{root.namespace&.uri}'")
       end
 
       def check_version(source, context)
@@ -106,10 +106,10 @@ module SvgConform
 
       def check_css2(source, context)
         parsed = parse(source, context)
-        return unless parsed.is_a?(Nokogiri::XML::Document)
+        return unless parsed.is_a?(Moxml::Document)
 
         parsed.traverse do |node|
-          next unless node.element? && node.namespace&.href == SVG_NS
+          next unless node.node_type == :element && node.namespace&.uri == SVG_NS
 
           check_style_attribute(node, context)
           check_style_element(node, context)
@@ -118,13 +118,14 @@ module SvgConform
 
       def check_xml_stylesheet(source, context)
         parsed = parse(source, context)
-        return unless parsed.is_a?(Nokogiri::XML::Document)
+        return unless parsed.is_a?(Moxml::Document)
 
         parsed.children.each do |node|
-          next unless node.processing_instruction? && node.name == STYLESHEET_TARGET
+          next unless node.node_type == :processing_instruction &&
+            node.name == STYLESHEET_TARGET
 
           stylesheet_problems(node.content).each do |problem|
-            fail_with(context, "xml-stylesheet: #{problem}", line: node.line)
+            fail_with(context, "xml-stylesheet: #{problem}", line: node.line_number)
           end
         end
       end
@@ -148,7 +149,7 @@ module SvgConform
       def report_css(result, where, node, context)
         result.errors.each do |error|
           fail_with(context, "CSS 2 grammar in #{where}: #{error}",
-                    line: node.line)
+                    line: node.line_number)
         end
       end
 
@@ -190,16 +191,16 @@ module SvgConform
       def parse(source, context)
         state = context.state_for(self)
         state.parsed ||= begin
-          doc = Nokogiri::XML::Document.parse(source) { |c| c.strict.nonet }
-          doc.root ? doc : { error: Nokogiri::XML::SyntaxError.new("document has no root element") }
-        rescue Nokogiri::XML::SyntaxError => e
+          doc = Moxml.parse(source)
+          doc.root ? doc : { error: Moxml::ParseError.new("document has no root element") }
+        rescue Moxml::ParseError => e
           { error: e }
         end
       end
 
       def root_of(source, context)
         parsed = parse(source, context)
-        parsed.is_a?(Nokogiri::XML::Document) ? parsed.root : nil
+        parsed.is_a?(Moxml::Document) ? parsed.root : nil
       end
 
       def fail_with(context, message, line: nil)

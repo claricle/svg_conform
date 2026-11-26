@@ -111,7 +111,7 @@ module SvgConform
       def check_attribute_nodes(node, context)
         node.attribute_nodes.each do |attr|
           # Check if attribute has a namespace
-          namespace_uri = attr.namespace&.href
+          namespace_uri = attr.namespace&.uri
           next unless namespace_uri
 
           # Determine if this namespace is invalid based on configuration
@@ -165,7 +165,7 @@ module SvgConform
         # For Moxml attributes, check if they have namespace information
         if attr.respond_to?(:namespace) && attr.namespace
           namespace_uri = if attr.namespace.respond_to?(:href)
-                            attr.namespace.href
+                            attr.namespace.uri
                           elsif attr.namespace.respond_to?(:uri)
                             attr.namespace.uri
                           else

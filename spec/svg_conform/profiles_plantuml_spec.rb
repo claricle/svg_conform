@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "nokogiri"
+require "moxml"
 
 RSpec.describe SvgConform::Profiles do
   let(:validator) { SvgConform::Validator.new(mode: :sax) }
@@ -67,15 +67,19 @@ RSpec.describe SvgConform::Profiles do
     expect(diagram_links(output).size).to eq(12)
   end
 
+  SVG_NS = "http://www.w3.org/2000/svg"
+  XLINK_NS = "http://www.w3.org/1999/xlink"
+
   def text_layout(xml)
-    Nokogiri::XML(xml).xpath("//svg:text", "svg" => "http://www.w3.org/2000/svg").map do |node|
-      [node.text, node["x"], node["y"], node["textLength"], node["lengthAdjust"]]
+    Moxml.parse(xml).xpath("//svg:text", "svg" => SVG_NS).map do |node|
+      [node.content, node["x"], node["y"], node["textLength"], node["lengthAdjust"]]
     end
   end
 
   def diagram_links(xml)
-    Nokogiri::XML(xml).xpath("//svg:a", "svg" => "http://www.w3.org/2000/svg").map do |node|
-      [node["title"], node.attribute_with_ns("href", "http://www.w3.org/1999/xlink")&.value]
+    Moxml.parse(xml).xpath("//svg:a", "svg" => SVG_NS).map do |node|
+      href = node.attributes.find { |attr| attr.namespace&.uri == XLINK_NS }
+      [node["title"], href&.value]
     end
   end
 end

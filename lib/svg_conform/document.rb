@@ -251,12 +251,11 @@ module SvgConform
 
     def parse_document
       begin
-        # Create a Moxml context and parse the document. The DOM is
-        # pinned to the Nokogiri adapter: the leptris adapter segfaults
-        # natively in attribute traversal on path-heavy SVGs
-        # (leptris#1712), and this gem's remediation passes are exactly
-        # that workload.
-        context = Moxml.new(:nokogiri)
+        # Create a Moxml context and parse the document. The adapter
+        # is leptris (the stack engine); re-verify the attribute-
+        # traversal segfault (leptris#1712) on every leptris bump —
+        # this gem's remediation passes are exactly that workload.
+        context = Moxml.new(:leptris)
         @moxml_document = context.parse(@content)
       rescue StandardError => e
         raise ParseError, "Failed to parse SVG document: #{e.message}"

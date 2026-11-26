@@ -622,7 +622,7 @@ repair_mode = false, _mixed_mode = false)
 
       doc.xpath("//*").each do |element|
         element.namespace_definitions.each do |ns|
-          namespaces[ns.prefix || "default"] = ns.href
+          namespaces[ns.prefix || "default"] = ns.uri
         end
       end
 
