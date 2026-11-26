@@ -164,13 +164,7 @@ module SvgConform
       def check_moxml_attribute(attr, node, context)
         # For Moxml attributes, check if they have namespace information
         if attr.respond_to?(:namespace) && attr.namespace
-          namespace_uri = if attr.namespace.respond_to?(:href)
-                            attr.namespace.uri
-                          elsif attr.namespace.respond_to?(:uri)
-                            attr.namespace.uri
-                          else
-                            attr.namespace.to_s
-                          end
+          namespace_uri = attr.namespace.uri
 
           # Skip if no namespace URI
           return unless namespace_uri && !namespace_uri.empty?
@@ -250,10 +244,7 @@ module SvgConform
               ns.prefix == prefix
             end
             if ns_def
-              return ns_def.uri if ns_def.respond_to?(:uri)
-              return ns_def.href if ns_def.respond_to?(:href)
-
-              return ns_def.to_s
+              return ns_def.uri
             end
           end
 
