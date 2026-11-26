@@ -53,7 +53,7 @@ module SvgConform
         if node.respond_to?(:attribute_nodes)
           # Use attribute_nodes if available (nokogiri-compatible API style)
           node.attribute_nodes.each do |attr|
-            namespace_uri = attr.namespace&.href
+            namespace_uri = attr.namespace&.uri
             next unless namespace_uri
 
             if namespace_disallowed?(namespace_uri)
@@ -195,7 +195,7 @@ module SvgConform
       def should_remove_moxml_attribute?(attr, node, removed_namespaces)
         if attr.respond_to?(:namespace) && attr.namespace
           namespace_uri = if attr.namespace.respond_to?(:href)
-                            attr.namespace.href
+                            attr.namespace.uri
                           elsif attr.namespace.respond_to?(:uri)
                             attr.namespace.uri
                           else

@@ -11,7 +11,6 @@ gem "lutaml-model", "~> 0.8.155" # rubygems line; drop the git-main float
 gem "moxml", "~> 0.6.0"
 # lens_core is optional at runtime (#121); development and CI use the released v1 gem.
 gem "lens_core", "~> 0.1"
-gem "nokogiri", "~> 1.16"
 gem "openssl", "~> 3.0"
 gem "rake"
 gem "rspec"
