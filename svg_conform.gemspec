@@ -35,9 +35,9 @@ Gem::Specification.new do |spec|
   # crashed on strict bundler deployments, claricle/svg_conform#130).
   # lens_core 0.1.0 is published, so the 0.2.5-era optionality is obsolete.
   spec.add_dependency "lens_core", "~> 0.1"
+  spec.add_dependency "leptris", "~> 1.9"
   spec.add_dependency "lutaml-model", "~> 0.8.155"
   spec.add_dependency "moxml", "~> 0.6.0"
-  spec.add_dependency "leptris", "~> 1.9"
   spec.add_dependency "rainbow"
   spec.add_dependency "table_tennis"
   spec.add_dependency "thor"
