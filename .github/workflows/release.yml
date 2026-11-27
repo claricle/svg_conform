@@ -29,5 +29,7 @@ concurrency:
 jobs:
   release:
     uses: metanorma/ci/.github/workflows/rubygems-release.yml@main
+    secrets:
+      pat_token: ${{ secrets.CLARICLE_CI_PAT_TOKEN }}
     with:
       next_version: ${{ github.event.inputs.next_version }}
